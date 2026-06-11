@@ -5,36 +5,55 @@ using System.Text;
 
 namespace Databento.CSharpApiClient.DataModel.Dbn
 {
+    /// <summary>
+    /// Parsed DBN stream metadata header. Every DBN stream begins with the magic bytes
+    /// <c>DBN</c> followed by a version byte and this fixed-length metadata block.
+    /// </summary>
     public sealed class DbnMetadata
     {
+        /// <summary>DBN format version (1 or 2).</summary>
         public byte Version { get; set; }
 
+        /// <summary>Dataset identifier embedded in the stream (e.g. <c>"XNAS.ITCH"</c>).</summary>
         public string Dataset { get; set; }
 
+        /// <summary>Schema of the records that follow.</summary>
         public DbnSchema Schema { get; set; }
 
+        /// <summary>Inclusive start of the time range covered by this stream.</summary>
         public DateTimeOffset Start { get; set; }
 
+        /// <summary>Exclusive end of the time range, or <see langword="null"/> if open-ended.</summary>
         public DateTimeOffset? End { get; set; }
 
+        /// <summary>Maximum number of records in the stream, or <see langword="null"/> if unlimited.</summary>
         public ulong? Limit { get; set; }
 
+        /// <summary>Input symbol type used when requesting this stream.</summary>
         public DbnSType STypeIn { get; set; }
 
+        /// <summary>Output symbol type used in the symbol mappings.</summary>
         public DbnSType STypeOut { get; set; }
 
+        /// <summary>Whether a <c>ts_out</c> field is appended to each record.</summary>
         public bool TsOut { get; set; }
 
-        public ushort SymbolCStrLen { get; set; }           // v1 => 22 (implicit), v2 => read from stream
+        /// <summary>Fixed width of symbol C-strings in the mappings section (22 for v1, read from stream for v2).</summary>
+        public ushort SymbolCStrLen { get; set; }
 
-        public byte[] SchemaDefinition { get; set; }        // schema_definition_length bytes
+        /// <summary>Raw schema definition bytes (may be empty).</summary>
+        public byte[] SchemaDefinition { get; set; }
 
+        /// <summary>Input symbols that were requested.</summary>
         public List<string> Symbols { get; set; } = new List<string>();
 
+        /// <summary>Input symbols that were only partially resolved.</summary>
         public List<string> Partial { get; set; } = new List<string>();
 
+        /// <summary>Input symbols for which no data was found.</summary>
         public List<string> NotFound { get; set; } = new List<string>();
 
+        /// <summary>Symbol mappings from stype_in to stype_out for the stream's time range.</summary>
         public List<DbnSymbolMapping> Mappings { get; set; } = new List<DbnSymbolMapping>();
 
         public static DbnMetadata FromBinaryReader(BinaryReader binaryReader)

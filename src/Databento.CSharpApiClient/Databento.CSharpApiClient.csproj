@@ -6,7 +6,7 @@
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591;CS1734</NoWarn>
+    <NoWarn>$(NoWarn);CS1734</NoWarn>
 
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>

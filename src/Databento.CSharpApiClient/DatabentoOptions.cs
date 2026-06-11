@@ -2,13 +2,19 @@ using System;
 
 namespace Databento.CSharpApiClient
 {
+    /// <summary>
+    /// Configuration options passed to <see cref="DatabentoClient"/> and
+    /// <see cref="DatabentoJsonClient"/> at construction time.
+    /// </summary>
     public sealed class DatabentoOptions
     {
-        /// <summary>Historical API base URL.</summary>
+        /// <summary>Historical API base URL. Defaults to <c>https://hist.databento.com/v0/</c>.</summary>
         public Uri BaseUri { get; set; } = new Uri("https://hist.databento.com/v0/");
 
+        /// <summary>Databento API key used for HTTP Basic authentication. Required.</summary>
         public string ApiKey { get; set; }
 
+        /// <summary>Value sent in the <c>User-Agent</c> header. Defaults to <c>DatabentoClient/1.0</c>.</summary>
         public string UserAgent { get; set; } = "DatabentoClient/1.0";
 
         /// <summary>Per-request HTTP timeout. Default: 5 minutes (suitable for large timeseries fetches).</summary>

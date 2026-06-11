@@ -39,6 +39,13 @@ namespace Databento.CSharpApiClient
             PropertyNameCaseInsensitive = true,
         };
 
+        /// <summary>
+        /// Initialises a new <see cref="DatabentoJsonClient"/> using the supplied options.
+        /// A default <see cref="HttpClient"/> with Basic authentication is created unless a custom
+        /// <paramref name="transport"/> is provided (useful for unit testing).
+        /// </summary>
+        /// <param name="options">Connection and authentication settings.</param>
+        /// <param name="transport">Optional custom HTTP transport; leave <see langword="null"/> to use the built-in client.</param>
         public DatabentoJsonClient(DatabentoOptions options, IHttpTransport transport = null)
         {
             this.options = options ?? throw new ArgumentNullException(nameof(options));
@@ -69,6 +76,7 @@ namespace Databento.CSharpApiClient
             }
         }
 
+        /// <summary>Releases the underlying HTTP transport (and its <see cref="HttpClient"/>).</summary>
         public void Dispose() => this.transport.Dispose();
 
         // ================================================================

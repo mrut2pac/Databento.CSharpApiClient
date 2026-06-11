@@ -1,24 +1,60 @@
 namespace Databento.CSharpApiClient.DataModel.Dbn
 {
+    /// <summary>
+    /// DBN symbol-type discriminator used in <see cref="DbnMetadata"/> (<c>stype_in</c> / <c>stype_out</c>).
+    /// Identifies the encoding convention used for symbol strings in the stream.
+    /// </summary>
     public enum DbnSType : byte
     {
-        Null = 0xFF,        // NULL_STYPE sentinel (no type)
+        /// <summary>NULL sentinel — no symbol type specified (0xFF).</summary>
+        Null = 0xFF,
 
-        InstrumentId = 0,   // Internal numeric instrument ID
-        RawSymbol = 1,      // Exchange-native symbol (string)
-        Continuous = 2,     // Continuous symbol
-        Parent = 3,         // Parent symbol
-        Cfi = 4,            // ISO 10962 Classification of Financial Instruments
-        ISIN = 5,           // ISO 6166 International Securities Identification Number
-        SEDOL = 6,          // Stock Exchange Daily Official List
-        RIC = 7,            // Refinitiv Instrument Code
-        Bloomberg = 8,      // Bloomberg symbol
-        Cusip = 9,          // Committee on Uniform Securities Identification Procedures
-        Ocid = 10,          // Option Clearing Corporation ID
-        Composite = 11,     // Composite symbol
-        Root = 12,          // Root symbol (e.g. futures root)
-        OccSymbol = 13,     // OCC option symbol
-        SecurityId = 14,    // Exchange security ID
-        Ticker = 15         // Human-friendly ticker
+        /// <summary>Databento numeric instrument identifier (uint32 as string).</summary>
+        InstrumentId = 0,
+
+        /// <summary>Exchange-native (raw) ticker symbol.</summary>
+        RawSymbol = 1,
+
+        /// <summary>Continuous front-month contract symbol (e.g. "ES.c.0").</summary>
+        Continuous = 2,
+
+        /// <summary>Underlying / parent symbol (all strikes and expiries roll up to this).</summary>
+        Parent = 3,
+
+        /// <summary>ISO 10962 CFI code.</summary>
+        Cfi = 4,
+
+        /// <summary>ISO 6166 International Securities Identification Number.</summary>
+        ISIN = 5,
+
+        /// <summary>London Stock Exchange SEDOL code.</summary>
+        SEDOL = 6,
+
+        /// <summary>Refinitiv Instrument Code.</summary>
+        RIC = 7,
+
+        /// <summary>Bloomberg ticker.</summary>
+        Bloomberg = 8,
+
+        /// <summary>CUSIP identifier.</summary>
+        Cusip = 9,
+
+        /// <summary>OCC option clearing ID.</summary>
+        Ocid = 10,
+
+        /// <summary>Composite symbol spanning multiple venues.</summary>
+        Composite = 11,
+
+        /// <summary>Root symbol (e.g. futures root such as "ES").</summary>
+        Root = 12,
+
+        /// <summary>OCC standardised option symbol.</summary>
+        OccSymbol = 13,
+
+        /// <summary>Exchange-assigned security identifier.</summary>
+        SecurityId = 14,
+
+        /// <summary>Human-friendly ticker string.</summary>
+        Ticker = 15,
     }
 }

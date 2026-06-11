@@ -13,9 +13,11 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// </summary>
     public sealed class StatisticsRecordJson
     {
+        /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]
         public RecordHeaderJson Header { get; set; }
 
+        /// <summary>Timestamp when the gateway received this message, in UTC.</summary>
         [JsonPropertyName("ts_recv")]
         public DateTime TsReceivedUtc { get; set; }
 
@@ -31,9 +33,11 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonPropertyName("quantity")]
         public int Quantity { get; set; }
 
+        /// <summary>Venue sequence number.</summary>
         [JsonPropertyName("sequence")]
         public uint Sequence { get; set; }
 
+        /// <summary>Nanosecond latency delta from venue receipt to gateway receipt.</summary>
         [JsonPropertyName("ts_in_delta")]
         public long TsInDelta { get; set; }
 
@@ -46,16 +50,20 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonPropertyName("stat_type")]
         public ushort StatType { get; set; }
 
+        /// <summary>Publisher channel identifier.</summary>
         [JsonPropertyName("channel_id")]
         public ushort ChannelId { get; set; }
 
+        /// <summary>Action that generated this update: 1=Add, 2=Delete.</summary>
         [JsonPropertyName("update_action")]
         public byte UpdateAction { get; set; }
 
+        /// <summary>Statistics message info flags.</summary>
         [JsonPropertyName("stat_flags")]
         [JsonConverter(typeof(FlagsConverter))]
         public MessageInfoBits StatFlags { get; set; }
 
+        /// <summary>Gateway send timestamp (UTC). Present when <c>ts_out</c> was requested.</summary>
         [JsonPropertyName("ts_out")]
         public DateTime? TsOutUtc { get; set; }
     }

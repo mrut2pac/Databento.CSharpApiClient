@@ -34,19 +34,24 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonConverter(typeof(TradeAggressorConverter))]
         public TradeAggressor Side { get; set; }
 
+        /// <summary>Message info flags.</summary>
         [JsonPropertyName("flags")]
         [JsonConverter(typeof(FlagsConverter))]
         public MessageInfoBits Flags { get; set; }
 
+        /// <summary>Price level at which the event occurred (0 = top of book).</summary>
         [JsonPropertyName("depth")]
         public uint Depth { get; set; }
 
+        /// <summary>Timestamp when the gateway received this message, in UTC.</summary>
         [JsonPropertyName("ts_recv")]
         public DateTime TsReceivedUtc { get; set; }
 
+        /// <summary>Nanosecond latency delta from venue receipt to gateway receipt.</summary>
         [JsonPropertyName("ts_in_delta")]
         public long TsInDelta { get; set; }
 
+        /// <summary>Venue sequence number for ordering within the same nanosecond.</summary>
         [JsonPropertyName("sequence")]
         public uint Sequence { get; set; }
 
@@ -54,9 +59,11 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonPropertyName("levels")]
         public Mbp1LevelJson[] Levels { get; set; }
 
+        /// <summary>Gateway send timestamp (UTC). Present when <c>ts_out</c> was requested.</summary>
         [JsonPropertyName("ts_out")]
         public DateTime? TsOutUtc { get; set; }
 
+        /// <summary>Convenience accessor for the single BBO level. <see langword="null"/> if <see cref="Levels"/> is empty.</summary>
         public Mbp1LevelJson Level1 => this.Levels?.Length > 0 ? this.Levels[0] : null;
     }
 }

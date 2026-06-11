@@ -9,9 +9,11 @@ namespace Databento.CSharpApiClient.DataModel.Metadata
     /// </summary>
     public sealed class DateRange
     {
+        /// <summary>Earliest available data timestamp (inclusive).</summary>
         [JsonPropertyName("start")]
         public DateTimeOffset Start { get; set; }
 
+        /// <summary>Latest available data timestamp (exclusive).</summary>
         [JsonPropertyName("end")]
         public DateTimeOffset End { get; set; }
     }

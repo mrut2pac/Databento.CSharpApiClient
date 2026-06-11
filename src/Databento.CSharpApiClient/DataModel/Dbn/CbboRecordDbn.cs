@@ -4,59 +4,68 @@ using System.IO;
 namespace Databento.CSharpApiClient.DataModel.Dbn
 {
     /// <summary>
-    /// Consolidated/National Best Bid/Offer snapshot (CBBO-1s / CBBO-1m).
+    /// Consolidated/National Best Bid and Offer (CBBO) snapshot record, deserialized from
+    /// a DBN binary stream. Corresponds to schemas <c>cbbo-1s</c> and <c>cbbo-1m</c>.
     /// </summary>
     public sealed class CbboRecordDbn
     {
+        /// <summary>DBN record-type discriminator (<see cref="RType.Cbbo1S"/> or <see cref="RType.Cbbo1M"/>).</summary>
         public RType RecordType { get; set; }
 
+        /// <summary>Publisher that contributed this snapshot.</summary>
         public ushort PublisherId { get; set; }
 
+        /// <summary>Databento numeric instrument identifier.</summary>
         public uint InstrumentId { get; set; }
 
+        /// <summary>Event timestamp at the venue, in UTC.</summary>
         public DateTime TsEventUtc { get; set; }
 
+        /// <summary>Timestamp when the gateway received this message, in UTC.</summary>
         public DateTime TsReceivedUtc { get; set; }
 
+        /// <summary>Aggressor side of the last trade that triggered this update.</summary>
         public TradeAggressor Side { get; set; }
 
+        /// <summary>Last trade price (converted from nano-integer to double).</summary>
         public double Price { get; set; }
 
+        /// <summary>Last trade size in lots.</summary>
         public uint Size { get; set; }
 
+        /// <summary>Message info flags.</summary>
         public MessageInfoBits Flags { get; set; }
 
+        /// <summary>National best bid price.</summary>
         public double BidPrice { get; set; }
 
+        /// <summary>National best ask price.</summary>
         public double AskPrice { get; set; }
 
+        /// <summary>Quantity available at the national best bid.</summary>
         public uint BidSize { get; set; }
 
+        /// <summary>Quantity available at the national best ask.</summary>
         public uint AskSize { get; set; }
 
-        /// <summary>
-        /// Publisher ID of venue contributing the best bid.
-        /// </summary>
+        /// <summary>Publisher ID of the venue contributing the best bid.</summary>
         public ushort BidPublisherId { get; set; }
 
-        /// <summary>
-        /// Publisher ID of venue contributing the best ask.
-        /// </summary>
+        /// <summary>Publisher ID of the venue contributing the best ask.</summary>
         public ushort AskPublisherId { get; set; }
 
         /// <summary>
-        /// Deserializes the object from the specified bytes array
+        /// Deserialises a CBBO record body from <paramref name="binaryReader"/> using the
+        /// already-parsed <paramref name="header"/>.
         /// </summary>
-        /// <param name="header">Read header object</param>
-        /// <param name="binaryReader">Binary reader</param>
-        /// <returns>Deserialized object</returns>
+        /// <param name="header">Pre-read 16-byte record header.</param>
+        /// <param name="binaryReader">Reader positioned immediately after the header bytes.</param>
         public static CbboRecordDbn ReadFromBytes(DbnRecordHeader header, BinaryReader binaryReader)
         {
             try
             {
                 CbboRecordDbn cbboRecord = new CbboRecordDbn();
 
-                // get from the header
                 cbboRecord.RecordType = header.RecordType;
                 cbboRecord.PublisherId = header.PublisherId;
                 cbboRecord.InstrumentId = header.InstrumentId;
@@ -64,16 +73,15 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
 
                 byte[] bodyBytes = binaryReader.ReadBytes(header.RecordLength - DbnRecordHeader.SizeBytes);
 
-                using(MemoryStream memoryStream = new MemoryStream(bodyBytes, writable: false))
+                using(System.IO.MemoryStream memoryStream = new System.IO.MemoryStream(bodyBytes, writable: false))
                 using(BinaryReader bodyBytesReader = new BinaryReader(memoryStream))
                 {
-                    // read from the body
                     cbboRecord.Price = Utils.NanoToDouble(bodyBytesReader.ReadInt64());
                     cbboRecord.Size = bodyBytesReader.ReadUInt32();
                     bodyBytesReader.ReadByte();
                     cbboRecord.Side = ReadSide(bodyBytesReader.ReadByte());
                     cbboRecord.Flags = (MessageInfoBits)bodyBytesReader.ReadByte();
-                    bodyBytesReader.ReadByte(); // skip 1 byte
+                    bodyBytesReader.ReadByte();
                     cbboRecord.TsReceivedUtc = Utils.FromUnixNs(bodyBytesReader.ReadUInt64()).UtcDateTime;
                     cbboRecord.BidPrice = Utils.NanoToDouble(bodyBytesReader.ReadInt64());
                     cbboRecord.AskPrice = Utils.NanoToDouble(bodyBytesReader.ReadInt64());
@@ -81,8 +89,6 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                     cbboRecord.AskSize = bodyBytesReader.ReadUInt32();
                     cbboRecord.BidPublisherId = bodyBytesReader.ReadUInt16();
                     cbboRecord.AskPublisherId = bodyBytesReader.ReadUInt16();
-
-                    // here might be also tsOut or not, we will skip it
                 }
 
                 return cbboRecord;

@@ -7,27 +7,55 @@ namespace Databento.CSharpApiClient
     public static class Datasets
     {
         // U.S. Equities
-        public const string XnasItch = "XNAS.ITCH";     // Nasdaq TotalView-ITCH
-        public const string XbosItch = "XBOS.ITCH";     // Nasdaq BX TotalView-ITCH
-        public const string XpsxItch = "XPSX.ITCH";     // Nasdaq PSX TotalView-ITCH
-        public const string BatsPitch = "BATS.PITCH";   // Cboe BZX PITCH
-        public const string BatyPitch = "BATY.PITCH";   // Cboe BYX PITCH
-        public const string EdgxPitch = "EDGX.PITCH";   // Cboe EDGX PITCH
-        public const string EdgaPitch = "EDGA.PITCH";   // Cboe EDGA PITCH
+
+        /// <summary>Nasdaq TotalView-ITCH (full order book).</summary>
+        public const string XnasItch = "XNAS.ITCH";
+
+        /// <summary>Nasdaq BX TotalView-ITCH.</summary>
+        public const string XbosItch = "XBOS.ITCH";
+
+        /// <summary>Nasdaq PSX TotalView-ITCH.</summary>
+        public const string XpsxItch = "XPSX.ITCH";
+
+        /// <summary>Cboe BZX PITCH (full order book).</summary>
+        public const string BatsPitch = "BATS.PITCH";
+
+        /// <summary>Cboe BYX PITCH.</summary>
+        public const string BatyPitch = "BATY.PITCH";
+
+        /// <summary>Cboe EDGX PITCH.</summary>
+        public const string EdgxPitch = "EDGX.PITCH";
+
+        /// <summary>Cboe EDGA PITCH.</summary>
+        public const string EdgaPitch = "EDGA.PITCH";
 
         // U.S. Equity Options
-        public const string OpraPillar = "OPRA.PILLAR"; // OPRA (U.S. equity option NBBO, trades, ToB)
+
+        /// <summary>OPRA PILLAR — U.S. equity option NBBO, trades, and top-of-book.</summary>
+        public const string OpraPillar = "OPRA.PILLAR";
 
         // U.S. Futures / Commodities
-        public const string GlbxMdp3 = "GLBX.MDP3";   // CME Globex MDP 3.0 (E-mini, energy, metals …)
+
+        /// <summary>CME Globex MDP 3.0 — E-mini, energy, metals, and more.</summary>
+        public const string GlbxMdp3 = "GLBX.MDP3";
 
         // European Futures / Fixed Income
-        public const string IfeuImpact = "IFEU.IMPACT"; // ICE Europe IMPACT
-        public const string NdexImpact = "NDEX.IMPACT"; // ICE Endex IMPACT
+
+        /// <summary>ICE Europe IMPACT.</summary>
+        public const string IfeuImpact = "IFEU.IMPACT";
+
+        /// <summary>ICE Endex IMPACT.</summary>
+        public const string NdexImpact = "NDEX.IMPACT";
 
         // Databento Equities roll-up products
-        public const string DbeqBasic = "DBEQ.BASIC";   // Databento Equities Basic
-        public const string DbeqPlus = "DBEQ.PLUS";     // Databento Equities Plus
-        public const string DbeqMax = "DBEQ.MAX";       // Databento Equities Max
+
+        /// <summary>Databento Equities Basic (consolidated U.S. equity NBBO and trades).</summary>
+        public const string DbeqBasic = "DBEQ.BASIC";
+
+        /// <summary>Databento Equities Plus (extended coverage on top of Basic).</summary>
+        public const string DbeqPlus = "DBEQ.PLUS";
+
+        /// <summary>Databento Equities Max (full market depth).</summary>
+        public const string DbeqMax = "DBEQ.MAX";
     }
 }

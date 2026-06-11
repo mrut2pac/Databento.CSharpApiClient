@@ -1,0 +1,25 @@
+# Normalize line endings to LF in the repo; git converts on checkout per platform.
+* text=auto eol=lf
+
+# Force LF for these even on Windows (CI runs on Linux — must match)
+*.cs        text eol=lf
+*.csproj    text eol=lf
+*.slnx      text eol=lf
+*.sln       text eol=lf
+*.props     text eol=lf
+*.targets   text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.json      text eol=lf
+*.md        text eol=lf
+*.txt       text eol=lf
+*.editorconfig text eol=lf
+*.gitattributes text eol=lf
+*.gitignore text eol=lf
+
+# Binaries — no line-ending conversion
+*.nupkg     binary
+*.dll       binary
+*.exe       binary
+*.png       binary
+*.jpg       binary

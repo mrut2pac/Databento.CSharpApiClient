@@ -1,6 +1,6 @@
 using System;
 
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 using Databento.CSharpApiClient.JsonSupport;
 
@@ -13,28 +13,28 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// </summary>
     public sealed class StatisticsRecordJson
     {
-        [JsonProperty("hd")]
+        [JsonPropertyName("hd")]
         public RecordHeaderJson Header { get; set; }
 
-        [JsonProperty("ts_recv")]
+        [JsonPropertyName("ts_recv")]
         public DateTime TsReceivedUtc { get; set; }
 
         /// <summary>Reference timestamp associated with the statistic (e.g. session open).</summary>
-        [JsonProperty("ts_ref")]
+        [JsonPropertyName("ts_ref")]
         public DateTime? TsRefUtc { get; set; }
 
         /// <summary>Statistic price value (display-scaled).</summary>
-        [JsonProperty("price")]
+        [JsonPropertyName("price")]
         public double Price { get; set; }
 
         /// <summary>Statistic quantity value (e.g. open interest).</summary>
-        [JsonProperty("quantity")]
+        [JsonPropertyName("quantity")]
         public int Quantity { get; set; }
 
-        [JsonProperty("sequence")]
+        [JsonPropertyName("sequence")]
         public uint Sequence { get; set; }
 
-        [JsonProperty("ts_in_delta")]
+        [JsonPropertyName("ts_in_delta")]
         public long TsInDelta { get; set; }
 
         /// <summary>
@@ -43,20 +43,20 @@ namespace Databento.CSharpApiClient.DataModel.Json
         /// 4=TradingSessionHighPrice, 5=TradingSessionLowPrice, 6=ClearedVolume, 7=LowestOffer,
         /// 8=HighestBid, 9=OpenInterest, 10=FixingPrice.
         /// </summary>
-        [JsonProperty("stat_type")]
+        [JsonPropertyName("stat_type")]
         public ushort StatType { get; set; }
 
-        [JsonProperty("channel_id")]
+        [JsonPropertyName("channel_id")]
         public ushort ChannelId { get; set; }
 
-        [JsonProperty("update_action")]
+        [JsonPropertyName("update_action")]
         public byte UpdateAction { get; set; }
 
-        [JsonProperty("stat_flags")]
+        [JsonPropertyName("stat_flags")]
         [JsonConverter(typeof(FlagsConverter))]
         public MessageInfoBits StatFlags { get; set; }
 
-        [JsonProperty("ts_out")]
+        [JsonPropertyName("ts_out")]
         public DateTime? TsOutUtc { get; set; }
     }
 }

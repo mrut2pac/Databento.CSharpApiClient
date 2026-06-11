@@ -1,21 +1,21 @@
 using System;
 
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Databento.CSharpApiClient.DataModel.Json
 {
     public class RecordHeaderJson
     {
-        [JsonProperty("ts_event")]
+        [JsonPropertyName("ts_event")]
         public DateTime? TsEventUtc { get; set; }
 
-        [JsonProperty("rtype")]
+        [JsonPropertyName("rtype")]
         public RType RecordType { get; set; }
 
-        [JsonProperty("publisher_id")]
+        [JsonPropertyName("publisher_id")]
         public ushort PublisherId { get; set; }
 
-        [JsonProperty("instrument_id")]
+        [JsonPropertyName("instrument_id")]
         public uint InstrumentId { get; set; }
     }
 }

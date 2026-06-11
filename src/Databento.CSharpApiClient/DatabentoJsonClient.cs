@@ -7,11 +7,9 @@ using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 using Databento.CSharpApiClient.DataModel;
 using Databento.CSharpApiClient.DataModel.Batch;
@@ -32,15 +30,13 @@ namespace Databento.CSharpApiClient
         private readonly DatabentoOptions options;
         private readonly IHttpTransport transport;
 
-        private static readonly JsonSerializerSettings RecordDeserializeSettings = new JsonSerializerSettings
+        // STJ options: property names are set via [JsonPropertyName] attributes on each model class,
+        // so no special naming policy is needed here. Unknown JSON properties are silently ignored
+        // by default. DateTime values from Databento carry Z-suffix when pretty_ts=true, so STJ
+        // correctly sets Kind=Utc without additional configuration.
+        private static readonly JsonSerializerOptions RecordDeserializeOptions = new JsonSerializerOptions
         {
-            MissingMemberHandling = MissingMemberHandling.Ignore,
-            NullValueHandling = NullValueHandling.Include,
-
-            // Databento emits Z-suffixed ISO-8601 timestamps under pretty_ts=true. Force every parsed
-            // DateTime to Kind=Utc so downstream .ToUniversalTime() / .ToLocalTime() never double-shift,
-            // even on the (rare) endpoints that omit the trailing Z.
-            DateTimeZoneHandling = DateTimeZoneHandling.Utc,
+            PropertyNameCaseInsensitive = true,
         };
 
         public DatabentoJsonClient(DatabentoOptions options, IHttpTransport transport = null)
@@ -113,7 +109,7 @@ namespace Databento.CSharpApiClient
             }
 
             string json = await this.GetRawJsonAsync(path, ct).ConfigureAwait(false);
-            return JsonConvert.DeserializeObject<DatasetCondition>(json, RecordDeserializeSettings);
+            return JsonSerializer.Deserialize<DatasetCondition>(json, RecordDeserializeOptions);
         }
 
         public DatasetCondition GetDatasetCondition(string dataset, string dateStr = null)
@@ -123,7 +119,7 @@ namespace Databento.CSharpApiClient
         {
             string path = "metadata.get_dataset_range?dataset=" + Uri.EscapeDataString(dataset);
             string json = await this.GetRawJsonAsync(path, ct).ConfigureAwait(false);
-            return JsonConvert.DeserializeObject<DateRange>(json, RecordDeserializeSettings);
+            return JsonSerializer.Deserialize<DateRange>(json, RecordDeserializeOptions);
         }
 
         public DateRange GetDatasetRange(string dataset) => this.GetDatasetRangeAsync(dataset).GetAwaiter().GetResult();
@@ -135,8 +131,8 @@ namespace Databento.CSharpApiClient
         public async Task<SymbologyResolution> ResolveSymbolsAsync(SymbologyRequest request, CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(request);
-            string json = await this.PostJsonAsync("symbology.resolve", JsonConvert.SerializeObject(request), ct).ConfigureAwait(false);
-            return JsonConvert.DeserializeObject<SymbologyResolution>(json, RecordDeserializeSettings);
+            string json = await this.PostJsonAsync("symbology.resolve", JsonSerializer.Serialize(request, RecordDeserializeOptions), ct).ConfigureAwait(false);
+            return JsonSerializer.Deserialize<SymbologyResolution>(json, RecordDeserializeOptions);
         }
 
         public SymbologyResolution ResolveSymbols(SymbologyRequest request)
@@ -184,7 +180,7 @@ namespace Databento.CSharpApiClient
             };
 
             string json = await this.PostFormAsync("batch.submit_job", form, ct).ConfigureAwait(false);
-            return JsonConvert.DeserializeObject<BatchJob>(json, RecordDeserializeSettings);
+            return JsonSerializer.Deserialize<BatchJob>(json, RecordDeserializeOptions);
         }
 
         public BatchJob SubmitBatchJob(
@@ -222,7 +218,7 @@ namespace Databento.CSharpApiClient
         {
             string path = "batch.get_job_details?job_id=" + Uri.EscapeDataString(jobId);
             string json = await this.GetRawJsonAsync(path, ct).ConfigureAwait(false);
-            return JsonConvert.DeserializeObject<BatchJob>(json, RecordDeserializeSettings);
+            return JsonSerializer.Deserialize<BatchJob>(json, RecordDeserializeOptions);
         }
 
         public BatchJob GetBatchJobDetails(string jobId) => this.GetBatchJobDetailsAsync(jobId).GetAwaiter().GetResult();
@@ -272,7 +268,7 @@ namespace Databento.CSharpApiClient
         public Stream DownloadBatchFile(string httpsUrl) => this.DownloadBatchFileAsync(httpsUrl).GetAwaiter().GetResult();
 
         // ================================================================
-        // Timeseries — CBBO (kept for backward compatibility)
+        // Timeseries — CBBO
         // ================================================================
 
         public Task<CbboRecordJson[]> GetCbbo1sAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
@@ -458,23 +454,25 @@ namespace Databento.CSharpApiClient
         private async Task<T[]> GetJsonArrayAsync<T>(string path, CancellationToken ct)
         {
             string json = await this.GetRawJsonAsync(path, ct).ConfigureAwait(false);
-            JToken token = JToken.Parse(json);
-
-            if(token.Type == JTokenType.Array)
+            using(JsonDocument doc = JsonDocument.Parse(json))
             {
-                return token.ToObject<T[]>();
-            }
+                JsonElement root = doc.RootElement;
 
-            // Some endpoints wrap the array in an envelope object; try common keys.
-            if(token.Type == JTokenType.Object)
-            {
-                JObject obj = (JObject)token;
-                foreach(string key in new[] { "result", "data", "items" })
+                if(root.ValueKind == JsonValueKind.Array)
                 {
-                    JToken arr;
-                    if(obj.TryGetValue(key, StringComparison.OrdinalIgnoreCase, out arr) && arr is JArray)
+                    return JsonSerializer.Deserialize<T[]>(json, RecordDeserializeOptions);
+                }
+
+                // Some endpoints wrap the array in an envelope object; try common keys.
+                if(root.ValueKind == JsonValueKind.Object)
+                {
+                    foreach(string key in new[] { "result", "data", "items" })
                     {
-                        return arr.ToObject<T[]>();
+                        JsonElement arr;
+                        if(root.TryGetProperty(key, out arr) && arr.ValueKind == JsonValueKind.Array)
+                        {
+                            return JsonSerializer.Deserialize<T[]>(arr.GetRawText(), RecordDeserializeOptions);
+                        }
                     }
                 }
             }
@@ -482,7 +480,7 @@ namespace Databento.CSharpApiClient
             throw new InvalidDataException("Unexpected JSON structure for array endpoint: " + path);
         }
 
-        // Used only for symbology.resolve, which is a read (idempotent) — safe to retry on transient errors.
+        // Used only for symbology.resolve, which is idempotent — safe to retry on transient errors.
         private async Task<string> PostJsonAsync(string path, string jsonBody, CancellationToken ct)
         {
             using(HttpResponseMessage response = await HttpRetryExecutor.SendWithRetryAsync(
@@ -691,7 +689,7 @@ namespace Databento.CSharpApiClient
                 if(peek == '[')
                 {
                     string json = sr.ReadToEnd();
-                    List<T> arr = JsonConvert.DeserializeObject<List<T>>(json, RecordDeserializeSettings);
+                    List<T> arr = JsonSerializer.Deserialize<List<T>>(json, RecordDeserializeOptions);
                     if(arr != null)
                     {
                         foreach(T item in arr)
@@ -718,7 +716,7 @@ namespace Databento.CSharpApiClient
                         T item;
                         try
                         {
-                            item = JsonConvert.DeserializeObject<T>(line, RecordDeserializeSettings);
+                            item = JsonSerializer.Deserialize<T>(line, RecordDeserializeOptions);
                         }
                         catch
                         {
@@ -756,16 +754,22 @@ namespace Databento.CSharpApiClient
 
             try
             {
-                JObject obj = JObject.Parse(body);
-                JToken detail;
-                if(!obj.TryGetValue("detail", StringComparison.OrdinalIgnoreCase, out detail))
+                using(JsonDocument doc = JsonDocument.Parse(body))
                 {
-                    return null;
-                }
+                    JsonElement detail;
+                    if(!doc.RootElement.TryGetProperty("detail", out detail))
+                    {
+                        return null;
+                    }
 
-                if(detail.Type == JTokenType.Object)
-                {
-                    return detail.Value<string>("case");
+                    if(detail.ValueKind == JsonValueKind.Object)
+                    {
+                        JsonElement caseEl;
+                        if(detail.TryGetProperty("case", out caseEl))
+                        {
+                            return caseEl.GetString();
+                        }
+                    }
                 }
             }
             catch

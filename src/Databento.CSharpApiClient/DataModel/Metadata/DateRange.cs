@@ -1,6 +1,6 @@
 using System;
 
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Databento.CSharpApiClient.DataModel.Metadata
 {
@@ -9,10 +9,10 @@ namespace Databento.CSharpApiClient.DataModel.Metadata
     /// </summary>
     public sealed class DateRange
     {
-        [JsonProperty("start")]
+        [JsonPropertyName("start")]
         public DateTimeOffset Start { get; set; }
 
-        [JsonProperty("end")]
+        [JsonPropertyName("end")]
         public DateTimeOffset End { get; set; }
     }
 }

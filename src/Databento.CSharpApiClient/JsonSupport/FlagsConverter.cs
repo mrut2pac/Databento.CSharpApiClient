@@ -1,6 +1,6 @@
 using System;
-
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using Databento.CSharpApiClient.DataModel;
 
@@ -8,14 +8,10 @@ namespace Databento.CSharpApiClient.JsonSupport
 {
     internal class FlagsConverter : JsonConverter<MessageInfoBits>
     {
-        public override void WriteJson(JsonWriter writer, MessageInfoBits value, JsonSerializer serializer)
-        {
-            writer.WriteValue((byte)value);
-        }
+        public override MessageInfoBits Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            => Utils.ParseFlags(reader.GetString());
 
-        public override MessageInfoBits ReadJson(JsonReader reader, Type objectType, MessageInfoBits existingValue, bool hasExistingValue, JsonSerializer serializer)
-        {
-            return Utils.ParseFlags(reader.Value.ToString());
-        }
+        public override void Write(Utf8JsonWriter writer, MessageInfoBits value, JsonSerializerOptions options)
+            => writer.WriteNumberValue((byte)value);
     }
 }

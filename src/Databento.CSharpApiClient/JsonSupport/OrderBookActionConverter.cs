@@ -1,6 +1,6 @@
 using System;
-
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using Databento.CSharpApiClient.DataModel;
 
@@ -8,14 +8,9 @@ namespace Databento.CSharpApiClient.JsonSupport
 {
     internal sealed class OrderBookActionConverter : JsonConverter<OrderBookAction>
     {
-        public override void WriteJson(JsonWriter writer, OrderBookAction value, JsonSerializer serializer)
+        public override OrderBookAction Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            writer.WriteValue(((char)value).ToString());
-        }
-
-        public override OrderBookAction ReadJson(JsonReader reader, Type objectType, OrderBookAction existingValue, bool hasExistingValue, JsonSerializer serializer)
-        {
-            if(reader.Value == null)
+            if(reader.TokenType == JsonTokenType.Null)
             {
                 return OrderBookAction.Unknown;
             }
@@ -23,13 +18,13 @@ namespace Databento.CSharpApiClient.JsonSupport
             // Most encodings send the action as a single-character string ("A", "T", ...), but some emit
             // the raw character code as a JSON integer — map that back to its char before matching.
             char c;
-            if(reader.TokenType == JsonToken.Integer)
+            if(reader.TokenType == JsonTokenType.Number)
             {
-                c = (char)Convert.ToInt64(reader.Value, System.Globalization.CultureInfo.InvariantCulture);
+                c = (char)reader.GetInt64();
             }
             else
             {
-                string s = reader.Value.ToString();
+                string s = reader.GetString();
                 if(string.IsNullOrEmpty(s))
                 {
                     return OrderBookAction.Unknown;
@@ -50,5 +45,8 @@ namespace Databento.CSharpApiClient.JsonSupport
                 default: return OrderBookAction.Unknown;
             }
         }
+
+        public override void Write(Utf8JsonWriter writer, OrderBookAction value, JsonSerializerOptions options)
+            => writer.WriteStringValue(((char)value).ToString());
     }
 }

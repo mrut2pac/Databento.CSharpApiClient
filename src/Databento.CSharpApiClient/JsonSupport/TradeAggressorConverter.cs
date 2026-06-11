@@ -1,6 +1,6 @@
 using System;
-
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using Databento.CSharpApiClient.DataModel;
 
@@ -8,14 +8,10 @@ namespace Databento.CSharpApiClient.JsonSupport
 {
     internal class TradeAggressorConverter : JsonConverter<TradeAggressor>
     {
-        public override void WriteJson(JsonWriter writer, TradeAggressor value, JsonSerializer serializer)
-        {
-            writer.WriteValue((char)value);
-        }
+        public override TradeAggressor Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            => Utils.ParseTradeAggressor(reader.GetString());
 
-        public override TradeAggressor ReadJson(JsonReader reader, Type objectType, TradeAggressor existingValue, bool hasExistingValue, JsonSerializer serializer)
-        {
-            return Utils.ParseTradeAggressor(reader.Value.ToString());
-        }
+        public override void Write(Utf8JsonWriter writer, TradeAggressor value, JsonSerializerOptions options)
+            => writer.WriteStringValue(((char)value).ToString());
     }
 }

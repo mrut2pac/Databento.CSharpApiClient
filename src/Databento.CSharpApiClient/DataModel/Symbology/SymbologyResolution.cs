@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Databento.CSharpApiClient.DataModel.Symbology
 {
@@ -10,30 +10,30 @@ namespace Databento.CSharpApiClient.DataModel.Symbology
         /// Maps each input symbol to its resolved mappings over the requested date range.
         /// Key = input symbol string; Value = time-sliced mapped symbols.
         /// </summary>
-        [JsonProperty("result")]
+        [JsonPropertyName("result")]
         public Dictionary<string, MappedSymbol[]> Result { get; set; }
 
-        [JsonProperty("symbols")]
+        [JsonPropertyName("symbols")]
         public string[] Symbols { get; set; }
 
-        [JsonProperty("stype_in")]
+        [JsonPropertyName("stype_in")]
         public string StypeIn { get; set; }
 
-        [JsonProperty("stype_out")]
+        [JsonPropertyName("stype_out")]
         public string StypeOut { get; set; }
 
-        [JsonProperty("start_date")]
+        [JsonPropertyName("start_date")]
         public string StartDate { get; set; }
 
-        [JsonProperty("end_date")]
+        [JsonPropertyName("end_date")]
         public string EndDate { get; set; }
 
         /// <summary>Symbols that were only partially resolved over the date range.</summary>
-        [JsonProperty("partial")]
+        [JsonPropertyName("partial")]
         public string[] Partial { get; set; }
 
         /// <summary>Symbols for which no mapping was found.</summary>
-        [JsonProperty("not_found")]
+        [JsonPropertyName("not_found")]
         public string[] NotFound { get; set; }
     }
 }

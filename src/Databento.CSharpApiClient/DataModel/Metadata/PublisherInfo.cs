@@ -1,22 +1,22 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Databento.CSharpApiClient.DataModel.Metadata
 {
     public sealed class PublisherInfo
     {
-        [JsonProperty("publisher_id")]
+        [JsonPropertyName("publisher_id")]
         public ushort PublisherId { get; set; }
 
-        [JsonProperty("dataset")]
+        [JsonPropertyName("dataset")]
         public string Dataset { get; set; }
 
-        [JsonProperty("venue")]
+        [JsonPropertyName("venue")]
         public string Venue { get; set; }
 
-        [JsonProperty("description")]
+        [JsonPropertyName("description")]
         public string Description { get; set; }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
     }
 }

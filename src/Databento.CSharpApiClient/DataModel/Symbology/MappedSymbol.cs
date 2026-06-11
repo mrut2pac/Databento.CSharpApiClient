@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Databento.CSharpApiClient.DataModel.Symbology
 {
@@ -8,15 +8,15 @@ namespace Databento.CSharpApiClient.DataModel.Symbology
     public sealed class MappedSymbol
     {
         /// <summary>The resolved output symbol (e.g. the numeric instrument_id as a string).</summary>
-        [JsonProperty("symbol")]
+        [JsonPropertyName("symbol")]
         public string Symbol { get; set; }
 
         /// <summary>"YYYY-MM-DD" — inclusive start of the validity interval.</summary>
-        [JsonProperty("start_date")]
+        [JsonPropertyName("start_date")]
         public string StartDate { get; set; }
 
         /// <summary>"YYYY-MM-DD" — inclusive end of the validity interval.</summary>
-        [JsonProperty("end_date")]
+        [JsonPropertyName("end_date")]
         public string EndDate { get; set; }
     }
 }

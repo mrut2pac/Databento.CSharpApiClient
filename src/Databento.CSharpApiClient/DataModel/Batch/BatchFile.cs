@@ -1,23 +1,23 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Databento.CSharpApiClient.DataModel.Batch
 {
     public sealed class BatchFile
     {
-        [JsonProperty("filename")]
+        [JsonPropertyName("filename")]
         public string Filename { get; set; }
 
-        [JsonProperty("size")]
+        [JsonPropertyName("size")]
         public long Size { get; set; }
 
         /// <summary>Hash of the file content, e.g. "sha256:abc123...".</summary>
-        [JsonProperty("hash")]
+        [JsonPropertyName("hash")]
         public string Hash { get; set; }
 
-        [JsonProperty("https_url")]
+        [JsonPropertyName("https_url")]
         public string HttpsUrl { get; set; }
 
-        [JsonProperty("ftp_url")]
+        [JsonPropertyName("ftp_url")]
         public string FtpUrl { get; set; }
     }
 }

@@ -1,6 +1,6 @@
 using System;
 
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 using Databento.CSharpApiClient.JsonSupport;
 
@@ -13,48 +13,48 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// </summary>
     public sealed class Mbp1RecordJson
     {
-        [JsonProperty("hd")]
+        [JsonPropertyName("hd")]
         public RecordHeaderJson Header { get; set; }
 
         /// <summary>Order price (display-scaled).</summary>
-        [JsonProperty("price")]
+        [JsonPropertyName("price")]
         public double Price { get; set; }
 
         /// <summary>Order quantity in lots.</summary>
-        [JsonProperty("size")]
+        [JsonPropertyName("size")]
         public uint Size { get; set; }
 
         /// <summary>Order-book action that triggered this update.</summary>
-        [JsonProperty("action")]
+        [JsonPropertyName("action")]
         [JsonConverter(typeof(OrderBookActionConverter))]
         public OrderBookAction Action { get; set; }
 
         /// <summary>Side of the triggering order.</summary>
-        [JsonProperty("side")]
+        [JsonPropertyName("side")]
         [JsonConverter(typeof(TradeAggressorConverter))]
         public TradeAggressor Side { get; set; }
 
-        [JsonProperty("flags")]
+        [JsonPropertyName("flags")]
         [JsonConverter(typeof(FlagsConverter))]
         public MessageInfoBits Flags { get; set; }
 
-        [JsonProperty("depth")]
+        [JsonPropertyName("depth")]
         public uint Depth { get; set; }
 
-        [JsonProperty("ts_recv")]
+        [JsonPropertyName("ts_recv")]
         public DateTime TsReceivedUtc { get; set; }
 
-        [JsonProperty("ts_in_delta")]
+        [JsonPropertyName("ts_in_delta")]
         public long TsInDelta { get; set; }
 
-        [JsonProperty("sequence")]
+        [JsonPropertyName("sequence")]
         public uint Sequence { get; set; }
 
         /// <summary>Best bid / best offer after applying this event.</summary>
-        [JsonProperty("levels")]
+        [JsonPropertyName("levels")]
         public Mbp1LevelJson[] Levels { get; set; }
 
-        [JsonProperty("ts_out")]
+        [JsonPropertyName("ts_out")]
         public DateTime? TsOutUtc { get; set; }
 
         public Mbp1LevelJson Level1 => this.Levels?.Length > 0 ? this.Levels[0] : null;

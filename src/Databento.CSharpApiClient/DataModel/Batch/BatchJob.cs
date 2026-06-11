@@ -1,84 +1,84 @@
 using System;
 
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Databento.CSharpApiClient.DataModel.Batch
 {
     public sealed class BatchJob
     {
-        [JsonProperty("job_id")]
+        [JsonPropertyName("job_id")]
         public string JobId { get; set; }
 
-        [JsonProperty("dataset")]
+        [JsonPropertyName("dataset")]
         public string Dataset { get; set; }
 
-        [JsonProperty("symbols")]
+        [JsonPropertyName("symbols")]
         public string[] Symbols { get; set; }
 
-        [JsonProperty("schema")]
+        [JsonPropertyName("schema")]
         public string Schema { get; set; }
 
-        [JsonProperty("start")]
+        [JsonPropertyName("start")]
         public DateTimeOffset? Start { get; set; }
 
-        [JsonProperty("end")]
+        [JsonPropertyName("end")]
         public DateTimeOffset? End { get; set; }
 
-        [JsonProperty("encoding")]
+        [JsonPropertyName("encoding")]
         public string Encoding { get; set; }
 
-        [JsonProperty("compression")]
+        [JsonPropertyName("compression")]
         public string Compression { get; set; }
 
-        [JsonProperty("pretty_px")]
+        [JsonPropertyName("pretty_px")]
         public bool PrettyPx { get; set; }
 
-        [JsonProperty("pretty_ts")]
+        [JsonPropertyName("pretty_ts")]
         public bool PrettyTs { get; set; }
 
-        [JsonProperty("map_symbols")]
+        [JsonPropertyName("map_symbols")]
         public bool MapSymbols { get; set; }
 
-        [JsonProperty("split_symbols")]
+        [JsonPropertyName("split_symbols")]
         public bool SplitSymbols { get; set; }
 
-        [JsonProperty("split_duration")]
+        [JsonPropertyName("split_duration")]
         public string SplitDuration { get; set; }
 
         /// <summary>
         /// Job lifecycle state: "received", "queued", "processing", "done", "expired".
         /// </summary>
-        [JsonProperty("state")]
+        [JsonPropertyName("state")]
         public string State { get; set; }
 
-        [JsonProperty("ts_received")]
+        [JsonPropertyName("ts_received")]
         public DateTimeOffset? TsReceived { get; set; }
 
-        [JsonProperty("ts_queued")]
+        [JsonPropertyName("ts_queued")]
         public DateTimeOffset? TsQueued { get; set; }
 
-        [JsonProperty("ts_process_start")]
+        [JsonPropertyName("ts_process_start")]
         public DateTimeOffset? TsProcessStart { get; set; }
 
-        [JsonProperty("ts_process_done")]
+        [JsonPropertyName("ts_process_done")]
         public DateTimeOffset? TsProcessDone { get; set; }
 
-        [JsonProperty("ts_expiration")]
+        [JsonPropertyName("ts_expiration")]
         public DateTimeOffset? TsExpiration { get; set; }
 
-        [JsonProperty("record_count")]
+        [JsonPropertyName("record_count")]
         public long? RecordCount { get; set; }
 
-        [JsonProperty("billed_size")]
+        [JsonPropertyName("billed_size")]
         public long? BilledSize { get; set; }
 
-        [JsonProperty("actual_size")]
+        [JsonPropertyName("actual_size")]
         public long? ActualSize { get; set; }
 
-        [JsonProperty("cost_usd")]
+        [JsonPropertyName("cost_usd")]
         public decimal? CostUsd { get; set; }
 
-        [JsonProperty("files")]
+        [JsonPropertyName("files")]
         public BatchFile[] Files { get; set; }
     }
 }

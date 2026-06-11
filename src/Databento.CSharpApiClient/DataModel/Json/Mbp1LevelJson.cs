@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Databento.CSharpApiClient.DataModel.Json
 {
@@ -7,24 +7,24 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// </summary>
     public sealed class Mbp1LevelJson
     {
-        [JsonProperty("bid_px")]
+        [JsonPropertyName("bid_px")]
         public double BidPrice { get; set; }
 
-        [JsonProperty("ask_px")]
+        [JsonPropertyName("ask_px")]
         public double AskPrice { get; set; }
 
-        [JsonProperty("bid_sz")]
+        [JsonPropertyName("bid_sz")]
         public uint BidSize { get; set; }
 
-        [JsonProperty("ask_sz")]
+        [JsonPropertyName("ask_sz")]
         public uint AskSize { get; set; }
 
         /// <summary>Number of orders on the bid side at this level.</summary>
-        [JsonProperty("bid_ct")]
+        [JsonPropertyName("bid_ct")]
         public uint BidCount { get; set; }
 
         /// <summary>Number of orders on the ask side at this level.</summary>
-        [JsonProperty("ask_ct")]
+        [JsonPropertyName("ask_ct")]
         public uint AskCount { get; set; }
     }
 }

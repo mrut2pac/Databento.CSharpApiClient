@@ -1,20 +1,24 @@
 using System;
-
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Databento.CSharpApiClient.JsonSupport
 {
     internal class NanoPriceConverter : JsonConverter<double>
     {
-        public override void WriteJson(JsonWriter writer, double value, JsonSerializer serializer)
+        public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            writer.WriteValue(Utils.DoubleToNano(value));
+            // pretty_px=true  → JSON number (e.g. 4.01)  → read directly
+            // pretty_px=false → JSON string nano integer  → parse via Utils
+            if(reader.TokenType == JsonTokenType.Number)
+            {
+                return reader.GetDouble();
+            }
+
+            return Utils.ParseNanoPrice(reader.GetString());
         }
 
-        public override double ReadJson(JsonReader reader, Type objectType, double existingValue, bool hasExistingValue, JsonSerializer serializer)
-        {
-            // Custom parsing logic for price
-            return Utils.ParseNanoPrice(reader.Value.ToString());
-        }
+        public override void Write(Utf8JsonWriter writer, double value, JsonSerializerOptions options)
+            => writer.WriteNumberValue(Utils.DoubleToNano(value));
     }
 }

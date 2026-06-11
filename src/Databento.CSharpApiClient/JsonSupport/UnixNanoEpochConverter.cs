@@ -1,29 +1,18 @@
 using System;
-
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Databento.CSharpApiClient.JsonSupport
 {
     internal class UnixNanoEpochConverter : JsonConverter<DateTime>
     {
-        public override void WriteJson(JsonWriter writer, DateTime value, JsonSerializer serializer)
+        public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            => Utils.ParseUnixNs(reader.TokenType == JsonTokenType.Null ? null : reader.GetString());
+
+        public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
         {
-            // Ensure the DateTime is in UTC or convert it to UTC if its Kind is Unspecified or Local
-            DateTimeOffset dateTimeOffset = new DateTimeOffset(value.ToUniversalTime());
-
-            // Get milliseconds since Unix Epoch
-            long unixMilliseconds = dateTimeOffset.ToUnixTimeMilliseconds();
-
-            // Convert milliseconds to nanoseconds
-            long unixNanoseconds = unixMilliseconds * 1_000_000;
-
-            writer.WriteValue(unixNanoseconds);
-        }
-
-        public override DateTime ReadJson(JsonReader reader, Type objectType, DateTime existingValue, bool hasExistingValue, JsonSerializer serializer)
-        {
-            // Custom parsing logic for DateTime
-            return Utils.ParseUnixNs(reader.Value?.ToString());
+            long unixNs = new DateTimeOffset(value.ToUniversalTime()).ToUnixTimeMilliseconds() * 1_000_000L;
+            writer.WriteNumberValue(unixNs);
         }
     }
 }

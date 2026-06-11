@@ -1,6 +1,6 @@
 using System;
 
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 using Databento.CSharpApiClient.JsonSupport;
 
@@ -12,49 +12,49 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// </summary>
     public sealed class TradeRecordJson
     {
-        [JsonProperty("hd")]
+        [JsonPropertyName("hd")]
         public RecordHeaderJson Header { get; set; }
 
         /// <summary>Trade price (display-scaled, i.e. pretty_px=true).</summary>
-        [JsonProperty("price")]
+        [JsonPropertyName("price")]
         public double Price { get; set; }
 
         /// <summary>Trade quantity in lots.</summary>
-        [JsonProperty("size")]
+        [JsonPropertyName("size")]
         public uint Size { get; set; }
 
         /// <summary>
         /// Order-book action for this message; always "T" for trade ticks.
         /// </summary>
-        [JsonProperty("action")]
+        [JsonPropertyName("action")]
         [JsonConverter(typeof(OrderBookActionConverter))]
         public OrderBookAction Action { get; set; }
 
         /// <summary>Aggressor side: Buyer, Seller, or None.</summary>
-        [JsonProperty("side")]
+        [JsonPropertyName("side")]
         [JsonConverter(typeof(TradeAggressorConverter))]
         public TradeAggressor Side { get; set; }
 
-        [JsonProperty("flags")]
+        [JsonPropertyName("flags")]
         [JsonConverter(typeof(FlagsConverter))]
         public MessageInfoBits Flags { get; set; }
 
         /// <summary>Level at which the trade occurred (0-indexed).</summary>
-        [JsonProperty("depth")]
+        [JsonPropertyName("depth")]
         public uint Depth { get; set; }
 
-        [JsonProperty("ts_recv")]
+        [JsonPropertyName("ts_recv")]
         public DateTime TsReceivedUtc { get; set; }
 
         /// <summary>Nanosecond delta from venue receipt to gateway receipt.</summary>
-        [JsonProperty("ts_in_delta")]
+        [JsonPropertyName("ts_in_delta")]
         public long TsInDelta { get; set; }
 
-        [JsonProperty("sequence")]
+        [JsonPropertyName("sequence")]
         public uint Sequence { get; set; }
 
         /// <summary>Optional send timestamp from the gateway. Present when ts_out was requested.</summary>
-        [JsonProperty("ts_out")]
+        [JsonPropertyName("ts_out")]
         public DateTime? TsOutUtc { get; set; }
     }
 }

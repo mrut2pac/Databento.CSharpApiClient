@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Databento.CSharpApiClient</RootNamespace>
+    <AssemblyName>Databento.CSharpApiClient</AssemblyName>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1734</NoWarn>
+
+    <!-- NuGet packaging -->
+    <IsPackable>true</IsPackable>
+    <PackageId>Databento.CSharpApiClient</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Tovmasyan Corporation</Authors>
+    <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
+    <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Condition="Exists('..\..\README.md')" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+</Project>

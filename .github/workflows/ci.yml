@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build & Test (.NET 8)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore Databento.CSharpApiClient.slnx
+
+      - name: Build (Debug)
+        run: dotnet build Databento.CSharpApiClient.slnx -c Debug --no-restore --nologo
+
+      - name: Build (Release)
+        run: dotnet build Databento.CSharpApiClient.slnx -c Release --no-restore --nologo
+
+      - name: Test
+        run: dotnet test Databento.CSharpApiClient.slnx --no-build --no-restore --nologo -c Debug
+
+      - name: Pack
+        run: dotnet pack src/Databento.CSharpApiClient/Databento.CSharpApiClient.csproj -c Release --no-build --nologo -o ./nupkg
+
+      - name: Upload NuGet package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: ./nupkg/*.nupkg
+          retention-days: 14

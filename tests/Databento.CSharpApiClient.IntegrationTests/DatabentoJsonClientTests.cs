@@ -4,6 +4,7 @@ using Databento.CSharpApiClient.DataModel;
 using Databento.CSharpApiClient.DataModel.Json;
 using Databento.CSharpApiClient.DataModel.Metadata;
 using Databento.CSharpApiClient.DataModel.Symbology;
+using Databento.CSharpApiClient.Exceptions;
 
 using Xunit;
 
@@ -77,15 +78,24 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
 
-            SymbologyResolution resolution = client.ResolveSymbols(new SymbologyRequest
+            SymbologyResolution resolution;
+            try
             {
-                Dataset   = Datasets.OpraPillar,
-                Symbols   = new[] { "SPXW  250908C06475000" },
-                StypeIn   = SymbolTypes.RawSymbol,
-                StypeOut  = SymbolTypes.InstrumentId,
-                StartDate = start.ToString("yyyy-MM-dd"),
-                EndDate   = end.ToString("yyyy-MM-dd"),
-            });
+                resolution = client.ResolveSymbols(new SymbologyRequest
+                {
+                    Dataset   = Datasets.OpraPillar,
+                    Symbols   = new[] { "SPXW  250908C06475000" },
+                    StypeIn   = SymbolTypes.RawSymbol,
+                    StypeOut  = SymbolTypes.InstrumentId,
+                    StartDate = start.ToString("yyyy-MM-dd"),
+                    EndDate   = end.ToString("yyyy-MM-dd"),
+                });
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
 
             Assert.NotNull(resolution);
             Assert.NotNull(resolution.Result);
@@ -104,7 +114,16 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
 
-            CbboRecordJson[] records = client.GetCbbo1m(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
+            CbboRecordJson[] records;
+            try
+            {
+                records = client.GetCbbo1m(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
 
             Assert.NotNull(records);
             Assert.NotEmpty(records);
@@ -120,7 +139,16 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2025, 9, 7, 0, 0, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2025, 9, 8, 0, 0, 0, TimeSpan.Zero);
 
-            CbboRecordJson[] records = client.GetCbbo1m(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
+            CbboRecordJson[] records;
+            try
+            {
+                records = client.GetCbbo1m(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
 
             Assert.NotNull(records);
             Assert.Empty(records);
@@ -139,9 +167,26 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 0, 0, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2022, 5, 17, 0, 0, 0, TimeSpan.Zero);
 
-            OhlcvRecordJson[] records = client.GetOhlcv1s(Datasets.XnasItch, "SPY", start, end);
+            OhlcvRecordJson[] records;
+            try
+            {
+                records = client.GetOhlcv1s(Datasets.XnasItch, "SPY", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
 
-            Assert.NotNull(records);
+            if(records.Length == 0)
+            {
+                string raw = this.FetchRawTimeseries(Datasets.XnasItch, Schema.Ohlcv1Sec, "SPY",
+                    "2022-05-16T00:00:00Z", "2022-05-17T00:00:00Z");
+                throw new Xunit.Sdk.XunitException(
+                    "Records empty after deserialization. Raw API response (first 2000 chars):\n"
+                    + raw.Substring(0, Math.Min(raw.Length, 2000)));
+            }
+
             Assert.NotEmpty(records);
         }
 
@@ -154,7 +199,16 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 0, 0, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2022, 5, 17, 0, 0, 0, TimeSpan.Zero);
 
-            OhlcvRecordJson[] records = client.GetOhlcv1m(Datasets.XnasItch, "SPY", start, end);
+            OhlcvRecordJson[] records;
+            try
+            {
+                records = client.GetOhlcv1m(Datasets.XnasItch, "SPY", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
 
             Assert.NotNull(records);
             Assert.NotEmpty(records);
@@ -169,7 +223,16 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2022, 6, 1, 0, 0, 0, TimeSpan.Zero);
 
-            OhlcvRecordJson[] records = client.GetOhlcv1d(Datasets.XnasItch, "SPY", start, end);
+            OhlcvRecordJson[] records;
+            try
+            {
+                records = client.GetOhlcv1d(Datasets.XnasItch, "SPY", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
 
             Assert.NotNull(records);
             Assert.NotEmpty(records);
@@ -188,7 +251,16 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 14, 30, 0, TimeSpan.Zero);
 
-            TradeRecordJson[] records = client.GetTrades(Datasets.XnasItch, "SPY", start, end);
+            TradeRecordJson[] records;
+            try
+            {
+                records = client.GetTrades(Datasets.XnasItch, "SPY", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
 
             Assert.NotNull(records);
             Assert.NotEmpty(records);
@@ -209,7 +281,16 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 13, 35, 0, TimeSpan.Zero);
 
-            Mbp1RecordJson[] records = client.GetMbp1(Datasets.XnasItch, "SPY", start, end);
+            Mbp1RecordJson[] records;
+            try
+            {
+                records = client.GetMbp1(Datasets.XnasItch, "SPY", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
 
             Assert.NotNull(records);
             Assert.NotEmpty(records);
@@ -230,11 +311,20 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
 
-            DefinitionRecordJson[] records = client.GetDefinitions(
-                Datasets.OpraPillar,
-                "SPXW  250908C06475000",
-                start,
-                end);
+            DefinitionRecordJson[] records;
+            try
+            {
+                records = client.GetDefinitions(
+                    Datasets.OpraPillar,
+                    "SPXW  250908C06475000",
+                    start,
+                    end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
 
             Assert.NotNull(records);
             Assert.NotEmpty(records);

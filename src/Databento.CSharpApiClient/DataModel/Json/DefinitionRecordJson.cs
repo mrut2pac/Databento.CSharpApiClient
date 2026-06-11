@@ -2,6 +2,8 @@ using System;
 
 using System.Text.Json.Serialization;
 
+using Databento.CSharpApiClient.JsonSupport;
+
 namespace Databento.CSharpApiClient.DataModel.Json
 {
     /// <summary>
@@ -21,10 +23,12 @@ namespace Databento.CSharpApiClient.DataModel.Json
 
         /// <summary>Minimum allowed price increment (tick size), display-scaled.</summary>
         [JsonPropertyName("min_price_increment")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double MinPriceIncrement { get; set; }
 
         /// <summary>Multiplier to convert the venue's raw price to a display price.</summary>
         [JsonPropertyName("display_factor")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double DisplayFactor { get; set; }
 
         /// <summary>Contract expiry timestamp (UTC). <see langword="null"/> for non-expiring instruments.</summary>
@@ -37,26 +41,32 @@ namespace Databento.CSharpApiClient.DataModel.Json
 
         /// <summary>Upper price limit for the instrument (display-scaled).</summary>
         [JsonPropertyName("high_limit_price")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double HighLimitPrice { get; set; }
 
         /// <summary>Lower price limit for the instrument (display-scaled).</summary>
         [JsonPropertyName("low_limit_price")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double LowLimitPrice { get; set; }
 
         /// <summary>Maximum price movement allowed between trades (display-scaled).</summary>
         [JsonPropertyName("max_price_variation")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double MaxPriceVariation { get; set; }
 
         /// <summary>Contract unit of measure quantity (e.g. 1000 barrels per lot).</summary>
         [JsonPropertyName("unit_of_measure_qty")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double UnitOfMeasureQty { get; set; }
 
         /// <summary>Contract size multiplier (e.g. 100 shares per equity option contract).</summary>
         [JsonPropertyName("contract_multiplier")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double ContractMultiplier { get; set; }
 
         /// <summary>Option strike price (display-scaled). Zero for non-option instruments.</summary>
         [JsonPropertyName("strike_price")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double StrikePrice { get; set; }
 
         /// <summary>Venue-native symbol string.</summary>

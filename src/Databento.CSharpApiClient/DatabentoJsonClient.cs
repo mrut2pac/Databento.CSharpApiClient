@@ -117,6 +117,22 @@ namespace Databento.CSharpApiClient
             }
 
             string json = await this.GetRawJsonAsync(path, ct).ConfigureAwait(false);
+
+            // Without a date the API returns an array of daily conditions; with a date it may
+            // also return an array. Return the first element in either case.
+            using(JsonDocument doc = JsonDocument.Parse(json))
+            {
+                if(doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach(JsonElement element in doc.RootElement.EnumerateArray())
+                    {
+                        return JsonSerializer.Deserialize<DatasetCondition>(element.GetRawText(), RecordDeserializeOptions);
+                    }
+
+                    return null;
+                }
+            }
+
             return JsonSerializer.Deserialize<DatasetCondition>(json, RecordDeserializeOptions);
         }
 
@@ -749,8 +765,7 @@ namespace Databento.CSharpApiClient
         private static bool IsNoDataResponse(int statusCode, string body)
         {
             string errorCase = ExtractErrorCase(body);
-            return (statusCode == 403 && errorCase == "license_not_found_unauthorized")
-                || (statusCode == 422 && errorCase == "data_end_after_available_end");
+            return statusCode == 422 && errorCase == "data_end_after_available_end";
         }
 
         private static string ExtractErrorCase(string body)

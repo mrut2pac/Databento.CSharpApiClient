@@ -293,34 +293,7 @@ namespace Databento.CSharpApiClient
                 body = string.Empty;
             }
 
-            if(body != null && body.Length > 512)
-            {
-                body = string.Concat(body.AsSpan(0, 512), "...");
-            }
-
-            string errorCase = null;
-            if(!string.IsNullOrEmpty(body))
-            {
-                int caseIdx = body.IndexOf("\"case\"", StringComparison.Ordinal);
-                if(caseIdx >= 0)
-                {
-                    int colonIdx = body.IndexOf(':', caseIdx);
-                    if(colonIdx >= 0)
-                    {
-                        int quoteStart = body.IndexOf('"', colonIdx + 1);
-                        if(quoteStart >= 0)
-                        {
-                            int quoteEnd = body.IndexOf('"', quoteStart + 1);
-                            if(quoteEnd > quoteStart)
-                            {
-                                errorCase = body.Substring(quoteStart + 1, quoteEnd - quoteStart - 1);
-                            }
-                        }
-                    }
-                }
-            }
-
-            throw new DatabentoHttpException((int)response.StatusCode, body ?? string.Empty, errorCase);
+            throw DatabentoHttpException.Create((int)response.StatusCode, body);
         }
 
         // =====================================================================================

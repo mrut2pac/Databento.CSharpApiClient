@@ -12,7 +12,7 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>

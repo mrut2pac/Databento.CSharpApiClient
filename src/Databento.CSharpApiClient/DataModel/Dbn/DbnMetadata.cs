@@ -56,6 +56,17 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         /// <summary>Symbol mappings from stype_in to stype_out for the stream's time range.</summary>
         public List<DbnSymbolMapping> Mappings { get; set; } = new List<DbnSymbolMapping>();
 
+        /// <summary>
+        /// Parses a <see cref="DbnMetadata"/> instance from the beginning of a DBN stream.
+        /// Reads the 4-byte prelude (<c>DBN</c> magic + version), the metadata-length prefix,
+        /// and the full metadata block.
+        /// </summary>
+        /// <param name="binaryReader">
+        /// A <see cref="BinaryReader"/> positioned at the very start of a DBN stream (little-endian).
+        /// </param>
+        /// <returns>The parsed <see cref="DbnMetadata"/>.</returns>
+        /// <exception cref="InvalidDataException">The stream does not start with a valid DBN header.</exception>
+        /// <exception cref="EndOfStreamException">The stream was truncated before the metadata could be fully read.</exception>
         public static DbnMetadata FromBinaryReader(BinaryReader binaryReader)
         {
             // Prelude: 'D','B','N' + version(u8) + metadata_length(u32 LE)

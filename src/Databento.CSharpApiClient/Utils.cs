@@ -46,13 +46,22 @@ namespace Databento.CSharpApiClient
                 return double.NaN;
             }
 
+            // Integer nano format, e.g. "39943000000" → 39.943
             long nanoPrice;
-            if(!long.TryParse(nanoRaw, out nanoPrice))
+            if(long.TryParse(nanoRaw, out nanoPrice))
             {
-                return double.NaN;
+                return NanoToDouble(nanoPrice);
             }
 
-            return NanoToDouble(nanoPrice);
+            // Decimal-formatted price string, e.g. "399.430000000" (already human-readable)
+            double price;
+            if(double.TryParse(nanoRaw, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out price))
+            {
+                return price;
+            }
+
+            return double.NaN;
         }
 
         public static double NanoToDouble(long nano)

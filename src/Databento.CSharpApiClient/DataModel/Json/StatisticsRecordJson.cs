@@ -27,18 +27,22 @@ namespace Databento.CSharpApiClient.DataModel.Json
 
         /// <summary>Statistic price value (display-scaled).</summary>
         [JsonPropertyName("price")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double Price { get; set; }
 
         /// <summary>Statistic quantity value (e.g. open interest).</summary>
         [JsonPropertyName("quantity")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public int Quantity { get; set; }
 
         /// <summary>Venue sequence number.</summary>
         [JsonPropertyName("sequence")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public uint Sequence { get; set; }
 
         /// <summary>Nanosecond latency delta from venue receipt to gateway receipt.</summary>
         [JsonPropertyName("ts_in_delta")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public long TsInDelta { get; set; }
 
         /// <summary>
@@ -48,14 +52,17 @@ namespace Databento.CSharpApiClient.DataModel.Json
         /// 8=HighestBid, 9=OpenInterest, 10=FixingPrice.
         /// </summary>
         [JsonPropertyName("stat_type")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public ushort StatType { get; set; }
 
         /// <summary>Publisher channel identifier.</summary>
         [JsonPropertyName("channel_id")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public ushort ChannelId { get; set; }
 
         /// <summary>Action that generated this update: 1=Add, 2=Delete.</summary>
         [JsonPropertyName("update_action")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public byte UpdateAction { get; set; }
 
         /// <summary>Statistics message info flags.</summary>

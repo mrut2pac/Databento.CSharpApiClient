@@ -10,6 +10,12 @@ namespace Databento.CSharpApiClient.JsonSupport
         {
             // pretty_px=true  → JSON number (e.g. 4.01)  → read directly
             // pretty_px=false → JSON string nano integer  → parse via Utils
+            // null            → undefined/sentinel price  → NaN
+            if(reader.TokenType == JsonTokenType.Null)
+            {
+                return double.NaN;
+            }
+
             if(reader.TokenType == JsonTokenType.Number)
             {
                 return reader.GetDouble();

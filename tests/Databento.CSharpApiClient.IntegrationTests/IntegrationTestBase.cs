@@ -1,4 +1,9 @@
 using System;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+
+using Databento.CSharpApiClient.Exceptions;
 
 using Xunit;
 
@@ -28,11 +33,48 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Skip.If(string.IsNullOrWhiteSpace(this.ApiKey), "DATABENTO_API_KEY environment variable not set.");
         }
 
+        /// <summary>
+        /// Skips the test when the exception indicates a missing data subscription.
+        /// Call in a catch block around calls that may fail with 403 or when the
+        /// schema is not available on the current subscription tier.
+        /// </summary>
+        protected static void SkipIfNoLicense(DatabentoHttpException ex)
+        {
+            Skip.If(
+                ex.StatusCode == 403
+                    || ex.ErrorCase == "license_not_found_unauthorized"
+                    || ex.ErrorCase == "dataset_schema_not_supported",
+                "Skipped — dataset/schema not available on this subscription: " + ex.Message);
+        }
+
         protected DatabentoJsonClient CreateJsonClient()
             => new DatabentoJsonClient(new DatabentoOptions { ApiKey = this.ApiKey });
 
         protected DatabentoClient CreateBinaryClient()
             => new DatabentoClient(new DatabentoOptions { ApiKey = this.ApiKey });
+
+        /// <summary>
+        /// Fetches the raw response body for a <c>timeseries.get_range</c> request.
+        /// Used by diagnostic tests to expose the actual API JSON when deserialization fails.
+        /// </summary>
+        protected string FetchRawTimeseries(string dataset, string schema, string symbol, string start, string end)
+        {
+            using(HttpClient http = new HttpClient())
+            {
+                string auth = Convert.ToBase64String(Encoding.ASCII.GetBytes(this.ApiKey + ":"));
+                http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", auth);
+
+                string url = "https://hist.databento.com/v0/timeseries.get_range"
+                    + "?dataset=" + Uri.EscapeDataString(dataset)
+                    + "&schema=" + Uri.EscapeDataString(schema)
+                    + "&symbols=" + Uri.EscapeDataString(symbol)
+                    + "&start=" + Uri.EscapeDataString(start)
+                    + "&end=" + Uri.EscapeDataString(end)
+                    + "&stype_in=raw_symbol&pretty_px=true&pretty_ts=true&encoding=json&compression=none";
+
+                return http.GetStringAsync(url).GetAwaiter().GetResult();
+            }
+        }
 
         public void Dispose() { }
     }

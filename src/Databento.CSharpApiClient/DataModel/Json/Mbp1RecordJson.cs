@@ -13,15 +13,18 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// </summary>
     public sealed class Mbp1RecordJson
     {
+        /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]
         public RecordHeaderJson Header { get; set; }
 
         /// <summary>Order price (display-scaled).</summary>
         [JsonPropertyName("price")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double Price { get; set; }
 
         /// <summary>Order quantity in lots.</summary>
         [JsonPropertyName("size")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public uint Size { get; set; }
 
         /// <summary>Order-book action that triggered this update.</summary>

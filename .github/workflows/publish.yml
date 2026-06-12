@@ -49,27 +49,15 @@ jobs:
             -p:Version=${{ steps.version.outputs.value }} \
             -o nupkg
 
-      - name: Get OIDC token
-        id: oidc
-        uses: actions/github-script@v7
+      - name: NuGet login (Trusted Publishing)
+        uses: NuGet/login@v1
+        id: login
         with:
-          script: |
-            const token = await core.getIDToken('api://AzureADTokenExchange')
-            core.setSecret(token)
-            core.setOutput('token', token)
+          user: Vardan.Tovmasyan
 
-      - name: Publish to NuGet.org (Trusted Publishing)
+      - name: Publish to NuGet.org
         run: |
-          RESPONSE=$(curl -sSL -X POST \
-            https://www.nuget.org/api/v1/api-key/oidc \
-            -H 'Content-Type: application/json' \
-            -d "{\"oidcToken\": \"${{ steps.oidc.outputs.token }}\"}")
-          NUGET_KEY=$(echo "$RESPONSE" | jq -r '.apiKey // .result // empty')
-          if [ -z "$NUGET_KEY" ]; then
-            echo "Exchange failed. Response: $RESPONSE"
-            exit 1
-          fi
           dotnet nuget push nupkg/*.nupkg \
             --source https://api.nuget.org/v3/index.json \
-            --api-key "$NUGET_KEY" \
+            --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
             --skip-duplicate

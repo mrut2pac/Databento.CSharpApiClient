@@ -13,6 +13,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// </summary>
     public sealed class Mbp1RecordJson
     {
+        /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]
         public RecordHeaderJson Header { get; set; }
 

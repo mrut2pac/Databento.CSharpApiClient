@@ -83,31 +83,59 @@ namespace Databento.CSharpApiClient
         // Metadata
         // ================================================================
 
+        /// <summary>Returns all dataset identifiers available to the authenticated account.</summary>
+        /// <param name="ct">Cancellation token.</param>
         public Task<string[]> ListDatasetsAsync(CancellationToken ct = default)
             => this.GetJsonArrayAsync<string>("metadata.list_datasets", ct);
 
+        /// <summary>Returns all dataset identifiers available to the authenticated account.</summary>
         public string[] ListDatasets() => this.ListDatasetsAsync().GetAwaiter().GetResult();
 
+        /// <summary>Returns the schema identifiers supported by <paramref name="dataset"/>.</summary>
+        /// <param name="dataset">The dataset identifier (e.g. <c>"XNAS.ITCH"</c>).</param>
+        /// <param name="ct">Cancellation token.</param>
         public Task<string[]> ListSchemasAsync(string dataset, CancellationToken ct = default)
             => this.GetJsonArrayAsync<string>("metadata.list_schemas?dataset=" + Uri.EscapeDataString(dataset), ct);
 
+        /// <summary>Returns the schema identifiers supported by <paramref name="dataset"/>.</summary>
+        /// <param name="dataset">The dataset identifier (e.g. <c>"XNAS.ITCH"</c>).</param>
         public string[] ListSchemas(string dataset) => this.ListSchemasAsync(dataset).GetAwaiter().GetResult();
 
+        /// <summary>Returns metadata for all publishers available in the Databento network.</summary>
+        /// <param name="ct">Cancellation token.</param>
         public Task<PublisherInfo[]> ListPublishersAsync(CancellationToken ct = default)
             => this.GetJsonArrayAsync<PublisherInfo>("metadata.list_publishers", ct);
 
+        /// <summary>Returns metadata for all publishers available in the Databento network.</summary>
         public PublisherInfo[] ListPublishers() => this.ListPublishersAsync().GetAwaiter().GetResult();
 
+        /// <summary>Returns the field names and types available for <paramref name="schema"/>.</summary>
+        /// <param name="schema">Schema identifier (e.g. <c>"trades"</c>).</param>
+        /// <param name="ct">Cancellation token.</param>
         public Task<FieldInfo[]> ListFieldsAsync(string schema, CancellationToken ct = default)
             => this.GetJsonArrayAsync<FieldInfo>("metadata.list_fields?schema=" + Uri.EscapeDataString(schema), ct);
 
+        /// <summary>Returns the field names and types available for <paramref name="schema"/>.</summary>
+        /// <param name="schema">Schema identifier (e.g. <c>"trades"</c>).</param>
         public FieldInfo[] ListFields(string schema) => this.ListFieldsAsync(schema).GetAwaiter().GetResult();
 
+        /// <summary>Returns per-schema unit prices for <paramref name="dataset"/>.</summary>
+        /// <param name="dataset">The dataset identifier.</param>
+        /// <param name="ct">Cancellation token.</param>
         public Task<UnitPriceInfo[]> ListUnitPricesAsync(string dataset, CancellationToken ct = default)
             => this.GetJsonArrayAsync<UnitPriceInfo>("metadata.list_unit_prices?dataset=" + Uri.EscapeDataString(dataset), ct);
 
+        /// <summary>Returns per-schema unit prices for <paramref name="dataset"/>.</summary>
+        /// <param name="dataset">The dataset identifier.</param>
         public UnitPriceInfo[] ListUnitPrices(string dataset) => this.ListUnitPricesAsync(dataset).GetAwaiter().GetResult();
 
+        /// <summary>
+        /// Returns the data-quality condition for <paramref name="dataset"/> on a given date.
+        /// When <paramref name="dateStr"/> is omitted the most recent condition entry is returned.
+        /// </summary>
+        /// <param name="dataset">The dataset identifier.</param>
+        /// <param name="dateStr">Optional ISO-8601 date string (e.g. <c>"2024-01-15"</c>).</param>
+        /// <param name="ct">Cancellation token.</param>
         public async Task<DatasetCondition> GetDatasetConditionAsync(string dataset, string dateStr = null, CancellationToken ct = default)
         {
             string path = "metadata.get_dataset_condition?dataset=" + Uri.EscapeDataString(dataset);
@@ -136,9 +164,18 @@ namespace Databento.CSharpApiClient
             return JsonSerializer.Deserialize<DatasetCondition>(json, RecordDeserializeOptions);
         }
 
+        /// <summary>
+        /// Returns the data-quality condition for <paramref name="dataset"/> on a given date.
+        /// When <paramref name="dateStr"/> is omitted the most recent condition entry is returned.
+        /// </summary>
+        /// <param name="dataset">The dataset identifier.</param>
+        /// <param name="dateStr">Optional ISO-8601 date string (e.g. <c>"2024-01-15"</c>).</param>
         public DatasetCondition GetDatasetCondition(string dataset, string dateStr = null)
             => this.GetDatasetConditionAsync(dataset, dateStr).GetAwaiter().GetResult();
 
+        /// <summary>Returns the available date range for <paramref name="dataset"/>.</summary>
+        /// <param name="dataset">The dataset identifier.</param>
+        /// <param name="ct">Cancellation token.</param>
         public async Task<DateRange> GetDatasetRangeAsync(string dataset, CancellationToken ct = default)
         {
             string path = "metadata.get_dataset_range?dataset=" + Uri.EscapeDataString(dataset);
@@ -146,12 +183,17 @@ namespace Databento.CSharpApiClient
             return JsonSerializer.Deserialize<DateRange>(json, RecordDeserializeOptions);
         }
 
+        /// <summary>Returns the available date range for <paramref name="dataset"/>.</summary>
+        /// <param name="dataset">The dataset identifier.</param>
         public DateRange GetDatasetRange(string dataset) => this.GetDatasetRangeAsync(dataset).GetAwaiter().GetResult();
 
         // ================================================================
         // Symbology
         // ================================================================
 
+        /// <summary>Resolves symbols from one symbology type to another for a given date range.</summary>
+        /// <param name="request">The resolution request parameters.</param>
+        /// <param name="ct">Cancellation token.</param>
         public async Task<SymbologyResolution> ResolveSymbolsAsync(SymbologyRequest request, CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -159,6 +201,8 @@ namespace Databento.CSharpApiClient
             return JsonSerializer.Deserialize<SymbologyResolution>(json, RecordDeserializeOptions);
         }
 
+        /// <summary>Resolves symbols from one symbology type to another for a given date range.</summary>
+        /// <param name="request">The resolution request parameters.</param>
         public SymbologyResolution ResolveSymbols(SymbologyRequest request)
             => this.ResolveSymbolsAsync(request).GetAwaiter().GetResult();
 
@@ -166,6 +210,21 @@ namespace Databento.CSharpApiClient
         // Batch
         // ================================================================
 
+        /// <summary>
+        /// Submits a batch data job and returns the created <see cref="BatchJob"/> with its assigned ID.
+        /// Batch jobs are processed asynchronously; poll <see cref="GetBatchJobDetailsAsync"/> for status.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param>
+        /// <param name="symbols">One or more symbols; pass <c>"ALL_SYMBOLS"</c> as the sole entry for the full universe.</param>
+        /// <param name="schema">Schema name (e.g. <c>"trades"</c>).</param>
+        /// <param name="startUtc">Inclusive start of the requested time range (UTC).</param>
+        /// <param name="endUtc">Exclusive end of the requested time range (UTC).</param>
+        /// <param name="encoding">Output encoding; defaults to <c>"dbn"</c>.</param>
+        /// <param name="compression">Output compression; defaults to <c>"zstd"</c>.</param>
+        /// <param name="prettyPx">When <see langword="true"/>, prices are formatted as display decimals.</param>
+        /// <param name="prettyTs">When <see langword="true"/>, timestamps are formatted as ISO-8601 strings.</param>
+        /// <param name="mapSymbols">When <see langword="true"/>, symbol mappings are appended inline.</param>
+        /// <param name="ct">Cancellation token.</param>
         public async Task<BatchJob> SubmitBatchJobAsync(
             string dataset,
             IReadOnlyList<string> symbols,
@@ -207,6 +266,16 @@ namespace Databento.CSharpApiClient
             return JsonSerializer.Deserialize<BatchJob>(json, RecordDeserializeOptions);
         }
 
+        /// <summary>
+        /// Submits a batch data job and returns the created <see cref="BatchJob"/> with its assigned ID.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param>
+        /// <param name="symbols">One or more symbols; pass <c>"ALL_SYMBOLS"</c> as the sole entry for the full universe.</param>
+        /// <param name="schema">Schema name (e.g. <c>"trades"</c>).</param>
+        /// <param name="startUtc">Inclusive start of the requested time range (UTC).</param>
+        /// <param name="endUtc">Exclusive end of the requested time range (UTC).</param>
+        /// <param name="encoding">Output encoding; defaults to <c>"dbn"</c>.</param>
+        /// <param name="compression">Output compression; defaults to <c>"zstd"</c>.</param>
         public BatchJob SubmitBatchJob(
             string dataset,
             IReadOnlyList<string> symbols,
@@ -217,6 +286,10 @@ namespace Databento.CSharpApiClient
             string compression = "zstd")
             => this.SubmitBatchJobAsync(dataset, symbols, schema, startUtc, endUtc, encoding, compression).GetAwaiter().GetResult();
 
+        /// <summary>Returns all batch jobs, optionally filtered by dataset and/or state.</summary>
+        /// <param name="dataset">Optional dataset filter.</param>
+        /// <param name="state">Optional state filter (e.g. <c>"received"</c>, <c>"done"</c>).</param>
+        /// <param name="ct">Cancellation token.</param>
         public async Task<BatchJob[]> ListBatchJobsAsync(string dataset = null, string state = null, CancellationToken ct = default)
         {
             StringBuilder path = new StringBuilder("batch.list_jobs");
@@ -235,9 +308,15 @@ namespace Databento.CSharpApiClient
             return await this.GetJsonArrayAsync<BatchJob>(path.ToString(), ct).ConfigureAwait(false);
         }
 
+        /// <summary>Returns all batch jobs, optionally filtered by dataset and/or state.</summary>
+        /// <param name="dataset">Optional dataset filter.</param>
+        /// <param name="state">Optional state filter (e.g. <c>"received"</c>, <c>"done"</c>).</param>
         public BatchJob[] ListBatchJobs(string dataset = null, string state = null)
             => this.ListBatchJobsAsync(dataset, state).GetAwaiter().GetResult();
 
+        /// <summary>Returns the current details and status of the batch job identified by <paramref name="jobId"/>.</summary>
+        /// <param name="jobId">The job identifier returned by <see cref="SubmitBatchJobAsync"/>.</param>
+        /// <param name="ct">Cancellation token.</param>
         public async Task<BatchJob> GetBatchJobDetailsAsync(string jobId, CancellationToken ct = default)
         {
             string path = "batch.get_job_details?job_id=" + Uri.EscapeDataString(jobId);
@@ -245,14 +324,21 @@ namespace Databento.CSharpApiClient
             return JsonSerializer.Deserialize<BatchJob>(json, RecordDeserializeOptions);
         }
 
+        /// <summary>Returns the current details and status of the batch job identified by <paramref name="jobId"/>.</summary>
+        /// <param name="jobId">The job identifier returned by <see cref="SubmitBatchJob"/>.</param>
         public BatchJob GetBatchJobDetails(string jobId) => this.GetBatchJobDetailsAsync(jobId).GetAwaiter().GetResult();
 
+        /// <summary>Returns the list of output files available for download for a completed batch job.</summary>
+        /// <param name="jobId">The job identifier.</param>
+        /// <param name="ct">Cancellation token.</param>
         public async Task<BatchFile[]> ListBatchFilesAsync(string jobId, CancellationToken ct = default)
         {
             string path = "batch.list_files?job_id=" + Uri.EscapeDataString(jobId);
             return await this.GetJsonArrayAsync<BatchFile>(path, ct).ConfigureAwait(false);
         }
 
+        /// <summary>Returns the list of output files available for download for a completed batch job.</summary>
+        /// <param name="jobId">The job identifier.</param>
         public BatchFile[] ListBatchFiles(string jobId) => this.ListBatchFilesAsync(jobId).GetAwaiter().GetResult();
 
         /// <summary>
@@ -289,33 +375,66 @@ namespace Databento.CSharpApiClient
             }
         }
 
+        /// <summary>
+        /// Downloads a batch file and returns its raw content as a <see cref="Stream"/>.
+        /// The caller is responsible for disposing the stream.
+        /// </summary>
+        /// <param name="httpsUrl">The HTTPS download URL from a <see cref="BatchFile"/>.</param>
         public Stream DownloadBatchFile(string httpsUrl) => this.DownloadBatchFileAsync(httpsUrl).GetAwaiter().GetResult();
 
         // ================================================================
         // Timeseries — CBBO
         // ================================================================
 
+        /// <summary>Returns 1-second consolidated best-bid-and-offer bars for a single symbol.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
         public Task<CbboRecordJson[]> GetCbbo1sAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetCbboAsync(dataset, new[] { symbol }, Schema.ConsolidatedBBO1Sec, startUtc, endUtc, ct);
 
+        /// <summary>Returns 1-minute consolidated best-bid-and-offer bars for a single symbol.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
         public Task<CbboRecordJson[]> GetCbbo1mAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetCbboAsync(dataset, new[] { symbol }, Schema.ConsolidatedBBO1Min, startUtc, endUtc, ct);
 
+        /// <summary>Returns 1-second consolidated best-bid-and-offer bars for a single symbol.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public CbboRecordJson[] GetCbbo1s(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetCbbo1sAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns 1-minute consolidated best-bid-and-offer bars for a single symbol.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public CbboRecordJson[] GetCbbo1m(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetCbbo1mAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns 1-second consolidated best-bid-and-offer bars for multiple symbols.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
         public Task<CbboRecordJson[]> GetCbbo1sAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetCbboAsync(dataset, symbols, Schema.ConsolidatedBBO1Sec, startUtc, endUtc, ct);
 
+        /// <summary>Returns 1-minute consolidated best-bid-and-offer bars for multiple symbols.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
         public Task<CbboRecordJson[]> GetCbbo1mAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetCbboAsync(dataset, symbols, Schema.ConsolidatedBBO1Min, startUtc, endUtc, ct);
 
+        /// <summary>Returns 1-second consolidated best-bid-and-offer bars for multiple symbols.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public CbboRecordJson[] GetCbbo1s(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetCbbo1sAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns 1-minute consolidated best-bid-and-offer bars for multiple symbols.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public CbboRecordJson[] GetCbbo1m(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetCbbo1mAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
 
@@ -323,63 +442,123 @@ namespace Databento.CSharpApiClient
         // Timeseries — OHLCV
         // ================================================================
 
+        /// <summary>Returns 1-second OHLCV bars for a single symbol. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code (e.g. <c>"XNAS.ITCH"</c>).</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<OhlcvRecordJson[]> GetOhlcv1sAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetOhlcvAsync(dataset, new[] { symbol }, Schema.Ohlcv1Sec, startUtc, endUtc, ct);
 
+        /// <summary>Returns 1-minute OHLCV bars for a single symbol. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<OhlcvRecordJson[]> GetOhlcv1mAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetOhlcvAsync(dataset, new[] { symbol }, Schema.Ohlcv1Min, startUtc, endUtc, ct);
 
+        /// <summary>Returns 1-hour OHLCV bars for a single symbol. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<OhlcvRecordJson[]> GetOhlcv1hAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetOhlcvAsync(dataset, new[] { symbol }, Schema.Ohlcv1Hour, startUtc, endUtc, ct);
 
+        /// <summary>Returns 1-day OHLCV bars for a single symbol. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<OhlcvRecordJson[]> GetOhlcv1dAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetOhlcvAsync(dataset, new[] { symbol }, Schema.Ohlcv1Day, startUtc, endUtc, ct);
 
+        /// <summary>Returns end-of-day OHLCV bars for a single symbol. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<OhlcvRecordJson[]> GetOhlcvEodAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetOhlcvAsync(dataset, new[] { symbol }, Schema.OhlcvEod, startUtc, endUtc, ct);
 
+        /// <summary>Returns 1-second OHLCV bars for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public OhlcvRecordJson[] GetOhlcv1s(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetOhlcv1sAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns 1-minute OHLCV bars for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public OhlcvRecordJson[] GetOhlcv1m(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetOhlcv1mAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns 1-hour OHLCV bars for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public OhlcvRecordJson[] GetOhlcv1h(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetOhlcv1hAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns 1-day OHLCV bars for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public OhlcvRecordJson[] GetOhlcv1d(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetOhlcv1dAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns end-of-day OHLCV bars for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public OhlcvRecordJson[] GetOhlcvEod(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetOhlcvEodAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns 1-second OHLCV bars for multiple symbols. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000). Pass <c>"ALL_SYMBOLS"</c> as the sole entry for the full universe.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<OhlcvRecordJson[]> GetOhlcv1sAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetOhlcvAsync(dataset, symbols, Schema.Ohlcv1Sec, startUtc, endUtc, ct);
 
+        /// <summary>Returns 1-minute OHLCV bars for multiple symbols. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<OhlcvRecordJson[]> GetOhlcv1mAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetOhlcvAsync(dataset, symbols, Schema.Ohlcv1Min, startUtc, endUtc, ct);
 
+        /// <summary>Returns 1-hour OHLCV bars for multiple symbols. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<OhlcvRecordJson[]> GetOhlcv1hAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetOhlcvAsync(dataset, symbols, Schema.Ohlcv1Hour, startUtc, endUtc, ct);
 
+        /// <summary>Returns 1-day OHLCV bars for multiple symbols. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<OhlcvRecordJson[]> GetOhlcv1dAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetOhlcvAsync(dataset, symbols, Schema.Ohlcv1Day, startUtc, endUtc, ct);
 
+        /// <summary>Returns end-of-day OHLCV bars for multiple symbols. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<OhlcvRecordJson[]> GetOhlcvEodAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetOhlcvAsync(dataset, symbols, Schema.OhlcvEod, startUtc, endUtc, ct);
 
+        /// <summary>Returns 1-second OHLCV bars for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public OhlcvRecordJson[] GetOhlcv1s(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetOhlcv1sAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns 1-minute OHLCV bars for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public OhlcvRecordJson[] GetOhlcv1m(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetOhlcv1mAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns 1-hour OHLCV bars for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public OhlcvRecordJson[] GetOhlcv1h(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetOhlcv1hAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns 1-day OHLCV bars for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public OhlcvRecordJson[] GetOhlcv1d(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetOhlcv1dAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns end-of-day OHLCV bars for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public OhlcvRecordJson[] GetOhlcvEod(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetOhlcvEodAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
 
@@ -387,15 +566,27 @@ namespace Databento.CSharpApiClient
         // Timeseries — Trades
         // ================================================================
 
+        /// <summary>Returns individual trade tick records for a single symbol. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<TradeRecordJson[]> GetTradesAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetGenericRecordsAsync(dataset, new[] { symbol }, Schema.Trades, startUtc, endUtc, DeserializeTradesJson, ct);
 
+        /// <summary>Returns individual trade tick records for multiple symbols. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<TradeRecordJson[]> GetTradesAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetGenericRecordsAsync(dataset, symbols, Schema.Trades, startUtc, endUtc, DeserializeTradesJson, ct);
 
+        /// <summary>Returns individual trade tick records for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public TradeRecordJson[] GetTrades(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetTradesAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns individual trade tick records for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public TradeRecordJson[] GetTrades(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetTradesAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
 
@@ -403,15 +594,27 @@ namespace Databento.CSharpApiClient
         // Timeseries — MBP-1
         // ================================================================
 
+        /// <summary>Returns market-by-price depth-1 (top-of-book) records for a single symbol. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<Mbp1RecordJson[]> GetMbp1Async(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetGenericRecordsAsync(dataset, new[] { symbol }, Schema.Mbp1, startUtc, endUtc, DeserializeMbp1Json, ct);
 
+        /// <summary>Returns market-by-price depth-1 (top-of-book) records for multiple symbols. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<Mbp1RecordJson[]> GetMbp1Async(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetGenericRecordsAsync(dataset, symbols, Schema.Mbp1, startUtc, endUtc, DeserializeMbp1Json, ct);
 
+        /// <summary>Returns market-by-price depth-1 (top-of-book) records for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public Mbp1RecordJson[] GetMbp1(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetMbp1Async(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns market-by-price depth-1 (top-of-book) records for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public Mbp1RecordJson[] GetMbp1(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetMbp1Async(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
 
@@ -419,15 +622,27 @@ namespace Databento.CSharpApiClient
         // Timeseries — Statistics
         // ================================================================
 
+        /// <summary>Returns end-of-day statistics records (settlement, open interest, etc.) for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<StatisticsRecordJson[]> GetStatisticsAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetGenericRecordsAsync(dataset, new[] { symbol }, Schema.Statistics, startUtc, endUtc, DeserializeStatisticsJson, ct);
 
+        /// <summary>Returns end-of-day statistics records (settlement, open interest, etc.) for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<StatisticsRecordJson[]> GetStatisticsAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetGenericRecordsAsync(dataset, symbols, Schema.Statistics, startUtc, endUtc, DeserializeStatisticsJson, ct);
 
+        /// <summary>Returns end-of-day statistics records (settlement, open interest, etc.) for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public StatisticsRecordJson[] GetStatistics(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetStatisticsAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns end-of-day statistics records (settlement, open interest, etc.) for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public StatisticsRecordJson[] GetStatistics(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetStatisticsAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
 
@@ -435,15 +650,27 @@ namespace Databento.CSharpApiClient
         // Timeseries — Definitions
         // ================================================================
 
+        /// <summary>Returns instrument definition records (contract metadata) for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<DefinitionRecordJson[]> GetDefinitionsAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetGenericRecordsAsync(dataset, new[] { symbol }, Schema.Definition, startUtc, endUtc, DeserializeDefinitionsJson, ct);
 
+        /// <summary>Returns instrument definition records (contract metadata) for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
         public Task<DefinitionRecordJson[]> GetDefinitionsAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetGenericRecordsAsync(dataset, symbols, Schema.Definition, startUtc, endUtc, DeserializeDefinitionsJson, ct);
 
+        /// <summary>Returns instrument definition records (contract metadata) for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public DefinitionRecordJson[] GetDefinitions(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetDefinitionsAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
 
+        /// <summary>Returns instrument definition records (contract metadata) for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
         public DefinitionRecordJson[] GetDefinitions(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetDefinitionsAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
 

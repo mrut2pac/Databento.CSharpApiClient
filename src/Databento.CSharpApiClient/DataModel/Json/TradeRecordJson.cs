@@ -12,6 +12,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// </summary>
     public sealed class TradeRecordJson
     {
+        /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]
         public RecordHeaderJson Header { get; set; }
 
@@ -35,6 +36,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonConverter(typeof(TradeAggressorConverter))]
         public TradeAggressor Side { get; set; }
 
+        /// <summary>Message info flags (e.g. last-in-sequence, fill-or-kill).</summary>
         [JsonPropertyName("flags")]
         [JsonConverter(typeof(FlagsConverter))]
         public MessageInfoBits Flags { get; set; }
@@ -43,6 +45,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonPropertyName("depth")]
         public uint Depth { get; set; }
 
+        /// <summary>Timestamp when the gateway received this message, in UTC.</summary>
         [JsonPropertyName("ts_recv")]
         public DateTime TsReceivedUtc { get; set; }
 
@@ -50,6 +53,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonPropertyName("ts_in_delta")]
         public long TsInDelta { get; set; }
 
+        /// <summary>Venue sequence number for ordering within the same nanosecond.</summary>
         [JsonPropertyName("sequence")]
         public uint Sequence { get; set; }
 

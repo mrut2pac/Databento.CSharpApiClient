@@ -1,6 +1,7 @@
 # Databento.CSharpApiClient
 
 [![NuGet](https://img.shields.io/nuget/v/Databento.CSharpApiClient.svg)](https://www.nuget.org/packages/Databento.CSharpApiClient)
+[![Databento](https://img.shields.io/badge/Databento-Historical%20API-474BD7)](https://databento.com)
 
 Pure-managed C# HTTP client for the [Databento Historical API](https://databento.com/docs/api-reference-historical).
 

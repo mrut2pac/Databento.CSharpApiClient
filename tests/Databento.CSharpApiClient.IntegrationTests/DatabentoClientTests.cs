@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 using Databento.CSharpApiClient.DataModel.Dbn;
 using Databento.CSharpApiClient.Exceptions;
@@ -14,7 +15,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         // =====================================================================
 
         [SkippableFact]
-        public void GetCbbo1s_SpxwOption_ReturnsRecordsWithBidOrAsk()
+        public async Task GetCbbo1s_SpxwOption_ReturnsRecordsWithBidOrAsk()
         {
             this.SkipIfNoApiKey();
             using DatabentoClient client = this.CreateBinaryClient();
@@ -22,7 +23,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
 
-            CbboRecordDbn[] records = client.GetCbbo1s(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
+            CbboRecordDbn[] records = await client.GetCbbo1sAsync(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
 
             Assert.NotNull(records);
             Assert.NotEmpty(records);
@@ -30,7 +31,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void GetCbbo1m_SpxwOption_ReturnsRecords()
+        public async Task GetCbbo1m_SpxwOption_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoClient client = this.CreateBinaryClient();
@@ -38,14 +39,14 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
 
-            CbboRecordDbn[] records = client.GetCbbo1m(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
+            CbboRecordDbn[] records = await client.GetCbbo1mAsync(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
 
             Assert.NotNull(records);
             Assert.NotEmpty(records);
         }
 
         [SkippableFact]
-        public void GetCbbo1s_MultiSymbol_ReturnsRecords()
+        public async Task GetCbbo1s_MultiSymbol_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoClient client = this.CreateBinaryClient();
@@ -53,9 +54,9 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
 
-            CbboRecordDbn[] records = client.GetCbbo1s(
+            CbboRecordDbn[] records = await client.GetCbbo1sAsync(
                 Datasets.OpraPillar,
-                new[] { "SPXW  250908C06475000", "SPXW  250908P06475000" },
+                ["SPXW  250908C06475000", "SPXW  250908P06475000"],
                 start,
                 end);
 
@@ -64,7 +65,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void GetCbbo1m_MultiSymbol_ReturnsRecords()
+        public async Task GetCbbo1m_MultiSymbol_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoClient client = this.CreateBinaryClient();
@@ -72,9 +73,9 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
 
-            CbboRecordDbn[] records = client.GetCbbo1m(
+            CbboRecordDbn[] records = await client.GetCbbo1mAsync(
                 Datasets.OpraPillar,
-                new[] { "SPXW  250908C06475000", "SPXW  250908P06475000" },
+                ["SPXW  250908C06475000", "SPXW  250908P06475000"],
                 start,
                 end);
 
@@ -83,7 +84,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void GetCbbo1s_MostRecentTradingDate_ThrowsDataStartAfterAvailableEnd()
+        public async Task GetCbbo1s_MostRecentTradingDate_ThrowsDataStartAfterAvailableEnd()
         {
             this.SkipIfNoApiKey();
             using DatabentoClient client = this.CreateBinaryClient();
@@ -91,8 +92,8 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset tomorrow = new DateTimeOffset(DateTime.UtcNow.Date.AddDays(1), TimeSpan.Zero);
             DateTimeOffset dayAfter = tomorrow.AddDays(1);
 
-            DatabentoHttpException ex = Assert.Throws<DatabentoHttpException>(() =>
-                client.GetCbbo1s(Datasets.OpraPillar, "SPXW  250908C06475000", tomorrow, dayAfter));
+            DatabentoHttpException ex = await Assert.ThrowsAsync<DatabentoHttpException>(() =>
+                client.GetCbbo1sAsync(Datasets.OpraPillar, "SPXW  250908C06475000", tomorrow, dayAfter));
 
             Assert.Equal(422, ex.StatusCode);
             Assert.Equal("data_start_after_available_end", ex.ErrorCase);
@@ -103,7 +104,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         // =====================================================================
 
         [SkippableFact]
-        public void GetTrades_Spy_ReturnsRecordsWithPriceAndSize()
+        public async Task GetTrades_Spy_ReturnsRecordsWithPriceAndSize()
         {
             this.SkipIfNoApiKey();
             using DatabentoClient client = this.CreateBinaryClient();
@@ -111,7 +112,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 14, 30, 0, TimeSpan.Zero);
 
-            TradeRecordDbn[] records = client.GetTrades(Datasets.XnasItch, "SPY", start, end);
+            TradeRecordDbn[] records = await client.GetTradesAsync(Datasets.XnasItch, "SPY", start, end);
 
             Assert.NotNull(records);
             Assert.NotEmpty(records);
@@ -120,7 +121,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void GetTrades_MultiSymbol_ReturnsRecords()
+        public async Task GetTrades_MultiSymbol_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoClient client = this.CreateBinaryClient();
@@ -128,9 +129,9 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 14, 30, 0, TimeSpan.Zero);
 
-            TradeRecordDbn[] records = client.GetTrades(
+            TradeRecordDbn[] records = await client.GetTradesAsync(
                 Datasets.XnasItch,
-                new[] { "SPY", "QQQ" },
+                ["SPY", "QQQ"],
                 start,
                 end);
 
@@ -143,7 +144,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         // =====================================================================
 
         [SkippableFact]
-        public void GetMbp1_Spy_ReturnsRecordsWithBidOrAsk()
+        public async Task GetMbp1_Spy_ReturnsRecordsWithBidOrAsk()
         {
             this.SkipIfNoApiKey();
             using DatabentoClient client = this.CreateBinaryClient();
@@ -151,7 +152,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 13, 35, 0, TimeSpan.Zero);
 
-            Mbp1RecordDbn[] records = client.GetMbp1(Datasets.XnasItch, "SPY", start, end);
+            Mbp1RecordDbn[] records = await client.GetMbp1Async(Datasets.XnasItch, "SPY", start, end);
 
             Assert.NotNull(records);
             Assert.NotEmpty(records);
@@ -159,7 +160,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void GetMbp1_MultiSymbol_ReturnsRecords()
+        public async Task GetMbp1_MultiSymbol_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoClient client = this.CreateBinaryClient();
@@ -167,9 +168,9 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 13, 35, 0, TimeSpan.Zero);
 
-            Mbp1RecordDbn[] records = client.GetMbp1(
+            Mbp1RecordDbn[] records = await client.GetMbp1Async(
                 Datasets.XnasItch,
-                new[] { "SPY", "QQQ" },
+                ["SPY", "QQQ"],
                 start,
                 end);
 

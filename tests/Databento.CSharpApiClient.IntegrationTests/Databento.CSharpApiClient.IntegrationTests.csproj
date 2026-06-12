@@ -4,6 +4,7 @@
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <IsPackable>false</IsPackable>
+    <NoWarn>CA1861</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

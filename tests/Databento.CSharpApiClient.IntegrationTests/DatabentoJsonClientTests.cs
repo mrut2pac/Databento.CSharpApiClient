@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 using Databento.CSharpApiClient.DataModel;
 using Databento.CSharpApiClient.DataModel.Batch;
@@ -18,12 +19,12 @@ namespace Databento.CSharpApiClient.IntegrationTests
         // =====================================================================
 
         [SkippableFact]
-        public void ListDatasets_ReturnsNonEmptyArrayContainingOpraPillar()
+        public async Task ListDatasets_ReturnsNonEmptyArrayContainingOpraPillar()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
 
-            string[] datasets = client.ListDatasets();
+            string[] datasets = await client.ListDatasetsAsync();
 
             Assert.NotNull(datasets);
             Assert.NotEmpty(datasets);
@@ -31,72 +32,72 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void ListSchemas_OpraPillar_ReturnsNonEmptyArray()
+        public async Task ListSchemas_OpraPillar_ReturnsNonEmptyArray()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
 
-            string[] schemas = client.ListSchemas(Datasets.OpraPillar);
+            string[] schemas = await client.ListSchemasAsync(Datasets.OpraPillar);
 
             Assert.NotNull(schemas);
             Assert.NotEmpty(schemas);
         }
 
         [SkippableFact]
-        public void ListPublishers_ReturnsNonEmptyArray()
+        public async Task ListPublishers_ReturnsNonEmptyArray()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
 
-            PublisherInfo[] publishers = client.ListPublishers();
+            PublisherInfo[] publishers = await client.ListPublishersAsync();
 
             Assert.NotNull(publishers);
             Assert.NotEmpty(publishers);
         }
 
         [SkippableFact]
-        public void ListFields_Trades_ReturnsNonEmptyArray()
+        public async Task ListFields_Trades_ReturnsNonEmptyArray()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
 
-            FieldInfo[] fields = client.ListFields(Schema.Trades);
+            FieldInfo[] fields = await client.ListFieldsAsync(Schema.Trades);
 
             Assert.NotNull(fields);
             Assert.NotEmpty(fields);
         }
 
         [SkippableFact]
-        public void ListUnitPrices_XnasItch_ReturnsNonEmptyArray()
+        public async Task ListUnitPrices_XnasItch_ReturnsNonEmptyArray()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
 
-            UnitPriceInfo[] prices = client.ListUnitPrices(Datasets.XnasItch);
+            UnitPriceInfo[] prices = await client.ListUnitPricesAsync(Datasets.XnasItch);
 
             Assert.NotNull(prices);
             Assert.NotEmpty(prices);
         }
 
         [SkippableFact]
-        public void GetDatasetCondition_OpraPillar_ReturnsNonNullWithDataset()
+        public async Task GetDatasetCondition_OpraPillar_ReturnsNonNullWithDataset()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
 
-            DatasetCondition condition = client.GetDatasetCondition(Datasets.OpraPillar);
+            DatasetCondition condition = await client.GetDatasetConditionAsync(Datasets.OpraPillar);
 
             Assert.NotNull(condition);
             Assert.False(string.IsNullOrEmpty(condition.Dataset));
         }
 
         [SkippableFact]
-        public void GetDatasetRange_OpraPillar_ReturnsValidRange()
+        public async Task GetDatasetRange_OpraPillar_ReturnsValidRange()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
 
-            DateRange range = client.GetDatasetRange(Datasets.OpraPillar);
+            DateRange range = await client.GetDatasetRangeAsync(Datasets.OpraPillar);
 
             Assert.NotNull(range);
             Assert.True(range.Start < range.End);
@@ -107,7 +108,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         // =====================================================================
 
         [SkippableFact]
-        public void ResolveSymbols_SpxwOption_ReturnsResolution()
+        public async Task ResolveSymbols_SpxwOption_ReturnsResolution()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -118,10 +119,10 @@ namespace Databento.CSharpApiClient.IntegrationTests
             SymbologyResolution resolution;
             try
             {
-                resolution = client.ResolveSymbols(new SymbologyRequest
+                resolution = await client.ResolveSymbolsAsync(new SymbologyRequest
                 {
                     Dataset   = Datasets.OpraPillar,
-                    Symbols   = new[] { "SPXW  250908C06475000" },
+                    Symbols   = ["SPXW  250908C06475000"],
                     StypeIn   = SymbolTypes.RawSymbol,
                     StypeOut  = SymbolTypes.InstrumentId,
                     StartDate = start.ToString("yyyy-MM-dd"),
@@ -143,13 +144,13 @@ namespace Databento.CSharpApiClient.IntegrationTests
         // =====================================================================
 
         [SkippableFact]
-        public void ListBatchJobs_ReturnsArray()
+        public async Task ListBatchJobs_ReturnsArray()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
 
             // Lists historical jobs (may be empty on a fresh account — that is acceptable).
-            BatchJob[] jobs = client.ListBatchJobs();
+            BatchJob[] jobs = await client.ListBatchJobsAsync();
 
             Assert.NotNull(jobs);
         }
@@ -159,7 +160,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         // =====================================================================
 
         [SkippableFact]
-        public void GetCbbo1s_SpxwOption_ReturnsRecords()
+        public async Task GetCbbo1s_SpxwOption_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -170,7 +171,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             CbboRecordJson[] records;
             try
             {
-                records = client.GetCbbo1s(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
+                records = await client.GetCbbo1sAsync(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
             }
             catch(DatabentoHttpException ex)
             {
@@ -183,7 +184,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void GetCbbo1m_SpxwOption_ReturnsRecords()
+        public async Task GetCbbo1m_SpxwOption_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -194,7 +195,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             CbboRecordJson[] records;
             try
             {
-                records = client.GetCbbo1m(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
+                records = await client.GetCbbo1mAsync(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
             }
             catch(DatabentoHttpException ex)
             {
@@ -207,7 +208,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void GetCbbo1m_MultiSymbol_ReturnsRecords()
+        public async Task GetCbbo1m_MultiSymbol_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -218,9 +219,9 @@ namespace Databento.CSharpApiClient.IntegrationTests
             CbboRecordJson[] records;
             try
             {
-                records = client.GetCbbo1m(
+                records = await client.GetCbbo1mAsync(
                     Datasets.OpraPillar,
-                    new[] { "SPXW  250908C06475000", "SPXW  250908P06475000" },
+                    ["SPXW  250908C06475000", "SPXW  250908P06475000"],
                     start,
                     end);
             }
@@ -235,7 +236,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void GetCbbo1m_SpxwOption_SundayReturnsEmpty()
+        public async Task GetCbbo1m_SpxwOption_SundayReturnsEmpty()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -247,7 +248,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             CbboRecordJson[] records;
             try
             {
-                records = client.GetCbbo1m(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
+                records = await client.GetCbbo1mAsync(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
             }
             catch(DatabentoHttpException ex)
             {
@@ -260,7 +261,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void GetCbbo1s_MostRecentTradingDate_ThrowsDataStartAfterAvailableEnd()
+        public async Task GetCbbo1s_MostRecentTradingDate_ThrowsDataStartAfterAvailableEnd()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -270,8 +271,8 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DateTimeOffset tomorrow = new DateTimeOffset(DateTime.UtcNow.Date.AddDays(1), TimeSpan.Zero);
             DateTimeOffset dayAfter = tomorrow.AddDays(1);
 
-            DatabentoHttpException ex = Assert.Throws<DatabentoHttpException>(() =>
-                client.GetCbbo1s(Datasets.OpraPillar, "SPXW  250908C06475000", tomorrow, dayAfter));
+            DatabentoHttpException ex = await Assert.ThrowsAsync<DatabentoHttpException>(() =>
+                client.GetCbbo1sAsync(Datasets.OpraPillar, "SPXW  250908C06475000", tomorrow, dayAfter));
 
             Assert.Equal(422, ex.StatusCode);
             Assert.Equal("data_start_after_available_end", ex.ErrorCase);
@@ -282,7 +283,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         // =====================================================================
 
         [SkippableFact]
-        public void GetOhlcv1s_Spy_ReturnsRecords()
+        public async Task GetOhlcv1s_Spy_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -293,7 +294,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             OhlcvRecordJson[] records;
             try
             {
-                records = client.GetOhlcv1s(Datasets.XnasItch, "SPY", start, end);
+                records = await client.GetOhlcv1sAsync(Datasets.XnasItch, "SPY", start, end);
             }
             catch(DatabentoHttpException ex)
             {
@@ -316,7 +317,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void GetOhlcv1m_Spy_ReturnsRecords()
+        public async Task GetOhlcv1m_Spy_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -327,7 +328,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             OhlcvRecordJson[] records;
             try
             {
-                records = client.GetOhlcv1m(Datasets.XnasItch, "SPY", start, end);
+                records = await client.GetOhlcv1mAsync(Datasets.XnasItch, "SPY", start, end);
             }
             catch(DatabentoHttpException ex)
             {
@@ -341,7 +342,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void GetOhlcv1h_Spy_ReturnsRecords()
+        public async Task GetOhlcv1h_Spy_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -352,7 +353,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             OhlcvRecordJson[] records;
             try
             {
-                records = client.GetOhlcv1h(Datasets.XnasItch, "SPY", start, end);
+                records = await client.GetOhlcv1hAsync(Datasets.XnasItch, "SPY", start, end);
             }
             catch(DatabentoHttpException ex)
             {
@@ -366,7 +367,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void GetOhlcv1d_Spy_ReturnsRecords()
+        public async Task GetOhlcv1d_Spy_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -377,7 +378,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             OhlcvRecordJson[] records;
             try
             {
-                records = client.GetOhlcv1d(Datasets.XnasItch, "SPY", start, end);
+                records = await client.GetOhlcv1dAsync(Datasets.XnasItch, "SPY", start, end);
             }
             catch(DatabentoHttpException ex)
             {
@@ -394,7 +395,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         // =====================================================================
 
         [SkippableFact]
-        public void GetTrades_Spy_ReturnsRecordsWithPriceAndSize()
+        public async Task GetTrades_Spy_ReturnsRecordsWithPriceAndSize()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -405,7 +406,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             TradeRecordJson[] records;
             try
             {
-                records = client.GetTrades(Datasets.XnasItch, "SPY", start, end);
+                records = await client.GetTradesAsync(Datasets.XnasItch, "SPY", start, end);
             }
             catch(DatabentoHttpException ex)
             {
@@ -420,7 +421,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void GetTrades_MultiSymbol_ReturnsRecords()
+        public async Task GetTrades_MultiSymbol_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -431,9 +432,9 @@ namespace Databento.CSharpApiClient.IntegrationTests
             TradeRecordJson[] records;
             try
             {
-                records = client.GetTrades(
+                records = await client.GetTradesAsync(
                     Datasets.XnasItch,
-                    new[] { "SPY", "QQQ" },
+                    ["SPY", "QQQ"],
                     start,
                     end);
             }
@@ -452,7 +453,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         // =====================================================================
 
         [SkippableFact]
-        public void GetMbp1_Spy_ReturnsRecordsWithBidOrAsk()
+        public async Task GetMbp1_Spy_ReturnsRecordsWithBidOrAsk()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -463,7 +464,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Mbp1RecordJson[] records;
             try
             {
-                records = client.GetMbp1(Datasets.XnasItch, "SPY", start, end);
+                records = await client.GetMbp1Async(Datasets.XnasItch, "SPY", start, end);
             }
             catch(DatabentoHttpException ex)
             {
@@ -478,7 +479,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void GetMbp1_MultiSymbol_ReturnsRecords()
+        public async Task GetMbp1_MultiSymbol_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -489,9 +490,9 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Mbp1RecordJson[] records;
             try
             {
-                records = client.GetMbp1(
+                records = await client.GetMbp1Async(
                     Datasets.XnasItch,
-                    new[] { "SPY", "QQQ" },
+                    ["SPY", "QQQ"],
                     start,
                     end);
             }
@@ -510,7 +511,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         // =====================================================================
 
         [SkippableFact]
-        public void GetStatistics_Es_ReturnsRecords()
+        public async Task GetStatistics_Es_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -522,7 +523,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             StatisticsRecordJson[] records;
             try
             {
-                records = client.GetStatistics(Datasets.GlbxMdp3, "ESH4", start, end);
+                records = await client.GetStatisticsAsync(Datasets.GlbxMdp3, "ESH4", start, end);
             }
             catch(DatabentoHttpException ex)
             {
@@ -539,7 +540,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         // =====================================================================
 
         [SkippableFact]
-        public void GetDefinitions_SpxwOption_ReturnsRecordsWithRawSymbol()
+        public async Task GetDefinitions_SpxwOption_ReturnsRecordsWithRawSymbol()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -550,7 +551,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DefinitionRecordJson[] records;
             try
             {
-                records = client.GetDefinitions(
+                records = await client.GetDefinitionsAsync(
                     Datasets.OpraPillar,
                     "SPXW  250908C06475000",
                     start,
@@ -568,7 +569,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public void GetDefinitions_MultiSymbol_ReturnsRecords()
+        public async Task GetDefinitions_MultiSymbol_ReturnsRecords()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
@@ -579,9 +580,9 @@ namespace Databento.CSharpApiClient.IntegrationTests
             DefinitionRecordJson[] records;
             try
             {
-                records = client.GetDefinitions(
+                records = await client.GetDefinitionsAsync(
                     Datasets.OpraPillar,
-                    new[] { "SPXW  250908C06475000", "SPXW  250908P06475000" },
+                    ["SPXW  250908C06475000", "SPXW  250908P06475000"],
                     start,
                     end);
             }

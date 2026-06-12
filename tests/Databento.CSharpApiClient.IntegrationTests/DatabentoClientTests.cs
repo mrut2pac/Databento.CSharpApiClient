@@ -1,6 +1,7 @@
 using System;
 
 using Databento.CSharpApiClient.DataModel.Dbn;
+using Databento.CSharpApiClient.Exceptions;
 
 using Xunit;
 
@@ -79,6 +80,22 @@ namespace Databento.CSharpApiClient.IntegrationTests
 
             Assert.NotNull(records);
             Assert.NotEmpty(records);
+        }
+
+        [SkippableFact]
+        public void GetCbbo1s_MostRecentTradingDate_ThrowsDataStartAfterAvailableEnd()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoClient client = this.CreateBinaryClient();
+
+            DateTimeOffset tomorrow = new DateTimeOffset(DateTime.UtcNow.Date.AddDays(1), TimeSpan.Zero);
+            DateTimeOffset dayAfter = tomorrow.AddDays(1);
+
+            DatabentoHttpException ex = Assert.Throws<DatabentoHttpException>(() =>
+                client.GetCbbo1s(Datasets.OpraPillar, "SPXW  250908C06475000", tomorrow, dayAfter));
+
+            Assert.Equal(422, ex.StatusCode);
+            Assert.Equal("data_start_after_available_end", ex.ErrorCase);
         }
 
         // =====================================================================

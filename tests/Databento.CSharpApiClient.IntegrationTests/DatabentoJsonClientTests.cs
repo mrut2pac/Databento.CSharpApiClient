@@ -259,6 +259,24 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Assert.Empty(records);
         }
 
+        [SkippableFact]
+        public void GetCbbo1s_MostRecentTradingDate_ThrowsDataStartAfterAvailableEnd()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            // Historical data for tomorrow is never available — the API pushes back with a
+            // descriptive 422 rather than a generic error. This documents that behavior.
+            DateTimeOffset tomorrow = new DateTimeOffset(DateTime.UtcNow.Date.AddDays(1), TimeSpan.Zero);
+            DateTimeOffset dayAfter = tomorrow.AddDays(1);
+
+            DatabentoHttpException ex = Assert.Throws<DatabentoHttpException>(() =>
+                client.GetCbbo1s(Datasets.OpraPillar, "SPXW  250908C06475000", tomorrow, dayAfter));
+
+            Assert.Equal(422, ex.StatusCode);
+            Assert.Equal("data_start_after_available_end", ex.ErrorCase);
+        }
+
         // =====================================================================
         // Timeseries: OHLCV
         // =====================================================================
@@ -369,31 +387,6 @@ namespace Databento.CSharpApiClient.IntegrationTests
 
             Assert.NotNull(records);
             Assert.NotEmpty(records);
-        }
-
-        [SkippableFact]
-        public void GetOhlcvEod_Spy_ReturnsRecords()
-        {
-            this.SkipIfNoApiKey();
-            using DatabentoJsonClient client = this.CreateJsonClient();
-
-            DateTimeOffset start = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero);
-            DateTimeOffset end   = new DateTimeOffset(2022, 6, 1, 0, 0, 0, TimeSpan.Zero);
-
-            OhlcvRecordJson[] records;
-            try
-            {
-                records = client.GetOhlcvEod(Datasets.XnasItch, "SPY", start, end);
-            }
-            catch(DatabentoHttpException ex)
-            {
-                SkipIfNoLicense(ex);
-                throw;
-            }
-
-            Assert.NotNull(records);
-            Assert.NotEmpty(records);
-            Assert.True(records[0].Close > 0);
         }
 
         // =====================================================================

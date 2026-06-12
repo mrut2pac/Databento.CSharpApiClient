@@ -1,5 +1,7 @@
 # Databento.CSharpApiClient
 
+[![NuGet](https://img.shields.io/nuget/v/Databento.CSharpApiClient.svg)](https://www.nuget.org/packages/Databento.CSharpApiClient)
+
 Pure-managed C# HTTP client for the [Databento Historical API](https://databento.com/docs/api-reference-historical).
 
 - Timeseries streaming: DBN binary (CBBO, Trades, MBP-1) and JSON (CBBO, OHLCV, Trades, MBP-1, Definitions, Statistics)

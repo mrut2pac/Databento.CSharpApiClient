@@ -1028,49 +1028,13 @@ namespace Databento.CSharpApiClient
 
         private static bool IsNoDataResponse(int statusCode, string body)
         {
-            string errorCase = ExtractErrorCase(body);
-            return statusCode == 422 && errorCase == "data_end_after_available_end";
-        }
-
-        private static string ExtractErrorCase(string body)
-        {
-            if(string.IsNullOrEmpty(body))
-            {
-                return null;
-            }
-
-            try
-            {
-                using(JsonDocument doc = JsonDocument.Parse(body))
-                {
-                    JsonElement detail;
-                    if(!doc.RootElement.TryGetProperty("detail", out detail))
-                    {
-                        return null;
-                    }
-
-                    if(detail.ValueKind == JsonValueKind.Object)
-                    {
-                        JsonElement caseEl;
-                        if(detail.TryGetProperty("case", out caseEl))
-                        {
-                            return caseEl.GetString();
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Not a structured JSON error.
-            }
-
-            return null;
+            return statusCode == 422
+                && DatabentoHttpException.MapErrorCase(DatabentoHttpException.ExtractErrorCase(body)) == DatabentoErrorCase.DataEndAfterAvailableEnd;
         }
 
         private static DatabentoHttpException BuildHttpException(int statusCode, string body)
         {
-            string errorCase = ExtractErrorCase(body);
-            return new DatabentoHttpException(statusCode, body, errorCase);
+            return DatabentoHttpException.Create(statusCode, body);
         }
 
         private static async Task<string> ReadBodyAsync(HttpResponseMessage response, CancellationToken ct)

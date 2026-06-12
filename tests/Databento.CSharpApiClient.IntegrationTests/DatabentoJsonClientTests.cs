@@ -595,5 +595,392 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Assert.NotNull(records);
             Assert.NotEmpty(records);
         }
+
+        // =====================================================================
+        // Timeseries: MBO
+        // =====================================================================
+
+        [SkippableFact]
+        public async Task GetMbo_Es_ReturnsRecordsWithOrderId()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            // ESH4 on GLBX.MDP3 — CME has full MBO (L3) data.
+            DateTimeOffset start = new DateTimeOffset(2024, 3, 15, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2024, 3, 15, 13, 31, 0, TimeSpan.Zero);
+
+            MboRecordJson[] records;
+            try
+            {
+                records = await client.GetMboAsync(Datasets.GlbxMdp3, "ESH4", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+            Assert.True(records[0].OrderId > 0);
+        }
+
+        // =====================================================================
+        // Timeseries: MBP-10
+        // =====================================================================
+
+        [SkippableFact]
+        public async Task GetMbp10_Spy_ReturnsRecordsWithLevels()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 13, 31, 0, TimeSpan.Zero);
+
+            Mbp10RecordJson[] records;
+            try
+            {
+                records = await client.GetMbp10Async(Datasets.XnasItch, "SPY", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+            Assert.NotNull(records[0].Level1);
+        }
+
+        // =====================================================================
+        // Timeseries: BBO-1s / BBO-1m
+        // =====================================================================
+
+        [SkippableFact]
+        public async Task GetBbo1s_Spy_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 14, 30, 0, TimeSpan.Zero);
+
+            BboRecordJson[] records;
+            try
+            {
+                records = await client.GetBbo1sAsync(Datasets.XnasItch, "SPY", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+            Assert.NotNull(records[0].Level1);
+            Assert.True(records[0].Level1.BidPrice > 0 || records[0].Level1.AskPrice > 0);
+        }
+
+        [SkippableFact]
+        public async Task GetBbo1m_Spy_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 14, 30, 0, TimeSpan.Zero);
+
+            BboRecordJson[] records;
+            try
+            {
+                records = await client.GetBbo1mAsync(Datasets.XnasItch, "SPY", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+        }
+
+        // =====================================================================
+        // Timeseries: TBBO
+        // =====================================================================
+
+        [SkippableFact]
+        public async Task GetTbbo_Spy_ReturnsRecordsWithBboLevel()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 14, 30, 0, TimeSpan.Zero);
+
+            TbboRecordJson[] records;
+            try
+            {
+                records = await client.GetTbboAsync(Datasets.XnasItch, "SPY", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+            Assert.True(records[0].Price > 0);
+            Assert.NotNull(records[0].Level1);
+        }
+
+        // =====================================================================
+        // Timeseries: TCBBO
+        // =====================================================================
+
+        [SkippableFact]
+        public async Task GetTcbbo_SpxwOption_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
+
+            TcbboRecordJson[] records;
+            try
+            {
+                records = await client.GetTcbboAsync(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+            Assert.NotNull(records[0].Level1);
+        }
+
+        // =====================================================================
+        // Timeseries: CMBP-1
+        // =====================================================================
+
+        [SkippableFact]
+        public async Task GetCmbp1_SpxwOption_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
+
+            Cmbp1RecordJson[] records;
+            try
+            {
+                records = await client.GetCmbp1Async(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+            Assert.NotNull(records[0].Level1);
+        }
+
+        // =====================================================================
+        // Timeseries: Status
+        // =====================================================================
+
+        [SkippableFact]
+        public async Task GetStatus_Spy_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 0, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 17, 0, 0, 0, TimeSpan.Zero);
+
+            StatusRecordJson[] records;
+            try
+            {
+                records = await client.GetStatusAsync(Datasets.XnasItch, "SPY", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+            Assert.False(string.IsNullOrEmpty(records[0].IsTrading));
+        }
+
+        // =====================================================================
+        // Timeseries: Imbalance
+        // =====================================================================
+
+        [SkippableFact]
+        public async Task GetImbalance_Spy_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            // NASDAQ publishes closing-auction imbalance messages for SPY around 16:00 ET.
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 0, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 17, 0, 0, 0, TimeSpan.Zero);
+
+            ImbalanceRecordJson[] records;
+            try
+            {
+                records = await client.GetImbalanceAsync(Datasets.XnasItch, "SPY", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+        }
+
+        // =====================================================================
+        // Timeseries: SymbolMapping
+        // =====================================================================
+
+        [SkippableFact]
+        public async Task GetSymbolMappings_SpxwOption_ReturnsRecordsWithSymbols()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
+
+            SymbolMappingRecordJson[] records;
+            try
+            {
+                records = await client.GetSymbolMappingsAsync(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+            Assert.False(string.IsNullOrEmpty(records[0].StypeInSymbol));
+        }
+
+        // =====================================================================
+        // Metadata: GetRecordCount / GetBillableSize / GetCost
+        // =====================================================================
+
+        [SkippableFact]
+        public async Task GetRecordCount_SpyTrades_ReturnsPositiveCount()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 14, 30, 0, TimeSpan.Zero);
+
+            long count;
+            try
+            {
+                count = await client.GetRecordCountAsync(Datasets.XnasItch, ["SPY"], Schema.Trades, start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.True(count > 0);
+        }
+
+        [SkippableFact]
+        public async Task GetBillableSize_SpyTrades_ReturnsPositiveBytes()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 14, 30, 0, TimeSpan.Zero);
+
+            long bytes;
+            try
+            {
+                bytes = await client.GetBillableSizeAsync(Datasets.XnasItch, ["SPY"], Schema.Trades, start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.True(bytes > 0);
+        }
+
+        [SkippableFact]
+        public async Task GetCost_SpyTrades_ReturnsNonNegativeCost()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 14, 30, 0, TimeSpan.Zero);
+
+            double cost;
+            try
+            {
+                cost = await client.GetCostAsync(Datasets.XnasItch, ["SPY"], Schema.Trades, start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.True(cost >= 0.0);
+        }
+
+        // =====================================================================
+        // Metadata: ListConditions
+        // =====================================================================
+
+        [SkippableFact]
+        public async Task ListConditions_OpraPillar_ReturnsNonEmptyArray()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DatasetCondition[] conditions;
+            try
+            {
+                conditions = await client.ListConditionsAsync(Datasets.OpraPillar);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(conditions);
+            Assert.NotEmpty(conditions);
+            Assert.All(conditions, c => Assert.False(string.IsNullOrEmpty(c.Condition)));
+        }
     }
 }

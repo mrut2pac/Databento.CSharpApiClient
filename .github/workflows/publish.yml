@@ -49,17 +49,26 @@ jobs:
             -p:Version=${{ steps.version.outputs.value }} \
             -o nupkg
 
+      - name: Get OIDC token
+        id: oidc
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken('api://AzureADTokenExchange')
+            core.setSecret(token)
+            core.setOutput('token', token)
+
       - name: Publish to NuGet.org (Trusted Publishing)
         run: |
-          OIDC_TOKEN=$(curl -sSf \
-            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" \
-            | jq -r '.value')
-          NUGET_KEY=$(curl -sSf -X POST \
-            https://api.nuget.org/v1/api-key/oidc \
+          RESPONSE=$(curl -sSL -X POST \
+            https://www.nuget.org/api/v1/api-key/oidc \
             -H 'Content-Type: application/json' \
-            -d "{\"oidcToken\": \"${OIDC_TOKEN}\"}" \
-            | jq -r '.result')
+            -d "{\"oidcToken\": \"${{ steps.oidc.outputs.token }}\"}")
+          NUGET_KEY=$(echo "$RESPONSE" | jq -r '.apiKey // .result // empty')
+          if [ -z "$NUGET_KEY" ]; then
+            echo "Exchange failed. Response: $RESPONSE"
+            exit 1
+          fi
           dotnet nuget push nupkg/*.nupkg \
             --source https://api.nuget.org/v3/index.json \
             --api-key "$NUGET_KEY" \

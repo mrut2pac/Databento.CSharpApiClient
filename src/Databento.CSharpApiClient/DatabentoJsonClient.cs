@@ -113,7 +113,7 @@ namespace Databento.CSharpApiClient
         /// <param name="schema">Schema identifier (e.g. <c>"trades"</c>).</param>
         /// <param name="ct">Cancellation token.</param>
         public Task<FieldInfo[]> ListFieldsAsync(string schema, CancellationToken ct = default)
-            => this.GetJsonArrayAsync<FieldInfo>("metadata.list_fields?schema=" + Uri.EscapeDataString(schema), ct);
+            => this.GetJsonArrayAsync<FieldInfo>("metadata.list_fields?schema=" + Uri.EscapeDataString(schema) + "&encoding=json", ct);
 
         /// <summary>Returns the field names and types available for <paramref name="schema"/>.</summary>
         /// <param name="schema">Schema identifier (e.g. <c>"trades"</c>).</param>
@@ -146,22 +146,40 @@ namespace Databento.CSharpApiClient
 
             string json = await this.GetRawJsonAsync(path, ct).ConfigureAwait(false);
 
-            // Without a date the API returns an array of daily conditions; with a date it may
-            // also return an array. Return the first element in either case.
+            // The API returns an array of daily conditions (no "dataset" field in each element —
+            // only "date", "condition", "last_modified_date"). Return the first entry and back-fill
+            // the dataset identifier from the request parameter.
+            DatasetCondition result;
             using(JsonDocument doc = JsonDocument.Parse(json))
             {
                 if(doc.RootElement.ValueKind == JsonValueKind.Array)
                 {
+                    string firstElementJson = null;
                     foreach(JsonElement element in doc.RootElement.EnumerateArray())
                     {
-                        return JsonSerializer.Deserialize<DatasetCondition>(element.GetRawText(), RecordDeserializeOptions);
+                        firstElementJson = element.GetRawText();
+                        break;
                     }
 
-                    return null;
+                    if(firstElementJson == null)
+                    {
+                        return null;
+                    }
+
+                    result = JsonSerializer.Deserialize<DatasetCondition>(firstElementJson, RecordDeserializeOptions);
+                }
+                else
+                {
+                    result = JsonSerializer.Deserialize<DatasetCondition>(json, RecordDeserializeOptions);
                 }
             }
 
-            return JsonSerializer.Deserialize<DatasetCondition>(json, RecordDeserializeOptions);
+            if(result != null && result.Dataset == null)
+            {
+                result.Dataset = dataset;
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -197,7 +215,26 @@ namespace Databento.CSharpApiClient
         public async Task<SymbologyResolution> ResolveSymbolsAsync(SymbologyRequest request, CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(request);
-            string json = await this.PostJsonAsync("symbology.resolve", JsonSerializer.Serialize(request, RecordDeserializeOptions), ct).ConfigureAwait(false);
+
+            // The symbology.resolve endpoint requires form-encoded POST (not JSON body).
+            List<KeyValuePair<string, string>> form = new List<KeyValuePair<string, string>>();
+            if(!string.IsNullOrEmpty(request.Dataset))
+                form.Add(new KeyValuePair<string, string>("dataset", request.Dataset));
+            if(request.Symbols != null)
+            {
+                foreach(string sym in request.Symbols)
+                    form.Add(new KeyValuePair<string, string>("symbols", sym));
+            }
+            if(!string.IsNullOrEmpty(request.StypeIn))
+                form.Add(new KeyValuePair<string, string>("stype_in", request.StypeIn));
+            if(!string.IsNullOrEmpty(request.StypeOut))
+                form.Add(new KeyValuePair<string, string>("stype_out", request.StypeOut));
+            if(!string.IsNullOrEmpty(request.StartDate))
+                form.Add(new KeyValuePair<string, string>("start_date", request.StartDate));
+            if(!string.IsNullOrEmpty(request.EndDate))
+                form.Add(new KeyValuePair<string, string>("end_date", request.EndDate));
+
+            string json = await this.PostFormAsync("symbology.resolve", form, ct).ConfigureAwait(false);
             return JsonSerializer.Deserialize<SymbologyResolution>(json, RecordDeserializeOptions);
         }
 

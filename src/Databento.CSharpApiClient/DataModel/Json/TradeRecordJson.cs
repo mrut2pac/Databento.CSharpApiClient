@@ -16,12 +16,14 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonPropertyName("hd")]
         public RecordHeaderJson Header { get; set; }
 
-        /// <summary>Trade price (display-scaled, i.e. pretty_px=true).</summary>
+        /// <summary>Trade price (display-scaled).</summary>
         [JsonPropertyName("price")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double Price { get; set; }
 
         /// <summary>Trade quantity in lots.</summary>
         [JsonPropertyName("size")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public uint Size { get; set; }
 
         /// <summary>

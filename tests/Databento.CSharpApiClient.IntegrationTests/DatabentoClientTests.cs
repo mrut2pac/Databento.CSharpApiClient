@@ -62,6 +62,25 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Assert.NotEmpty(records);
         }
 
+        [SkippableFact]
+        public void GetCbbo1m_MultiSymbol_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoClient client = this.CreateBinaryClient();
+
+            DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
+
+            CbboRecordDbn[] records = client.GetCbbo1m(
+                Datasets.OpraPillar,
+                new[] { "SPXW  250908C06475000", "SPXW  250908P06475000" },
+                start,
+                end);
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+        }
+
         // =====================================================================
         // Trades (DBN binary)
         // =====================================================================
@@ -120,6 +139,25 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Assert.NotNull(records);
             Assert.NotEmpty(records);
             Assert.True(records[0].BidPrice > 0 || records[0].AskPrice > 0);
+        }
+
+        [SkippableFact]
+        public void GetMbp1_MultiSymbol_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoClient client = this.CreateBinaryClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 13, 35, 0, TimeSpan.Zero);
+
+            Mbp1RecordDbn[] records = client.GetMbp1(
+                Datasets.XnasItch,
+                new[] { "SPY", "QQQ" },
+                start,
+                end);
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
         }
     }
 }

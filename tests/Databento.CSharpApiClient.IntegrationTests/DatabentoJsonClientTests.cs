@@ -1,6 +1,7 @@
 using System;
 
 using Databento.CSharpApiClient.DataModel;
+using Databento.CSharpApiClient.DataModel.Batch;
 using Databento.CSharpApiClient.DataModel.Json;
 using Databento.CSharpApiClient.DataModel.Metadata;
 using Databento.CSharpApiClient.DataModel.Symbology;
@@ -54,6 +55,30 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
+        public void ListFields_Trades_ReturnsNonEmptyArray()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            FieldInfo[] fields = client.ListFields(Schema.Trades);
+
+            Assert.NotNull(fields);
+            Assert.NotEmpty(fields);
+        }
+
+        [SkippableFact]
+        public void ListUnitPrices_XnasItch_ReturnsNonEmptyArray()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            UnitPriceInfo[] prices = client.ListUnitPrices(Datasets.XnasItch);
+
+            Assert.NotNull(prices);
+            Assert.NotEmpty(prices);
+        }
+
+        [SkippableFact]
         public void GetDatasetCondition_OpraPillar_ReturnsNonNullWithDataset()
         {
             this.SkipIfNoApiKey();
@@ -63,6 +88,18 @@ namespace Databento.CSharpApiClient.IntegrationTests
 
             Assert.NotNull(condition);
             Assert.False(string.IsNullOrEmpty(condition.Dataset));
+        }
+
+        [SkippableFact]
+        public void GetDatasetRange_OpraPillar_ReturnsValidRange()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateRange range = client.GetDatasetRange(Datasets.OpraPillar);
+
+            Assert.NotNull(range);
+            Assert.True(range.Start < range.End);
         }
 
         // =====================================================================
@@ -102,8 +139,48 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         // =====================================================================
+        // Batch
+        // =====================================================================
+
+        [SkippableFact]
+        public void ListBatchJobs_ReturnsArray()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            // Lists historical jobs (may be empty on a fresh account — that is acceptable).
+            BatchJob[] jobs = client.ListBatchJobs();
+
+            Assert.NotNull(jobs);
+        }
+
+        // =====================================================================
         // Timeseries: CBBO
         // =====================================================================
+
+        [SkippableFact]
+        public void GetCbbo1s_SpxwOption_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
+
+            CbboRecordJson[] records;
+            try
+            {
+                records = client.GetCbbo1s(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+        }
 
         [SkippableFact]
         public void GetCbbo1m_SpxwOption_ReturnsRecords()
@@ -118,6 +195,34 @@ namespace Databento.CSharpApiClient.IntegrationTests
             try
             {
                 records = client.GetCbbo1m(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+        }
+
+        [SkippableFact]
+        public void GetCbbo1m_MultiSymbol_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
+
+            CbboRecordJson[] records;
+            try
+            {
+                records = client.GetCbbo1m(
+                    Datasets.OpraPillar,
+                    new[] { "SPXW  250908C06475000", "SPXW  250908P06475000" },
+                    start,
+                    end);
             }
             catch(DatabentoHttpException ex)
             {
@@ -188,6 +293,8 @@ namespace Databento.CSharpApiClient.IntegrationTests
             }
 
             Assert.NotEmpty(records);
+            Assert.True(records[0].Open > 0);
+            Assert.True(records[0].Volume > 0);
         }
 
         [SkippableFact]
@@ -212,6 +319,32 @@ namespace Databento.CSharpApiClient.IntegrationTests
 
             Assert.NotNull(records);
             Assert.NotEmpty(records);
+            Assert.True(records[0].Open > 0);
+        }
+
+        [SkippableFact]
+        public void GetOhlcv1h_Spy_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 0, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 17, 0, 0, 0, TimeSpan.Zero);
+
+            OhlcvRecordJson[] records;
+            try
+            {
+                records = client.GetOhlcv1h(Datasets.XnasItch, "SPY", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+            Assert.True(records[0].Open > 0);
         }
 
         [SkippableFact]
@@ -236,6 +369,31 @@ namespace Databento.CSharpApiClient.IntegrationTests
 
             Assert.NotNull(records);
             Assert.NotEmpty(records);
+        }
+
+        [SkippableFact]
+        public void GetOhlcvEod_Spy_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 6, 1, 0, 0, 0, TimeSpan.Zero);
+
+            OhlcvRecordJson[] records;
+            try
+            {
+                records = client.GetOhlcvEod(Datasets.XnasItch, "SPY", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+            Assert.True(records[0].Close > 0);
         }
 
         // =====================================================================
@@ -268,6 +426,34 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Assert.True(records[0].Size > 0);
         }
 
+        [SkippableFact]
+        public void GetTrades_MultiSymbol_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 14, 30, 0, TimeSpan.Zero);
+
+            TradeRecordJson[] records;
+            try
+            {
+                records = client.GetTrades(
+                    Datasets.XnasItch,
+                    new[] { "SPY", "QQQ" },
+                    start,
+                    end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+        }
+
         // =====================================================================
         // Timeseries: MBP-1
         // =====================================================================
@@ -296,6 +482,63 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Assert.NotEmpty(records);
             Assert.NotNull(records[0].Level1);
             Assert.True(records[0].Level1.BidPrice > 0 || records[0].Level1.AskPrice > 0);
+        }
+
+        [SkippableFact]
+        public void GetMbp1_MultiSymbol_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 13, 35, 0, TimeSpan.Zero);
+
+            Mbp1RecordJson[] records;
+            try
+            {
+                records = client.GetMbp1(
+                    Datasets.XnasItch,
+                    new[] { "SPY", "QQQ" },
+                    start,
+                    end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+        }
+
+        // =====================================================================
+        // Timeseries: Statistics
+        // =====================================================================
+
+        [SkippableFact]
+        public void GetStatistics_Es_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            // ESH4 = E-mini S&P 500, March 2024 expiry (raw symbol, GLBX.MDP3).
+            DateTimeOffset start = new DateTimeOffset(2024, 3, 15, 0, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2024, 3, 16, 0, 0, 0, TimeSpan.Zero);
+
+            StatisticsRecordJson[] records;
+            try
+            {
+                records = client.GetStatistics(Datasets.GlbxMdp3, "ESH4", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
         }
 
         // =====================================================================
@@ -329,6 +572,34 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Assert.NotNull(records);
             Assert.NotEmpty(records);
             Assert.False(string.IsNullOrEmpty(records[0].RawSymbol));
+        }
+
+        [SkippableFact]
+        public void GetDefinitions_MultiSymbol_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
+
+            DefinitionRecordJson[] records;
+            try
+            {
+                records = client.GetDefinitions(
+                    Datasets.OpraPillar,
+                    new[] { "SPXW  250908C06475000", "SPXW  250908P06475000" },
+                    start,
+                    end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
         }
     }
 }

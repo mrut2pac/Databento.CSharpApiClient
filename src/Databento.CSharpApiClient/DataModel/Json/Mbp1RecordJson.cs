@@ -19,10 +19,12 @@ namespace Databento.CSharpApiClient.DataModel.Json
 
         /// <summary>Order price (display-scaled).</summary>
         [JsonPropertyName("price")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double Price { get; set; }
 
         /// <summary>Order quantity in lots.</summary>
         [JsonPropertyName("size")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public uint Size { get; set; }
 
         /// <summary>Order-book action that triggered this update.</summary>

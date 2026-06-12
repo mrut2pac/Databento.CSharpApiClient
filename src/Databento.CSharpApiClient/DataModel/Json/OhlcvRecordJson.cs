@@ -3,6 +3,8 @@ using System.Diagnostics;
 
 using System.Text.Json.Serialization;
 
+using Databento.CSharpApiClient.JsonSupport;
+
 namespace Databento.CSharpApiClient.DataModel.Json
 {
     /// <summary>
@@ -18,22 +20,27 @@ namespace Databento.CSharpApiClient.DataModel.Json
 
         /// <summary>Open price of the bar interval (display-scaled).</summary>
         [JsonPropertyName("open")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double Open { get; set; }
 
         /// <summary>Highest traded price within the bar interval (display-scaled).</summary>
         [JsonPropertyName("high")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double High { get; set; }
 
         /// <summary>Lowest traded price within the bar interval (display-scaled).</summary>
         [JsonPropertyName("low")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double Low { get; set; }
 
         /// <summary>Close price of the bar interval (display-scaled).</summary>
         [JsonPropertyName("close")]
+        [JsonConverter(typeof(NanoPriceConverter))]
         public double Close { get; set; }
 
         /// <summary>Total traded volume within the bar interval (in lots).</summary>
         [JsonPropertyName("volume")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public long Volume { get; set; }
 
         /// <summary>Timestamp at which the bar interval ended (UTC). Present when <c>ts_out</c> was requested.</summary>

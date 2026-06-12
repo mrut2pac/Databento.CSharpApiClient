@@ -18,9 +18,9 @@ jobs:
       id-token: write   # required for OIDC / Trusted Publishing
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
 
@@ -51,15 +51,15 @@ jobs:
 
       - name: Publish to NuGet.org (Trusted Publishing)
         run: |
-          OIDC_TOKEN=$(curl -sSL \
+          OIDC_TOKEN=$(curl -sSf \
             -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" \
             | jq -r '.value')
-          NUGET_KEY=$(curl -sSL -X POST \
-            https://api.nuget.org/v1/api-key/exchange-using-trusted-publisher \
+          NUGET_KEY=$(curl -sSf -X POST \
+            https://api.nuget.org/v1/api-key/oidc \
             -H 'Content-Type: application/json' \
             -d "{\"oidcToken\": \"${OIDC_TOKEN}\"}" \
-            | jq -r '.apiKey')
+            | jq -r '.result')
           dotnet nuget push nupkg/*.nupkg \
             --source https://api.nuget.org/v3/index.json \
             --api-key "$NUGET_KEY" \

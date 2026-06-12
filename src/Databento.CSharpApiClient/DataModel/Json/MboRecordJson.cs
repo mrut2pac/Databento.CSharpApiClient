@@ -1,0 +1,73 @@
+using System;
+
+using System.Text.Json.Serialization;
+
+using Databento.CSharpApiClient.JsonSupport;
+
+namespace Databento.CSharpApiClient.DataModel.Json
+{
+    /// <summary>
+    /// A Market-by-Order (L3) record from the <c>mbo</c> schema (JSON encoding).
+    /// Each message represents a single order-book event for one order.
+    /// Corresponds to DBN rtype <c>Mbo</c>.
+    /// </summary>
+    public sealed class MboRecordJson
+    {
+        /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
+        [JsonPropertyName("hd")]
+        public RecordHeaderJson Header { get; set; }
+
+        /// <summary>Order price (display-scaled).</summary>
+        [JsonPropertyName("price")]
+        [JsonConverter(typeof(NanoPriceConverter))]
+        public double Price { get; set; }
+
+        /// <summary>Order quantity in lots.</summary>
+        [JsonPropertyName("size")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public uint Size { get; set; }
+
+        /// <summary>Order-book action that triggered this message (Add, Cancel, Modify, Trade, Fill).</summary>
+        [JsonPropertyName("action")]
+        [JsonConverter(typeof(OrderBookActionConverter))]
+        public OrderBookAction Action { get; set; }
+
+        /// <summary>Side of the order: Buyer, Seller, or None.</summary>
+        [JsonPropertyName("side")]
+        [JsonConverter(typeof(TradeAggressorConverter))]
+        public TradeAggressor Side { get; set; }
+
+        /// <summary>Message info flags.</summary>
+        [JsonPropertyName("flags")]
+        [JsonConverter(typeof(FlagsConverter))]
+        public MessageInfoBits Flags { get; set; }
+
+        /// <summary>Publisher channel identifier.</summary>
+        [JsonPropertyName("channel_id")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public ushort ChannelId { get; set; }
+
+        /// <summary>Exchange-assigned order identifier.</summary>
+        [JsonPropertyName("order_id")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public ulong OrderId { get; set; }
+
+        /// <summary>Timestamp when the gateway received this message, in UTC.</summary>
+        [JsonPropertyName("ts_recv")]
+        public DateTime TsReceivedUtc { get; set; }
+
+        /// <summary>Nanosecond latency delta from venue receipt to gateway receipt.</summary>
+        [JsonPropertyName("ts_in_delta")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public long TsInDelta { get; set; }
+
+        /// <summary>Venue sequence number for ordering within the same nanosecond.</summary>
+        [JsonPropertyName("sequence")]
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public uint Sequence { get; set; }
+
+        /// <summary>Gateway send timestamp (UTC). Present when <c>ts_out</c> was requested.</summary>
+        [JsonPropertyName("ts_out")]
+        public DateTime? TsOutUtc { get; set; }
+    }
+}

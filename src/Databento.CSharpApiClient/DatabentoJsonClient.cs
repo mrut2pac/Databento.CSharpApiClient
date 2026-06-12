@@ -205,6 +205,165 @@ namespace Databento.CSharpApiClient
         /// <param name="dataset">The dataset identifier.</param>
         public DateRange GetDatasetRange(string dataset) => this.GetDatasetRangeAsync(dataset).GetAwaiter().GetResult();
 
+        /// <summary>
+        /// Returns all daily data-quality conditions for <paramref name="dataset"/>,
+        /// optionally filtered to a date range.
+        /// </summary>
+        /// <param name="dataset">The dataset identifier.</param>
+        /// <param name="startDateStr">Optional ISO-8601 start date string (inclusive), e.g. <c>"2024-01-01"</c>.</param>
+        /// <param name="endDateStr">Optional ISO-8601 end date string (exclusive), e.g. <c>"2024-02-01"</c>.</param>
+        /// <param name="ct">Cancellation token.</param>
+        public async Task<DatasetCondition[]> ListConditionsAsync(string dataset, string startDateStr = null, string endDateStr = null, CancellationToken ct = default)
+        {
+            StringBuilder path = new StringBuilder("metadata.list_conditions?dataset=").Append(Uri.EscapeDataString(dataset));
+            if(!string.IsNullOrEmpty(startDateStr))
+            {
+                path.Append("&start_date=").Append(Uri.EscapeDataString(startDateStr));
+            }
+
+            if(!string.IsNullOrEmpty(endDateStr))
+            {
+                path.Append("&end_date=").Append(Uri.EscapeDataString(endDateStr));
+            }
+
+            string json = await this.GetRawJsonAsync(path.ToString(), ct).ConfigureAwait(false);
+
+            DatasetCondition[] results;
+            using(JsonDocument doc = JsonDocument.Parse(json))
+            {
+                JsonElement root = doc.RootElement;
+                if(root.ValueKind == JsonValueKind.Array)
+                {
+                    results = JsonSerializer.Deserialize<DatasetCondition[]>(json, RecordDeserializeOptions);
+                }
+                else if(root.ValueKind == JsonValueKind.Object)
+                {
+                    // Unwrap common envelope keys.
+                    DatasetCondition[] wrapped = null;
+                    foreach(string key in new[] { "result", "data", "items" })
+                    {
+                        JsonElement arr;
+                        if(root.TryGetProperty(key, out arr) && arr.ValueKind == JsonValueKind.Array)
+                        {
+                            wrapped = JsonSerializer.Deserialize<DatasetCondition[]>(arr.GetRawText(), RecordDeserializeOptions);
+                            break;
+                        }
+                    }
+
+                    results = wrapped;
+                }
+                else
+                {
+                    results = null;
+                }
+            }
+
+            if(results != null)
+            {
+                foreach(DatasetCondition c in results)
+                {
+                    if(c != null && c.Dataset == null)
+                    {
+                        c.Dataset = dataset;
+                    }
+                }
+            }
+
+            return results ?? Array.Empty<DatasetCondition>();
+        }
+
+        /// <summary>
+        /// Returns all daily data-quality conditions for <paramref name="dataset"/>,
+        /// optionally filtered to a date range.
+        /// </summary>
+        /// <param name="dataset">The dataset identifier.</param>
+        /// <param name="startDateStr">Optional ISO-8601 start date string (inclusive).</param>
+        /// <param name="endDateStr">Optional ISO-8601 end date string (exclusive).</param>
+        public DatasetCondition[] ListConditions(string dataset, string startDateStr = null, string endDateStr = null)
+            => this.ListConditionsAsync(dataset, startDateStr, endDateStr).GetAwaiter().GetResult();
+
+        /// <summary>
+        /// Returns the estimated record count for a query without transferring the actual data.
+        /// Useful for capacity planning and cost estimation before submitting a full request.
+        /// </summary>
+        /// <param name="dataset">The dataset identifier.</param>
+        /// <param name="symbols">Instrument symbols; pass <c>"ALL_SYMBOLS"</c> as the sole entry for the full dataset.</param>
+        /// <param name="schema">Schema identifier (e.g. <c>"trades"</c>).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param>
+        /// <param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public async Task<long> GetRecordCountAsync(string dataset, IReadOnlyList<string> symbols, string schema, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+        {
+            string path = BuildMetadataCountQuery("metadata.get_record_count", dataset, symbols, schema, startUtc, endUtc);
+            string json = await this.GetRawJsonAsync(path, ct).ConfigureAwait(false);
+            return JsonSerializer.Deserialize<long>(json, RecordDeserializeOptions);
+        }
+
+        /// <summary>
+        /// Returns the estimated record count for a query without transferring the actual data.
+        /// </summary>
+        /// <param name="dataset">The dataset identifier.</param>
+        /// <param name="symbols">Instrument symbols.</param>
+        /// <param name="schema">Schema identifier.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param>
+        /// <param name="endUtc">Exclusive range end (UTC).</param>
+        public long GetRecordCount(string dataset, IReadOnlyList<string> symbols, string schema, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetRecordCountAsync(dataset, symbols, schema, startUtc, endUtc).GetAwaiter().GetResult();
+
+        /// <summary>
+        /// Returns the billable uncompressed size in bytes for a query without transferring the actual data.
+        /// </summary>
+        /// <param name="dataset">The dataset identifier.</param>
+        /// <param name="symbols">Instrument symbols; pass <c>"ALL_SYMBOLS"</c> as the sole entry for the full dataset.</param>
+        /// <param name="schema">Schema identifier (e.g. <c>"trades"</c>).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param>
+        /// <param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public async Task<long> GetBillableSizeAsync(string dataset, IReadOnlyList<string> symbols, string schema, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+        {
+            string path = BuildMetadataCountQuery("metadata.get_billable_size", dataset, symbols, schema, startUtc, endUtc);
+            string json = await this.GetRawJsonAsync(path, ct).ConfigureAwait(false);
+            return JsonSerializer.Deserialize<long>(json, RecordDeserializeOptions);
+        }
+
+        /// <summary>
+        /// Returns the billable uncompressed size in bytes for a query without transferring the actual data.
+        /// </summary>
+        /// <param name="dataset">The dataset identifier.</param>
+        /// <param name="symbols">Instrument symbols.</param>
+        /// <param name="schema">Schema identifier.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param>
+        /// <param name="endUtc">Exclusive range end (UTC).</param>
+        public long GetBillableSize(string dataset, IReadOnlyList<string> symbols, string schema, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetBillableSizeAsync(dataset, symbols, schema, startUtc, endUtc).GetAwaiter().GetResult();
+
+        /// <summary>
+        /// Returns the estimated cost in USD for a query without transferring the actual data.
+        /// </summary>
+        /// <param name="dataset">The dataset identifier.</param>
+        /// <param name="symbols">Instrument symbols; pass <c>"ALL_SYMBOLS"</c> as the sole entry for the full dataset.</param>
+        /// <param name="schema">Schema identifier (e.g. <c>"trades"</c>).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param>
+        /// <param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public async Task<double> GetCostAsync(string dataset, IReadOnlyList<string> symbols, string schema, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+        {
+            string path = BuildMetadataCountQuery("metadata.get_cost", dataset, symbols, schema, startUtc, endUtc);
+            string json = await this.GetRawJsonAsync(path, ct).ConfigureAwait(false);
+            return JsonSerializer.Deserialize<double>(json, RecordDeserializeOptions);
+        }
+
+        /// <summary>
+        /// Returns the estimated cost in USD for a query without transferring the actual data.
+        /// </summary>
+        /// <param name="dataset">The dataset identifier.</param>
+        /// <param name="symbols">Instrument symbols.</param>
+        /// <param name="schema">Schema identifier.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param>
+        /// <param name="endUtc">Exclusive range end (UTC).</param>
+        public double GetCost(string dataset, IReadOnlyList<string> symbols, string schema, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetCostAsync(dataset, symbols, schema, startUtc, endUtc).GetAwaiter().GetResult();
+
         // ================================================================
         // Symbology
         // ================================================================
@@ -712,6 +871,286 @@ namespace Databento.CSharpApiClient
             => this.GetDefinitionsAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
 
         // ================================================================
+        // Timeseries — MBO
+        // ================================================================
+
+        /// <summary>Returns Market-by-Order (L3) records for a single symbol. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<MboRecordJson[]> GetMboAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, new[] { symbol }, Schema.Mbo, startUtc, endUtc, DeserializeMboJson, ct);
+
+        /// <summary>Returns Market-by-Order (L3) records for multiple symbols. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<MboRecordJson[]> GetMboAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, symbols, Schema.Mbo, startUtc, endUtc, DeserializeMboJson, ct);
+
+        /// <summary>Returns Market-by-Order (L3) records for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public MboRecordJson[] GetMbo(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetMboAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
+
+        /// <summary>Returns Market-by-Order (L3) records for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public MboRecordJson[] GetMbo(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetMboAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
+
+        // ================================================================
+        // Timeseries — MBP-10
+        // ================================================================
+
+        /// <summary>Returns Market-by-Price depth-10 records for a single symbol. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<Mbp10RecordJson[]> GetMbp10Async(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, new[] { symbol }, Schema.Mbp10, startUtc, endUtc, DeserializeMbp10Json, ct);
+
+        /// <summary>Returns Market-by-Price depth-10 records for multiple symbols. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<Mbp10RecordJson[]> GetMbp10Async(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, symbols, Schema.Mbp10, startUtc, endUtc, DeserializeMbp10Json, ct);
+
+        /// <summary>Returns Market-by-Price depth-10 records for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public Mbp10RecordJson[] GetMbp10(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetMbp10Async(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
+
+        /// <summary>Returns Market-by-Price depth-10 records for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public Mbp10RecordJson[] GetMbp10(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetMbp10Async(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
+
+        // ================================================================
+        // Timeseries — BBO (venue-local)
+        // ================================================================
+
+        /// <summary>Returns 1-second venue-local BBO snapshots for a single symbol.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public Task<BboRecordJson[]> GetBbo1sAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, new[] { symbol }, Schema.Bbo1Sec, startUtc, endUtc, DeserializeBboJson, ct);
+
+        /// <summary>Returns 1-minute venue-local BBO snapshots for a single symbol.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public Task<BboRecordJson[]> GetBbo1mAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, new[] { symbol }, Schema.Bbo1Min, startUtc, endUtc, DeserializeBboJson, ct);
+
+        /// <summary>Returns 1-second venue-local BBO snapshots for multiple symbols.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public Task<BboRecordJson[]> GetBbo1sAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, symbols, Schema.Bbo1Sec, startUtc, endUtc, DeserializeBboJson, ct);
+
+        /// <summary>Returns 1-minute venue-local BBO snapshots for multiple symbols.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public Task<BboRecordJson[]> GetBbo1mAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, symbols, Schema.Bbo1Min, startUtc, endUtc, DeserializeBboJson, ct);
+
+        /// <summary>Returns 1-second venue-local BBO snapshots for a single symbol.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public BboRecordJson[] GetBbo1s(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetBbo1sAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
+
+        /// <summary>Returns 1-minute venue-local BBO snapshots for a single symbol.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public BboRecordJson[] GetBbo1m(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetBbo1mAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
+
+        /// <summary>Returns 1-second venue-local BBO snapshots for multiple symbols.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public BboRecordJson[] GetBbo1s(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetBbo1sAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
+
+        /// <summary>Returns 1-minute venue-local BBO snapshots for multiple symbols.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public BboRecordJson[] GetBbo1m(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetBbo1mAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
+
+        // ================================================================
+        // Timeseries — TBBO (Trade + venue BBO)
+        // ================================================================
+
+        /// <summary>Returns Trade + venue BBO records for a single symbol. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<TbboRecordJson[]> GetTbboAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, new[] { symbol }, Schema.Tbbo, startUtc, endUtc, DeserializeTbboJson, ct);
+
+        /// <summary>Returns Trade + venue BBO records for multiple symbols. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<TbboRecordJson[]> GetTbboAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, symbols, Schema.Tbbo, startUtc, endUtc, DeserializeTbboJson, ct);
+
+        /// <summary>Returns Trade + venue BBO records for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public TbboRecordJson[] GetTbbo(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetTbboAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
+
+        /// <summary>Returns Trade + venue BBO records for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public TbboRecordJson[] GetTbbo(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetTbboAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
+
+        // ================================================================
+        // Timeseries — TCBBO (Trade + Consolidated BBO)
+        // ================================================================
+
+        /// <summary>Returns Trade + Consolidated BBO records for a single symbol. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<TcbboRecordJson[]> GetTcbboAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, new[] { symbol }, Schema.Tcbbo, startUtc, endUtc, DeserializeTcbboJson, ct);
+
+        /// <summary>Returns Trade + Consolidated BBO records for multiple symbols. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<TcbboRecordJson[]> GetTcbboAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, symbols, Schema.Tcbbo, startUtc, endUtc, DeserializeTcbboJson, ct);
+
+        /// <summary>Returns Trade + Consolidated BBO records for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public TcbboRecordJson[] GetTcbbo(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetTcbboAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
+
+        /// <summary>Returns Trade + Consolidated BBO records for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public TcbboRecordJson[] GetTcbbo(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetTcbboAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
+
+        // ================================================================
+        // Timeseries — CMBP-1 (Consolidated MBP depth-1)
+        // ================================================================
+
+        /// <summary>Returns Consolidated MBP depth-1 records for a single symbol. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<Cmbp1RecordJson[]> GetCmbp1Async(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, new[] { symbol }, Schema.Cmbp1, startUtc, endUtc, DeserializeCmbp1Json, ct);
+
+        /// <summary>Returns Consolidated MBP depth-1 records for multiple symbols. Filters on <c>ts_recv</c>.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<Cmbp1RecordJson[]> GetCmbp1Async(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, symbols, Schema.Cmbp1, startUtc, endUtc, DeserializeCmbp1Json, ct);
+
+        /// <summary>Returns Consolidated MBP depth-1 records for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public Cmbp1RecordJson[] GetCmbp1(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetCmbp1Async(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
+
+        /// <summary>Returns Consolidated MBP depth-1 records for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public Cmbp1RecordJson[] GetCmbp1(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetCmbp1Async(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
+
+        // ================================================================
+        // Timeseries — Status
+        // ================================================================
+
+        /// <summary>Returns trading-status / halt records for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<StatusRecordJson[]> GetStatusAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, new[] { symbol }, Schema.Status, startUtc, endUtc, DeserializeStatusJson, ct);
+
+        /// <summary>Returns trading-status / halt records for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<StatusRecordJson[]> GetStatusAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, symbols, Schema.Status, startUtc, endUtc, DeserializeStatusJson, ct);
+
+        /// <summary>Returns trading-status / halt records for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public StatusRecordJson[] GetStatus(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetStatusAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
+
+        /// <summary>Returns trading-status / halt records for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public StatusRecordJson[] GetStatus(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetStatusAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
+
+        // ================================================================
+        // Timeseries — Imbalance
+        // ================================================================
+
+        /// <summary>Returns auction imbalance records for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<ImbalanceRecordJson[]> GetImbalanceAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, new[] { symbol }, Schema.Imbalance, startUtc, endUtc, DeserializeImbalanceJson, ct);
+
+        /// <summary>Returns auction imbalance records for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<ImbalanceRecordJson[]> GetImbalanceAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, symbols, Schema.Imbalance, startUtc, endUtc, DeserializeImbalanceJson, ct);
+
+        /// <summary>Returns auction imbalance records for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public ImbalanceRecordJson[] GetImbalance(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetImbalanceAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
+
+        /// <summary>Returns auction imbalance records for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public ImbalanceRecordJson[] GetImbalance(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetImbalanceAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
+
+        // ================================================================
+        // Timeseries — SymbolMapping
+        // ================================================================
+
+        /// <summary>Returns symbol-mapping records for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<SymbolMappingRecordJson[]> GetSymbolMappingsAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, new[] { symbol }, Schema.SymbolMapping, startUtc, endUtc, DeserializeSymbolMappingJson, ct);
+
+        /// <summary>Returns symbol-mapping records for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        public Task<SymbolMappingRecordJson[]> GetSymbolMappingsAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.GetGenericRecordsAsync(dataset, symbols, Schema.SymbolMapping, startUtc, endUtc, DeserializeSymbolMappingJson, ct);
+
+        /// <summary>Returns symbol-mapping records for a single symbol.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public SymbolMappingRecordJson[] GetSymbolMappings(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetSymbolMappingsAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
+
+        /// <summary>Returns symbol-mapping records for multiple symbols.</summary>
+        /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public SymbolMappingRecordJson[] GetSymbolMappings(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.GetSymbolMappingsAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
+
+        // ================================================================
         // Core HTTP helpers (with retry)
         // ================================================================
 
@@ -943,6 +1382,35 @@ namespace Databento.CSharpApiClient
             return sb.ToString();
         }
 
+        private static string BuildMetadataCountQuery(
+            string endpoint,
+            string dataset,
+            IReadOnlyList<string> symbols,
+            string schema,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc)
+        {
+            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
+            if(symbols == null || symbols.Count == 0)
+            {
+                throw new ArgumentException("At least one symbol is required. Pass \"ALL_SYMBOLS\" explicitly to request the whole dataset.", nameof(symbols));
+            }
+
+            string start = startUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+            string end = endUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+            string symbolParam = string.Join(",", symbols);
+
+            StringBuilder sb = new StringBuilder();
+            sb.Append(endpoint);
+            sb.Append("?dataset=").Append(Uri.EscapeDataString(dataset));
+            sb.Append("&schema=").Append(Uri.EscapeDataString(schema));
+            sb.Append("&symbols=").Append(Uri.EscapeDataString(symbolParam));
+            sb.Append("&start=").Append(Uri.EscapeDataString(start));
+            sb.Append("&end=").Append(Uri.EscapeDataString(end));
+            sb.Append("&stype_in=").Append(Uri.EscapeDataString(SymbolTypes.RawSymbol));
+            return sb.ToString();
+        }
+
         // ================================================================
         // JSON-Lines / array deserializers
         // ================================================================
@@ -964,6 +1432,33 @@ namespace Databento.CSharpApiClient
 
         private static DefinitionRecordJson[] DeserializeDefinitionsJson(Stream stream, CancellationToken ct)
             => DeserializeJsonLines<DefinitionRecordJson>(stream, rec => rec?.Header != null, ct);
+
+        private static MboRecordJson[] DeserializeMboJson(Stream stream, CancellationToken ct)
+            => DeserializeJsonLines<MboRecordJson>(stream, rec => rec?.Header != null, ct);
+
+        private static Mbp10RecordJson[] DeserializeMbp10Json(Stream stream, CancellationToken ct)
+            => DeserializeJsonLines<Mbp10RecordJson>(stream, rec => rec?.Header != null, ct);
+
+        private static BboRecordJson[] DeserializeBboJson(Stream stream, CancellationToken ct)
+            => DeserializeJsonLines<BboRecordJson>(stream, rec => rec?.Header != null, ct);
+
+        private static TbboRecordJson[] DeserializeTbboJson(Stream stream, CancellationToken ct)
+            => DeserializeJsonLines<TbboRecordJson>(stream, rec => rec?.Header != null, ct);
+
+        private static TcbboRecordJson[] DeserializeTcbboJson(Stream stream, CancellationToken ct)
+            => DeserializeJsonLines<TcbboRecordJson>(stream, rec => rec?.Header != null, ct);
+
+        private static Cmbp1RecordJson[] DeserializeCmbp1Json(Stream stream, CancellationToken ct)
+            => DeserializeJsonLines<Cmbp1RecordJson>(stream, rec => rec?.Header != null, ct);
+
+        private static StatusRecordJson[] DeserializeStatusJson(Stream stream, CancellationToken ct)
+            => DeserializeJsonLines<StatusRecordJson>(stream, rec => rec?.Header != null, ct);
+
+        private static ImbalanceRecordJson[] DeserializeImbalanceJson(Stream stream, CancellationToken ct)
+            => DeserializeJsonLines<ImbalanceRecordJson>(stream, rec => rec?.Header != null, ct);
+
+        private static SymbolMappingRecordJson[] DeserializeSymbolMappingJson(Stream stream, CancellationToken ct)
+            => DeserializeJsonLines<SymbolMappingRecordJson>(stream, rec => rec?.Header != null, ct);
 
         private static T[] DeserializeJsonLines<T>(Stream stream, Func<T, bool> isValid, CancellationToken ct)
         {

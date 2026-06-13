@@ -30,14 +30,21 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         /// <param name="reader">Reader positioned at the start of the level.</param>
         public static Mbp1LevelDbn ReadFromBytes(BinaryReader reader)
         {
-            Mbp1LevelDbn level = new Mbp1LevelDbn();
-            level.BidPrice = Utils.NanoToDouble(reader.ReadInt64());
-            level.AskPrice = Utils.NanoToDouble(reader.ReadInt64());
-            level.BidSize = reader.ReadUInt32();
-            level.AskSize = reader.ReadUInt32();
-            level.BidCount = reader.ReadUInt32();
-            level.AskCount = reader.ReadUInt32();
-            return level;
+            try
+            {
+                Mbp1LevelDbn level = new Mbp1LevelDbn();
+                level.BidPrice = Utils.NanoToDouble(reader.ReadInt64());
+                level.AskPrice = Utils.NanoToDouble(reader.ReadInt64());
+                level.BidSize = reader.ReadUInt32();
+                level.AskSize = reader.ReadUInt32();
+                level.BidCount = reader.ReadUInt32();
+                level.AskCount = reader.ReadUInt32();
+                return level;
+            }
+            catch(System.IO.EndOfStreamException)
+            {
+                throw new System.IO.InvalidDataException("Truncated DBN BBO level.");
+            }
         }
     }
 }

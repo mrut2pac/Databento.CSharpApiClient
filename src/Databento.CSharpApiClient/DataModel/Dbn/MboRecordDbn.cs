@@ -83,7 +83,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                     body.ReadByte();  // _pad
                     record.ChannelId = body.ReadUInt16();
                     record.Action    = (OrderBookAction)body.ReadByte();
-                    record.Side      = ReadSide(body.ReadByte());
+                    record.Side      = Utils.ReadSide(body.ReadByte());
                     body.ReadBytes(6); // _pad (align ts_recv to 8 bytes)
                     record.TsReceivedUtc = Utils.FromUnixNs(body.ReadUInt64()).UtcDateTime;
                     record.TsInDelta  = body.ReadInt32();
@@ -98,14 +98,5 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             }
         }
 
-        private static TradeAggressor ReadSide(byte side)
-        {
-            switch((char)side)
-            {
-                case 'A': return TradeAggressor.Seller;
-                case 'B': return TradeAggressor.Buyer;
-                default:  return TradeAggressor.None;
-            }
-        }
     }
 }

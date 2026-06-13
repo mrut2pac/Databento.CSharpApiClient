@@ -1014,14 +1014,14 @@ namespace Databento.CSharpApiClient
                     symbolList.Append(',');
                 }
 
-                symbolList.Append(symbols[i]);
+                symbolList.Append(Uri.EscapeDataString(symbols[i]));
             }
 
             StringBuilder sb = new StringBuilder();
             sb.Append("timeseries.get_range");
             sb.Append("?dataset=").Append(Uri.EscapeDataString(dataset));
             sb.Append("&schema=").Append(Uri.EscapeDataString(schema));
-            sb.Append("&symbols=").Append(Uri.EscapeDataString(symbolList.ToString()));
+            sb.Append("&symbols=").Append(symbolList);
             sb.Append("&start=").Append(Uri.EscapeDataString(start));
             sb.Append("&end=").Append(Uri.EscapeDataString(end));
             sb.Append("&stype_in=").Append(Uri.EscapeDataString(stypeIn ?? "raw_symbol"));

@@ -441,6 +441,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
                 Cmbp1RecordDbn[] records = await client.GetCmbp1Async(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
                 Assert.NotNull(records);
                 Assert.NotEmpty(records);
+                Assert.True(records[0].Level.BidPrice > 0 || records[0].Level.AskPrice > 0, "expected at least one level price to be non-zero");
             }
             catch(DatabentoHttpException ex) { SkipIfNoLicense(ex); throw; }
         }
@@ -607,6 +608,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
                 StatisticsRecordDbn[] records = await client.GetStatisticsAsync(Datasets.XnasItch, "SPY", start, end);
                 Assert.NotNull(records);
                 Assert.NotEmpty(records);
+                Assert.True(records[0].StatType > 0 || records[0].Price > 0, "expected at least one decoded field to be non-zero");
             }
             catch(DatabentoHttpException ex) { SkipIfNoLicense(ex); throw; }
         }
@@ -696,6 +698,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
                 StatusRecordDbn[] records = await client.GetStatusAsync(Datasets.XnasItch, "SPY", start, end);
                 Assert.NotNull(records);
                 Assert.NotEmpty(records);
+                Assert.True(records[0].TsReceivedUtc > default(DateTime), "expected ts_recv to be decoded");
             }
             catch(DatabentoHttpException ex) { SkipIfNoLicense(ex); throw; }
         }
@@ -740,6 +743,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
                 ImbalanceRecordDbn[] records = await client.GetImbalanceAsync(Datasets.XnasItch, "SPY", start, end);
                 Assert.NotNull(records);
                 Assert.NotEmpty(records);
+                Assert.True(records[0].PairedQty > 0 || records[0].TotalImbalanceQty > 0, "expected at least one quantity field to be non-zero");
             }
             catch(DatabentoHttpException ex) { SkipIfNoLicense(ex); throw; }
         }

@@ -90,6 +90,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                     record.ChannelId   = body.ReadUInt16();
                     record.UpdateAction = body.ReadByte();
                     record.StatFlags   = (MessageInfoBits)body.ReadByte();
+                    body.ReadBytes(2); // _reserved
                 }
 
                 return record;

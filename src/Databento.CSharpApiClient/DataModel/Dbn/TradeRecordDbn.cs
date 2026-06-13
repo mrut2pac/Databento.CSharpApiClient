@@ -37,13 +37,13 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         public MessageInfoBits Flags { get; set; }
 
         /// <summary>Price level at which the trade occurred (usually 0).</summary>
-        public uint Depth { get; set; }
+        public byte Depth { get; set; }
 
         /// <summary>Timestamp when the gateway received this message, in UTC.</summary>
         public DateTime TsReceivedUtc { get; set; }
 
         /// <summary>Nanosecond latency delta from venue receipt to gateway receipt.</summary>
-        public long TsInDelta { get; set; }
+        public int TsInDelta { get; set; }
 
         /// <summary>Venue sequence number for ordering within the same nanosecond.</summary>
         public uint Sequence { get; set; }
@@ -72,7 +72,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                     record.Price = Utils.NanoToDouble(body.ReadInt64());
                     record.Size = body.ReadUInt32();
                     record.Action = (OrderBookAction)body.ReadByte();
-                    record.Side = ReadSide(body.ReadByte());
+                    record.Side = Utils.ReadSide(body.ReadByte());
                     record.Flags = (MessageInfoBits)body.ReadByte();
                     record.Depth = body.ReadByte();
                     record.TsReceivedUtc = Utils.FromUnixNs(body.ReadUInt64()).UtcDateTime;
@@ -88,14 +88,5 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             }
         }
 
-        private static TradeAggressor ReadSide(byte side)
-        {
-            switch((char)side)
-            {
-                case 'A': return TradeAggressor.Seller;
-                case 'B': return TradeAggressor.Buyer;
-                default: return TradeAggressor.None;
-            }
-        }
     }
 }

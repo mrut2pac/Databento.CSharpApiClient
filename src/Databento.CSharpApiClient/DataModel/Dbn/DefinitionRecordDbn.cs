@@ -72,12 +72,12 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
 
         /// <summary>
         /// Single-character instrument class: 'F' futures, 'C' call option, 'P' put option,
-        /// 'K' FX forward, 'S' stock, 'M' mixed spread.
+        /// 'K' FX forward, 'S' stock, 'M' mixed spread. <see langword="null"/> when not set.
         /// </summary>
-        public string InstrumentClass { get; set; }
+        public char? InstrumentClass { get; set; }
 
-        /// <summary>Action that caused this definition message: "A" add, "M" modify, "D" delete.</summary>
-        public string Action { get; set; }
+        /// <summary>Action that caused this definition message: 'A' add, 'M' modify, 'D' delete. <see langword="null"/> when not set.</summary>
+        public char? Action { get; set; }
 
         /// <summary>
         /// Deserialises a definition record body from <paramref name="reader"/> using the
@@ -172,10 +172,10 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             return end == 0 ? string.Empty : Encoding.ASCII.GetString(buf, 0, end);
         }
 
-        private static string ReadChar(BinaryReader r)
+        private static char? ReadChar(BinaryReader r)
         {
             byte b = r.ReadByte();
-            return b == 0 ? string.Empty : ((char)b).ToString();
+            return b == 0 ? (char?)null : (char)b;
         }
     }
 }

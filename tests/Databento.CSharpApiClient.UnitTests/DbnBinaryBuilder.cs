@@ -107,7 +107,7 @@ namespace Databento.CSharpApiClient.UnitTests
             using(MemoryStream ms = new MemoryStream())
             using(BinaryWriter w = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
             {
-                WriteMetadata(w, schema: 0x00 /*Mbo*/);
+                WriteMetadata(w, schema: 0xA0 /*Mbo*/);
                 foreach(MboSeed rec in records)
                     WriteMboRecord(w, rec);
                 w.Flush();
@@ -121,7 +121,7 @@ namespace Databento.CSharpApiClient.UnitTests
             using(MemoryStream ms = new MemoryStream())
             using(BinaryWriter w = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
             {
-                WriteMetadata(w, schema: 0x02 /*Mbp10*/);
+                WriteMetadata(w, schema: 0x0A /*Mbp10*/);
                 foreach(Mbp10Seed rec in records)
                     WriteMbp10Record(w, rec);
                 w.Flush();
@@ -135,7 +135,7 @@ namespace Databento.CSharpApiClient.UnitTests
             using(MemoryStream ms = new MemoryStream())
             using(BinaryWriter w = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
             {
-                WriteMetadata(w, schema: 0x12 /*Bbo1S*/);
+                WriteMetadata(w, schema: rtype);
                 foreach(BboSeed rec in records)
                     WriteBboRecord(w, rtype, rec);
                 w.Flush();
@@ -163,7 +163,7 @@ namespace Databento.CSharpApiClient.UnitTests
             using(MemoryStream ms = new MemoryStream())
             using(BinaryWriter w = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
             {
-                WriteMetadata(w, schema: 0x11 /*Tcbbo*/);
+                WriteMetadata(w, schema: 0xC2 /*Tcbbo*/);
                 foreach(TcbboSeed rec in records)
                     WriteTcbboRecord(w, 0xC2 /*Tcbbo*/, rec);
                 w.Flush();
@@ -177,7 +177,7 @@ namespace Databento.CSharpApiClient.UnitTests
             using(MemoryStream ms = new MemoryStream())
             using(BinaryWriter w = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
             {
-                WriteMetadata(w, schema: 0x0E /*Cmbp1*/);
+                WriteMetadata(w, schema: 0xB1 /*Cmbp1*/);
                 foreach(TcbboSeed rec in records)
                     WriteTcbboRecord(w, 0xB1 /*Cmbp1*/, rec);
                 w.Flush();
@@ -191,7 +191,7 @@ namespace Databento.CSharpApiClient.UnitTests
             using(MemoryStream ms = new MemoryStream())
             using(BinaryWriter w = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
             {
-                WriteMetadata(w, schema: 0x05 /*Ohlcv1S*/);
+                WriteMetadata(w, schema: rtype);
                 foreach(OhlcvSeed rec in records)
                     WriteOhlcvRecord(w, rtype, rec);
                 w.Flush();
@@ -205,7 +205,7 @@ namespace Databento.CSharpApiClient.UnitTests
             using(MemoryStream ms = new MemoryStream())
             using(BinaryWriter w = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
             {
-                WriteMetadata(w, schema: 0x0A /*Statistics*/);
+                WriteMetadata(w, schema: 0x18 /*Statistics*/);
                 foreach(StatisticsSeed rec in records)
                     WriteStatisticsRecord(w, rec);
                 w.Flush();
@@ -219,7 +219,7 @@ namespace Databento.CSharpApiClient.UnitTests
             using(MemoryStream ms = new MemoryStream())
             using(BinaryWriter w = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
             {
-                WriteMetadata(w, schema: 0x0B /*Status*/);
+                WriteMetadata(w, schema: 0x12 /*Status*/);
                 foreach(StatusSeed rec in records)
                     WriteStatusRecord(w, rec);
                 w.Flush();
@@ -233,7 +233,7 @@ namespace Databento.CSharpApiClient.UnitTests
             using(MemoryStream ms = new MemoryStream())
             using(BinaryWriter w = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
             {
-                WriteMetadata(w, schema: 0x0C /*Imbalance*/);
+                WriteMetadata(w, schema: 0x14 /*Imbalance*/);
                 foreach(ImbalanceSeed rec in records)
                     WriteImbalanceRecord(w, rec);
                 w.Flush();

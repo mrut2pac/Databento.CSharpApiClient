@@ -102,6 +102,16 @@ namespace Databento.CSharpApiClient
             }
         }
 
+        internal static TradeAggressor ReadSide(byte side)
+        {
+            switch((char)side)
+            {
+                case 'A': return TradeAggressor.Seller;
+                case 'B': return TradeAggressor.Buyer;
+                default:  return TradeAggressor.None;
+            }
+        }
+
         public static MessageInfoBits ParseFlags(string s)
         {
             if(string.IsNullOrEmpty(s) || !byte.TryParse(s, out byte value))

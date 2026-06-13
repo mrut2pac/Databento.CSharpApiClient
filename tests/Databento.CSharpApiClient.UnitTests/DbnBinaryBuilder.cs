@@ -467,7 +467,7 @@ namespace Databento.CSharpApiClient.UnitTests
         private static void WriteTbboRecord(BinaryWriter w, TbboSeed rec)
         {
             w.Write((byte)(TbboRecordBytes / 4));   // length_byte = 20
-            w.Write((byte)0x03);                    // rtype = Tbbo
+            w.Write((byte)0x01);                    // rtype = Mbp1 (TBBO schema sends Mbp1 rtype)
             w.Write(rec.PublisherId);
             w.Write(rec.InstrumentId);
             w.Write(DateTimeOffsetToNs(rec.TsEvent));

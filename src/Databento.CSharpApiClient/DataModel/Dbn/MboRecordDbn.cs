@@ -6,7 +6,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
     /// <summary>
     /// A Market-by-Order (Level 3) record deserialized from a DBN binary stream.
     /// Schema: <c>mbo</c> — rtype <c>Mbo</c> (0xA0).
-    /// Record body is 48 bytes; total record = 64 bytes (length_byte = 16).
+    /// DBN v2 body is 48 bytes (total 64, length_byte = 16); DBN v1 body is 40 bytes (total 56, length_byte = 14).
     /// </summary>
     public sealed class MboRecordDbn
     {
@@ -73,21 +73,33 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                 using(System.IO.MemoryStream ms = new System.IO.MemoryStream(bodyBytes, writable: false))
                 using(BinaryReader body = new BinaryReader(ms))
                 {
-                    // Layout (48 bytes):
-                    // order_id(8) + price(8) + size(4) + flags(1) + _pad(1) + channel_id(2)
-                    // + action(1) + side(1) + _pad(6) + ts_recv(8) + ts_in_delta(4) + sequence(4)
-                    record.OrderId   = body.ReadUInt64();
-                    record.Price     = Utils.NanoToDouble(body.ReadInt64());
-                    record.Size      = body.ReadUInt32();
-                    record.Flags     = (MessageInfoBits)body.ReadByte();
-                    body.ReadByte();  // _pad
-                    record.ChannelId = body.ReadUInt16();
-                    record.Action    = (OrderBookAction)body.ReadByte();
-                    record.Side      = Utils.ReadSide(body.ReadByte());
-                    body.ReadBytes(6); // _pad (align ts_recv to 8 bytes)
+                    record.OrderId = body.ReadUInt64();
+                    record.Price   = Utils.NanoToDouble(body.ReadInt64());
+                    record.Size    = body.ReadUInt32();
+                    record.Flags   = (MessageInfoBits)body.ReadByte();
+
+                    if(bodyBytes.Length >= 48)
+                    {
+                        // DBN v2 layout (48-byte body):
+                        // flags(1) + _pad(1) + channel_id(2) + action(1) + side(1) + _pad(6) + ts_recv(8) + ts_in_delta(4) + sequence(4)
+                        body.ReadByte();  // _pad
+                        record.ChannelId = body.ReadUInt16();
+                        record.Action    = (OrderBookAction)body.ReadByte();
+                        record.Side      = Utils.ReadSide(body.ReadByte());
+                        body.ReadBytes(6); // _pad (align ts_recv to 8 bytes)
+                    }
+                    else
+                    {
+                        // DBN v1 layout (40-byte body): no channel_id, flags + action + side + _reserved(1)
+                        // ts_recv falls naturally on an 8-byte boundary at body offset 24.
+                        record.Action = (OrderBookAction)body.ReadByte();
+                        record.Side   = Utils.ReadSide(body.ReadByte());
+                        body.ReadByte(); // _reserved (alignment pad)
+                    }
+
                     record.TsReceivedUtc = Utils.FromUnixNs(body.ReadUInt64()).UtcDateTime;
-                    record.TsInDelta  = body.ReadInt32();
-                    record.Sequence   = body.ReadUInt32();
+                    record.TsInDelta     = body.ReadInt32();
+                    record.Sequence      = body.ReadUInt32();
                 }
 
                 return record;

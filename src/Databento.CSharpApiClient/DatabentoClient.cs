@@ -1217,7 +1217,9 @@ namespace Databento.CSharpApiClient
                         break;
                     }
 
-                    if(header.RecordType != RType.Tbbo)
+                    // TBBO schema sends records with rtype = Mbp1 (0x01), sharing the
+                    // MBP-1 binary layout (trade event + top-of-book level).
+                    if(header.RecordType != RType.Mbp1)
                     {
                         throw new InvalidDataException(
                             string.Format(CultureInfo.InvariantCulture,

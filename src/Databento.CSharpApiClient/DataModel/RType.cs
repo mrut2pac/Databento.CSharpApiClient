@@ -15,7 +15,11 @@ namespace Databento.CSharpApiClient.DataModel
         /// <summary>Market-by-price depth-10 record (<c>mbp-10</c>).</summary>
         Mbp10 = 0x0A,
 
-        /// <summary>Trade plus venue BBO snapshot (<c>tbbo</c> schema).</summary>
+        /// <summary>
+        /// Trade plus venue BBO snapshot (<c>tbbo</c> schema).
+        /// Note: the live Databento API sends TBBO records with rtype <see cref="Mbp1"/> (0x01),
+        /// sharing the MBP-1 binary layout.
+        /// </summary>
         Tbbo = 0x03,
 
         /// <summary>Deprecated OHLCV record type. Use <see cref="Ohlcv1S"/>–<see cref="OhlcvEod"/> instead.</summary>

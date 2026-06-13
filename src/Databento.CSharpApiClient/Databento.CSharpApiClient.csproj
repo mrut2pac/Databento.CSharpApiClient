@@ -18,7 +18,14 @@
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>
+v1.2.0: Complete DBN binary and JSON API coverage for all Databento Historical API schemas
+(MBO, MBP-10, BBO-1s/1m, TBBO, TCBBO, CMBP-1, Status, Imbalance, Statistics, Definitions,
+Symbol Mapping). Adaptive MBO v1/v2 body layout. Fix TBBO rtype check. See CHANGELOG.md.
+    </PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

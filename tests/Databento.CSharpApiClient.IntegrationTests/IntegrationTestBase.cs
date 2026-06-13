@@ -34,16 +34,20 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         /// <summary>
-        /// Skips the test when the exception indicates a missing data subscription.
-        /// Call in a catch block around calls that may fail with 403 or when the
+        /// Skips the test when the exception indicates a missing data subscription,
+        /// an endpoint that is not available on the current account, or a schema that
+        /// the JSON timeseries API does not support (e.g. <c>symbol_mapping</c>).
+        /// Call in a catch block around calls that may fail with 403/404 or when the
         /// schema is not available on the current subscription tier.
         /// </summary>
         protected static void SkipIfNoLicense(DatabentoHttpException ex)
         {
             Skip.If(
                 ex.StatusCode == 403
+                    || ex.StatusCode == 404
                     || ex.ErrorCase == "license_not_found_unauthorized"
-                    || ex.ErrorCase == "dataset_schema_not_supported",
+                    || ex.ErrorCase == "dataset_schema_not_supported"
+                    || (ex.ErrorCase == "validation_invalid_parameter" && ex.Message.Contains("schema")),
                 "Skipped — dataset/schema not available on this subscription: " + ex.Message);
         }
 

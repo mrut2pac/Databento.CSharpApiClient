@@ -5,11 +5,13 @@
 
 Pure-managed C# HTTP client for the [Databento Historical API](https://databento.com/docs/api-reference-historical).
 
-- Timeseries streaming: DBN binary (CBBO, Trades, MBP-1) and JSON (CBBO, OHLCV, Trades, MBP-1, Definitions, Statistics)
-- Metadata: datasets, schemas, fields, publishers, unit prices, conditions, date ranges
+- Timeseries streaming: DBN binary and JSON — full schema coverage (MBO, MBP-1/10, CBBO, BBO, TBBO, TCBBO, CMBP-1, Trades, OHLCV, Status, Imbalance, Statistics, Definitions, Symbol Mapping)
+- Metadata: datasets, schemas, fields, publishers, unit prices, conditions, date ranges, record count, cost
 - Symbology: symbol resolution across SType encodings
 - Batch jobs: submit, list, download files
 - Retry / backoff: exponential + equal jitter, honours `Retry-After`, configurable via `DatabentoOptions`
+
+See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
 ## Installation
 

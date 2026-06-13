@@ -22,9 +22,21 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
-v1.2.0: Complete DBN binary and JSON API coverage for all Databento Historical API schemas
-(MBO, MBP-10, BBO-1s/1m, TBBO, TCBBO, CMBP-1, Status, Imbalance, Statistics, Definitions,
-Symbol Mapping). Adaptive MBO v1/v2 body layout. Fix TBBO rtype check. See CHANGELOG.md.
+v1.2.0 — 2026-06-13
+
+Added
+- DatabentoJsonClient: full Historical API JSON coverage — new schemas: mbo, mbp-10,
+  bbo-1s, bbo-1m, tbbo, tcbbo, cmbp-1, status, imbalance, symbol_mapping; new metadata
+  endpoints: list_conditions, get_record_count, get_billable_size, get_cost.
+- DatabentoClient (DBN binary): full schema coverage — MboRecordDbn, Mbp10RecordDbn,
+  TbboRecordDbn, TcbboRecordDbn, Cmbp1RecordDbn, BboRecordDbn, StatusRecordDbn,
+  ImbalanceRecordDbn, StatisticsRecordDbn, DefinitionRecordDbn, SymbolMappingRecordDbn.
+- Adaptive MBO body layout: handles DBN v1 (40-byte, no channel_id) and v2 (48-byte).
+
+Fixed
+- TBBO decoder now accepts rtype 0x01 (Mbp1) as sent by the live Databento API.
+
+Full history: https://github.com/mrut2pac/Databento.CSharpApiClient/blob/main/CHANGELOG.md
     </PackageReleaseNotes>
   </PropertyGroup>
 

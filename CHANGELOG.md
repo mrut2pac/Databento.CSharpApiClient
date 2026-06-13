@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-06-13
+
+### Changed
+- README updated to reflect full v1.2.0 schema coverage
+- NuGet `PackageReleaseNotes` expanded to the full v1.2.0 Added/Fixed entries
+
 ## [1.2.0] - 2026-06-13
 
 ### Added
@@ -48,7 +54,8 @@ Initial release.
 - HTTP retry with exponential back-off and jitter
 - Zero external dependencies — pure `System.Text.Json` on .NET 8+
 
-[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.0.0...v1.0.1

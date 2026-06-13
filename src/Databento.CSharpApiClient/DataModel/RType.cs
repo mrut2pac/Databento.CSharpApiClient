@@ -15,6 +15,9 @@ namespace Databento.CSharpApiClient.DataModel
         /// <summary>Market-by-price depth-10 record (<c>mbp-10</c>).</summary>
         Mbp10 = 0x0A,
 
+        /// <summary>Trade plus venue BBO snapshot (<c>tbbo</c> schema).</summary>
+        Tbbo = 0x03,
+
         /// <summary>Deprecated OHLCV record type. Use <see cref="Ohlcv1S"/>–<see cref="OhlcvEod"/> instead.</summary>
         OhlcvDeprecated = 0x11,
 

@@ -207,6 +207,37 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Assert.NotEmpty(records);
         }
 
+        // Regression for issue #19: a 1-DTE option whose CBBO records carry string-encoded prices
+        // (e.g. "price":"4.000000000") previously deserialized to ZERO records, because the numeric
+        // DTO fields could not read from a JSON string and the per-line parse error was silently
+        // swallowed. The byte-identical HTTP request returns ~405 records for this window.
+        [SkippableFact]
+        public async Task GetCbbo1m_SpxwOption_StringEncodedPrices_ReturnsRecords()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2023, 11, 8, 5, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2023, 11, 9, 4, 59, 59, TimeSpan.Zero);
+
+            CbboRecordJson[] records;
+            try
+            {
+                records = await client.GetCbbo1mAsync(Datasets.OpraPillar, "SPXW  231109P04350000", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(records);
+            Assert.NotEmpty(records);
+            // Prove a record actually decoded its prices (the regression dropped records entirely);
+            // every CBBO record carries a two-sided quote in its level.
+            Assert.Contains(records, r => r.Level1 != null && r.Level1.BidPrice > 0);
+        }
+
         [SkippableFact]
         public async Task GetCbbo1m_MultiSymbol_ReturnsRecords()
         {

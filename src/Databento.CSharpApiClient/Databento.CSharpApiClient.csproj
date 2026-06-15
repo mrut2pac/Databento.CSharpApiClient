@@ -9,10 +9,19 @@
     <NoWarn>$(NoWarn);CS1734</NoWarn>
     <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
 
+    <!-- Debug symbols + Source Link: ship a .snupkg so consumers can step into the source. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <DebugType>portable</DebugType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>1.2.1</Version>
+    <Version>1.2.2</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
@@ -22,6 +31,18 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
+v1.2.2 — 2026-06-15
+
+Fixed
+- JSON client returned zero records for responses whose numeric fields are string-encoded
+  (pretty_px=true, e.g. "price":"4.000000000"): such values now read into the numeric DTO
+  properties via JsonNumberHandling.AllowReadingFromString.
+- A record that fails to deserialize now throws DatabentoException instead of being silently
+  dropped, so a parse failure can no longer masquerade as an empty result.
+
+Added
+- Symbol package (.snupkg) + Source Link for step-into debugging.
+
 v1.2.1 — 2026-06-13 (docs/metadata update; no API changes)
 See v1.2.0 below for the full feature release.
 
@@ -45,6 +66,10 @@ Full history: https://github.com/mrut2pac/Databento.CSharpApiClient/blob/main/CH
 
   <ItemGroup>
     <None Include="..\..\README.md" Pack="true" PackagePath="\" Condition="Exists('..\..\README.md')" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

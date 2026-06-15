@@ -385,5 +385,47 @@ namespace Databento.CSharpApiClient.UnitTests
             await Assert.ThrowsExceptionAsync<DatabentoHttpException>(() =>
                 client.GetMboAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd));
         }
+
+        // =====================================================================
+        // Error: an unparseable record throws instead of being silently dropped
+        // =====================================================================
+
+        [TestMethod]
+        public async Task GetCbbo1mAsync_UnparseableRecord_ThrowsDatabentoException()
+        {
+            // A record whose numeric field cannot be parsed is a real error, not "no data". It must
+            // surface as an exception rather than being silently skipped, which previously caused the
+            // client to return zero rows for responses that actually contained data.
+            string json = "{" + MakeHeader(rtype: 193) + ",\"side\":\"N\",\"price\":\"not_a_number\",\"size\":1,\"flags\":200}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+
+            await Assert.ThrowsExceptionAsync<DatabentoException>(() =>
+                client.GetCbbo1mAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd));
+        }
+
+        // =====================================================================
+        // Regression: string-encoded numeric fields parse (offline, runs in CI)
+        // =====================================================================
+
+        [TestMethod]
+        public async Task GetCbbo1mAsync_StringEncodedPrice_ParsesIntoNumericField()
+        {
+            // The headline regression (#19): with pretty_px=true the API returns prices as JSON
+            // strings ("price":"4.000000000"). They must read into the numeric DTO properties and the
+            // record must survive — previously the whole response collapsed to zero records.
+            string level = "{\"bid_px\":\"3.700000000\",\"ask_px\":\"3.900000000\",\"bid_sz\":185,\"ask_sz\":147,\"bid_pb\":0,\"ask_pb\":0}";
+            string json = "{" + MakeHeader(rtype: 193) + ",\"side\":\"N\",\"price\":\"4.000000000\",\"size\":18,\"flags\":200,"
+                + "\"ts_recv\":\"2023-11-08T14:31:00.000000000Z\",\"levels\":[" + level + "]}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            CbboRecordJson[] records = await client.GetCbbo1mAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
+
+            Assert.AreEqual(1, records.Length);
+            Assert.IsTrue(records[0].Price.HasValue);
+            Assert.AreEqual(4.0, records[0].Price.Value);
+            Assert.IsNotNull(records[0].Level1);
+            Assert.AreEqual(3.7, records[0].Level1.BidPrice);
+        }
     }
 }

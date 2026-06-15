@@ -233,6 +233,9 @@ namespace Databento.CSharpApiClient.IntegrationTests
 
             Assert.NotNull(records);
             Assert.NotEmpty(records);
+            // Prove a record actually decoded its prices (the regression dropped records entirely);
+            // every CBBO record carries a two-sided quote in its level.
+            Assert.Contains(records, r => r.Level1 != null && r.Level1.BidPrice > 0);
         }
 
         [SkippableFact]

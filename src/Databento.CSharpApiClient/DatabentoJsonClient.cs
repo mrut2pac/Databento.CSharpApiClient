@@ -1511,11 +1511,12 @@ namespace Databento.CSharpApiClient
                         {
                             item = JsonSerializer.Deserialize<T>(line, RecordDeserializeOptions);
                         }
-                        catch(JsonException ex)
+                        catch(Exception ex) when(ex is JsonException or FormatException or OverflowException or NotSupportedException)
                         {
                             // A record that fails to parse is a real error, not "no data". Swallowing it
                             // here previously returned zero rows for responses that actually contained
                             // data (e.g. string-encoded numeric fields), so surface it to the caller.
+                            // A custom converter may throw Format/Overflow rather than JsonException.
                             throw new DatabentoException(
                                 string.Format(
                                     CultureInfo.InvariantCulture,

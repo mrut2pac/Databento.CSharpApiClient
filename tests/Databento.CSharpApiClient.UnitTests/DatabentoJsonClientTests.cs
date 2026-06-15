@@ -385,5 +385,23 @@ namespace Databento.CSharpApiClient.UnitTests
             await Assert.ThrowsExceptionAsync<DatabentoHttpException>(() =>
                 client.GetMboAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd));
         }
+
+        // =====================================================================
+        // Error: an unparseable record throws instead of being silently dropped
+        // =====================================================================
+
+        [TestMethod]
+        public async Task GetCbbo1mAsync_UnparseableRecord_ThrowsDatabentoException()
+        {
+            // A record whose numeric field cannot be parsed is a real error, not "no data". It must
+            // surface as an exception rather than being silently skipped, which previously caused the
+            // client to return zero rows for responses that actually contained data.
+            string json = "{" + MakeHeader(rtype: 193) + ",\"side\":\"N\",\"price\":\"not_a_number\",\"size\":1,\"flags\":200}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+
+            await Assert.ThrowsExceptionAsync<DatabentoException>(() =>
+                client.GetCbbo1mAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd));
+        }
     }
 }

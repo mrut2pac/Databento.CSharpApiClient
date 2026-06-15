@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,6 +38,10 @@ namespace Databento.CSharpApiClient
         private static readonly JsonSerializerOptions RecordDeserializeOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
+            // The Historical API serialises numeric fields as JSON strings when pretty_px=true
+            // (e.g. "price":"4.000000000", "bid_px":"3.700000000"); read those into the numeric DTO
+            // properties instead of throwing on the string token.
+            NumberHandling = JsonNumberHandling.AllowReadingFromString,
         };
 
         /// <summary>
@@ -1466,10 +1471,10 @@ namespace Databento.CSharpApiClient
 
             using(StreamReader sr = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 64 * 1024, leaveOpen: false))
             {
-                int peek;
-                do { peek = sr.Peek(); } while(peek == ' ' || peek == '\t' || peek == '\r' || peek == '\n');
-
-                if(peek == '[')
+                // A JSON array document starts with '['; anything else is treated as newline-delimited
+                // JSON (the timeseries encoding). Peek does not consume, so either branch still reads
+                // from the start of the stream.
+                if(sr.Peek() == '[')
                 {
                     string json = sr.ReadToEnd();
                     List<T> arr = JsonSerializer.Deserialize<List<T>>(json, RecordDeserializeOptions);
@@ -1488,10 +1493,15 @@ namespace Databento.CSharpApiClient
                 else
                 {
                     string line;
+                    long lineNumber = 0;
                     while((line = sr.ReadLine()) != null)
                     {
                         ct.ThrowIfCancellationRequested();
-                        if(string.IsNullOrWhiteSpace(line) || line[0] != '{')
+                        lineNumber++;
+
+                        // A blank separator line (e.g. a trailing newline) is legal in JSONL and carries
+                        // no record. Any non-blank line is expected to be a complete record object.
+                        if(string.IsNullOrWhiteSpace(line))
                         {
                             continue;
                         }
@@ -1501,9 +1511,19 @@ namespace Databento.CSharpApiClient
                         {
                             item = JsonSerializer.Deserialize<T>(line, RecordDeserializeOptions);
                         }
-                        catch
+                        catch(JsonException ex)
                         {
-                            continue;
+                            // A record that fails to parse is a real error, not "no data". Swallowing it
+                            // here previously returned zero rows for responses that actually contained
+                            // data (e.g. string-encoded numeric fields), so surface it to the caller.
+                            throw new DatabentoException(
+                                string.Format(
+                                    CultureInfo.InvariantCulture,
+                                    "Failed to deserialize a {0} record from the JSONL response at line {1}: {2}",
+                                    typeof(T).Name,
+                                    lineNumber,
+                                    ex.Message),
+                                ex);
                         }
 
                         if(isValid(item))

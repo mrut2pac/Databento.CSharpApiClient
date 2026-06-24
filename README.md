@@ -69,4 +69,4 @@ var options = new DatabentoOptions
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](https://github.com/mrut2pac/Databento.CSharpApiClient/blob/main/LICENSE).

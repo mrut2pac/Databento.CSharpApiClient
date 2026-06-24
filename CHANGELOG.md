@@ -6,6 +6,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-06-24
+
+### Fixed
+- README LICENSE link now uses an absolute GitHub URL so it resolves on the NuGet package page (relative links parked on the package page).
+
 ## [1.2.1] - 2026-06-13
 
 ### Changed

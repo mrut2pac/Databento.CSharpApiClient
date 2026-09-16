@@ -267,6 +267,63 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
+        public async Task GetCbbo1m_MultiSymbol_RecordsCarryTheirSymbol()
+        {
+            // A multi-symbol response interleaves the symbols, so each record must name its own or the
+            // caller cannot attribute it without a second symbology call.
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
+
+            const string Call = "SPXW  250908C06475000";
+            const string Put  = "SPXW  250908P06475000";
+
+            CbboRecordJson[] records;
+            try
+            {
+                records = await client.GetCbbo1mAsync(Datasets.OpraPillar, [Call, Put], start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotEmpty(records);
+            Assert.All(records, r => Assert.False(string.IsNullOrEmpty(r.Symbol)));
+            Assert.Contains(records, r => r.Symbol == Call);
+            Assert.Contains(records, r => r.Symbol == Put);
+        }
+
+        [SkippableFact]
+        public async Task GetCbbo1m_SingleSymbol_DoesNotCarrySymbol()
+        {
+            // The caller already knows the symbol, so the field is not requested and the extra bytes are
+            // not paid on every record.
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
+
+            CbboRecordJson[] records;
+            try
+            {
+                records = await client.GetCbbo1mAsync(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotEmpty(records);
+            Assert.All(records, r => Assert.Null(r.Symbol));
+        }
+
+        [SkippableFact]
         public async Task GetCbbo1m_SpxwOption_SundayReturnsEmpty()
         {
             this.SkipIfNoApiKey();

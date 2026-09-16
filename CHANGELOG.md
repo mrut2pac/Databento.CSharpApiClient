@@ -6,6 +6,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-17
+
+### Added
+- `Symbol` on every JSON record type returned by `timeseries.get_range` — `BboRecordJson`, `CbboRecordJson`, `Cmbp1RecordJson`, `DefinitionRecordJson`, `ImbalanceRecordJson`, `MboRecordJson`, `Mbp1RecordJson`, `Mbp10RecordJson`, `OhlcvRecordJson`, `StatisticsRecordJson`, `StatusRecordJson`, `TbboRecordJson`, `TcbboRecordJson`, `TradeRecordJson`. Populated from the API's `map_symbols` field; `null` when the request did not ask for it.
+
+### Changed
+- A timeseries request covering **more than one symbol** — several symbols, or `ALL_SYMBOLS` — now sends `map_symbols=true`. The response interleaves the requested symbols, so each record has to name its own; previously a caller had to resolve `instrument_id` through a separate `symbology.resolve` call to attribute them.
+- A **single-symbol** request is unchanged and deliberately does not send it. The caller already knows the symbol, and `map_symbols` repeats it on every record rather than sending it once per response — roughly 10% payload growth for no information.
+
+**Impact:** additive. Existing single-symbol callers see byte-identical requests and responses. Multi-symbol callers get a slightly larger response carrying the new field; deserialization of a response without it is unaffected, and `Symbol` is simply `null`. The DBN binary path is untouched — DBN carries symbol mappings in its metadata already.
+
 ## [1.2.3] - 2026-06-24
 
 ### Fixed

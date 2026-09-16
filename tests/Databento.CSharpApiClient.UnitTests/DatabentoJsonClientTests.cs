@@ -1,6 +1,7 @@
 // Ignore Spelling: Databento Mbo Mbp Bbo Tbbo Tcbbo Cmbp Json Cbbo Ohlcv
 
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -60,6 +61,24 @@ namespace Databento.CSharpApiClient.UnitTests
                 .ReturnsAsync(() => new HttpResponseMessage(status)
                 {
                     Content = new StringContent(body, Encoding.UTF8, "application/json"),
+                });
+            transport.Setup(t => t.Dispose());
+
+            return new DatabentoJsonClient(new DatabentoOptions { ApiKey = AnyApiKey }, transport.Object);
+        }
+
+        private static DatabentoJsonClient BuildClientCapturingRequest(out List<HttpRequestMessage> captured)
+        {
+            List<HttpRequestMessage> requests = new List<HttpRequestMessage>();
+            captured = requests;
+
+            Mock<IHttpTransport> transport = new Mock<IHttpTransport>(MockBehavior.Strict);
+            transport
+                .Setup(t => t.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+                .Callback<HttpRequestMessage, CancellationToken>((request, _) => requests.Add(request))
+                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(string.Empty, Encoding.UTF8, "application/json"),
                 });
             transport.Setup(t => t.Dispose());
 
@@ -426,6 +445,109 @@ namespace Databento.CSharpApiClient.UnitTests
             Assert.AreEqual(4.0, records[0].Price.Value);
             Assert.IsNotNull(records[0].Level1);
             Assert.AreEqual(3.7, records[0].Level1.BidPrice);
+        }
+        // =====================================================================
+        // map_symbols
+        // =====================================================================
+
+        [TestMethod]
+        public async Task GetCbbo1mAsync_SingleSymbol_DoesNotRequestMapSymbols()
+        {
+            // The caller already knows the symbol, and map_symbols repeats it on every record rather
+            // than sending it once - so asking for it here is pure payload for no information.
+            using DatabentoJsonClient client = BuildClientCapturingRequest(out List<HttpRequestMessage> captured);
+            await client.GetCbbo1mAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
+
+            Assert.AreEqual(1, captured.Count);
+            StringAssert.Contains(captured[0].RequestUri.ToString(), "symbols=SPY");
+            Assert.IsFalse(captured[0].RequestUri.ToString().Contains("map_symbols"));
+        }
+
+        [TestMethod]
+        public async Task GetCbbo1mAsync_SeveralSymbols_RequestsMapSymbols()
+        {
+            // The response interleaves the symbols, so without this each record could only be attributed
+            // by resolving instrument ids through a second symbology call.
+            using DatabentoJsonClient client = BuildClientCapturingRequest(out List<HttpRequestMessage> captured);
+            await client.GetCbbo1mAsync(AnyDataset, new[] { "SPY", "QQQ" }, AnyStart, AnyEnd);
+
+            Assert.AreEqual(1, captured.Count);
+            StringAssert.Contains(captured[0].RequestUri.ToString(), "map_symbols=true");
+        }
+
+        [TestMethod]
+        public async Task GetCbbo1mAsync_AllSymbols_RequestsMapSymbols()
+        {
+            // One entry, but it stands for the whole dataset - so the response is multi-symbol.
+            using DatabentoJsonClient client = BuildClientCapturingRequest(out List<HttpRequestMessage> captured);
+            await client.GetCbbo1mAsync(AnyDataset, new[] { "ALL_SYMBOLS" }, AnyStart, AnyEnd);
+
+            Assert.AreEqual(1, captured.Count);
+            StringAssert.Contains(captured[0].RequestUri.ToString(), "map_symbols=true");
+        }
+
+        [TestMethod]
+        public async Task GetCbbo1mAsync_AllSymbolsThroughTheSingleSymbolOverload_RequestsMapSymbols()
+        {
+            // The single-symbol overload wraps its argument into a one-element list, so ALL_SYMBOLS has to
+            // be recognised there too - it is one entry that stands for the whole dataset.
+            using DatabentoJsonClient client = BuildClientCapturingRequest(out List<HttpRequestMessage> captured);
+            await client.GetCbbo1mAsync(AnyDataset, "ALL_SYMBOLS", AnyStart, AnyEnd);
+
+            Assert.AreEqual(1, captured.Count);
+            StringAssert.Contains(captured[0].RequestUri.ToString(), "map_symbols=true");
+        }
+
+        [TestMethod]
+        public async Task GetCbbo1mAsync_AllSymbolsMixedWithAnother_RequestsMapSymbols()
+        {
+            // ALL_SYMBOLS is documented as the sole entry, but a list carrying it alongside another symbol
+            // is still multi-symbol, so the records must name themselves either way.
+            using DatabentoJsonClient client = BuildClientCapturingRequest(out List<HttpRequestMessage> captured);
+            await client.GetCbbo1mAsync(AnyDataset, new[] { "SPY", "ALL_SYMBOLS" }, AnyStart, AnyEnd);
+
+            Assert.AreEqual(1, captured.Count);
+            StringAssert.Contains(captured[0].RequestUri.ToString(), "map_symbols=true");
+        }
+
+        [TestMethod]
+        public async Task GetOhlcv1mAsync_SeveralSymbols_RequestsMapSymbols()
+        {
+            // The rule lives in the shared query builder, so it holds for every timeseries schema.
+            using DatabentoJsonClient client = BuildClientCapturingRequest(out List<HttpRequestMessage> captured);
+            await client.GetOhlcv1mAsync(AnyDataset, new[] { "SPY", "QQQ" }, AnyStart, AnyEnd);
+
+            Assert.AreEqual(1, captured.Count);
+            StringAssert.Contains(captured[0].RequestUri.ToString(), "map_symbols=true");
+        }
+
+        [TestMethod]
+        public async Task GetCbbo1mAsync_ResponseCarriesSymbol_PopulatesIt()
+        {
+            string level = "{\"bid_px\":\"3.70\",\"ask_px\":\"3.90\",\"bid_sz\":185,\"ask_sz\":147,\"bid_pb\":0,\"ask_pb\":0}";
+            string json = "{" + MakeHeader(rtype: 193) + ",\"side\":\"N\",\"price\":\"4.00\",\"size\":18,\"flags\":200,"
+                + "\"ts_recv\":\"2023-11-08T14:31:00.000000000Z\",\"levels\":[" + level + "],\"symbol\":\"QQQ\"}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            CbboRecordJson[] records = await client.GetCbbo1mAsync(AnyDataset, new[] { "SPY", "QQQ" }, AnyStart, AnyEnd);
+
+            Assert.AreEqual(1, records.Length);
+            Assert.AreEqual("QQQ", records[0].Symbol);
+        }
+
+        [TestMethod]
+        public async Task GetCbbo1mAsync_ResponseWithoutSymbol_LeavesItNull()
+        {
+            // A single-symbol request never asks for the field, so the record must still parse without it.
+            string level = "{\"bid_px\":\"3.70\",\"ask_px\":\"3.90\",\"bid_sz\":185,\"ask_sz\":147,\"bid_pb\":0,\"ask_pb\":0}";
+            string json = "{" + MakeHeader(rtype: 193) + ",\"side\":\"N\",\"price\":\"4.00\",\"size\":18,\"flags\":200,"
+                + "\"ts_recv\":\"2023-11-08T14:31:00.000000000Z\",\"levels\":[" + level + "]}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            CbboRecordJson[] records = await client.GetCbbo1mAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
+
+            Assert.AreEqual(1, records.Length);
+            Assert.IsNull(records[0].Symbol);
         }
     }
 }

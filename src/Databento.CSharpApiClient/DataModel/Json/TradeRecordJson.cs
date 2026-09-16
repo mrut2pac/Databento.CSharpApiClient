@@ -62,5 +62,9 @@ namespace Databento.CSharpApiClient.DataModel.Json
         /// <summary>Optional send timestamp from the gateway. Present when ts_out was requested.</summary>
         [JsonPropertyName("ts_out")]
         public DateTime? TsOutUtc { get; set; }
+
+        /// <summary>The raw symbol this record belongs to. Populated only when the request covered more than one symbol; <see langword="null"/> otherwise.</summary>
+        [JsonPropertyName("symbol")]
+        public string Symbol { get; set; }
     }
 }

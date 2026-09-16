@@ -487,6 +487,30 @@ namespace Databento.CSharpApiClient.UnitTests
         }
 
         [TestMethod]
+        public async Task GetCbbo1mAsync_AllSymbolsThroughTheSingleSymbolOverload_RequestsMapSymbols()
+        {
+            // The single-symbol overload wraps its argument into a one-element list, so ALL_SYMBOLS has to
+            // be recognised there too - it is one entry that stands for the whole dataset.
+            using DatabentoJsonClient client = BuildClientCapturingRequest(out List<HttpRequestMessage> captured);
+            await client.GetCbbo1mAsync(AnyDataset, "ALL_SYMBOLS", AnyStart, AnyEnd);
+
+            Assert.AreEqual(1, captured.Count);
+            StringAssert.Contains(captured[0].RequestUri.ToString(), "map_symbols=true");
+        }
+
+        [TestMethod]
+        public async Task GetCbbo1mAsync_AllSymbolsMixedWithAnother_RequestsMapSymbols()
+        {
+            // ALL_SYMBOLS is documented as the sole entry, but a list carrying it alongside another symbol
+            // is still multi-symbol, so the records must name themselves either way.
+            using DatabentoJsonClient client = BuildClientCapturingRequest(out List<HttpRequestMessage> captured);
+            await client.GetCbbo1mAsync(AnyDataset, new[] { "SPY", "ALL_SYMBOLS" }, AnyStart, AnyEnd);
+
+            Assert.AreEqual(1, captured.Count);
+            StringAssert.Contains(captured[0].RequestUri.ToString(), "map_symbols=true");
+        }
+
+        [TestMethod]
         public async Task GetOhlcv1mAsync_SeveralSymbols_RequestsMapSymbols()
         {
             // The rule lives in the shared query builder, so it holds for every timeseries schema.

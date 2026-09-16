@@ -28,6 +28,11 @@ namespace Databento.CSharpApiClient
     /// </summary>
     public sealed class DatabentoJsonClient : IDisposable
     {
+        /// <summary>
+        /// The symbol a caller passes as the sole entry to request the whole dataset.
+        /// </summary>
+        private const string AllSymbols = "ALL_SYMBOLS";
+
         private readonly DatabentoOptions options;
         private readonly IHttpTransport transport;
 
@@ -1384,7 +1389,26 @@ namespace Databento.CSharpApiClient
             sb.Append("&end=").Append(Uri.EscapeDataString(end));
             sb.Append("&stype_in=").Append(Uri.EscapeDataString(stypeIn ?? SymbolTypes.RawSymbol));
             sb.Append("&pretty_px=true&pretty_ts=true&encoding=json&compression=none");
+
+            if(CoversMoreThanOneSymbol(symbols))
+            {
+                // The response interleaves the requested symbols, so each record has to name its own.
+                // It is deliberately not requested for a single symbol: the caller already knows the
+                // answer, and the field is repeated on every record rather than sent once per response.
+                sb.Append("&map_symbols=true");
+            }
+
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Tells whether a request can return records of more than one symbol, which is the only case where
+        /// a record needs to name the symbol it belongs to.
+        /// </summary>
+        private static bool CoversMoreThanOneSymbol(IReadOnlyList<string> symbols)
+        {
+            return symbols.Count > 1
+                || string.Equals(symbols[0], AllSymbols, StringComparison.OrdinalIgnoreCase);
         }
 
         private static string BuildMetadataCountQuery(

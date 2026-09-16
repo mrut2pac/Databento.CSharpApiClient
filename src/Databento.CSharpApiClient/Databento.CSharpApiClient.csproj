@@ -21,7 +21,7 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>1.2.3</Version>
+    <Version>1.3.0</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
@@ -31,6 +31,20 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
+v1.3.0 — 2026-09-17
+
+Added
+- JSON records returned by timeseries.get_range now expose the raw Symbol they belong to,
+  populated from the API's map_symbols field. Covers every timeseries schema: bbo, cbbo,
+  cmbp-1, definition, imbalance, mbo, mbp-1, mbp-10, ohlcv, statistics, status, tbbo,
+  tcbbo and trades.
+
+Changed
+- A timeseries request covering more than one symbol (or ALL_SYMBOLS) now sends
+  map_symbols=true, so an interleaved response can be split per symbol without a second
+  symbology call. A single-symbol request is unchanged and does not send it: the caller
+  already knows the symbol and the field is repeated on every record.
+
 v1.2.2 — 2026-06-15
 
 Fixed

@@ -68,5 +68,9 @@ namespace Databento.CSharpApiClient.DataModel.Json
 
         /// <summary>Convenience accessor for the single BBO level. <see langword="null"/> if <see cref="Levels"/> is empty.</summary>
         public Mbp1LevelJson Level1 => this.Levels?.Length > 0 ? this.Levels[0] : null;
+
+        /// <summary>The raw symbol this record belongs to. Populated only when the request covered more than one symbol; <see langword="null"/> otherwise.</summary>
+        [JsonPropertyName("symbol")]
+        public string Symbol { get; set; }
     }
 }

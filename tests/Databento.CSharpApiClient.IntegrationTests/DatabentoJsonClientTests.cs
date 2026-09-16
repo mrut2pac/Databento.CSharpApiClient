@@ -298,6 +298,30 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
+        public async Task GetCbbo1m_AllSymbolsMixedWithAnother_IsRejectedBySymbology()
+        {
+            // ALL_SYMBOLS is documented as the sole entry, and the API enforces that: the request is
+            // refused during symbology resolution, so the full-universe query is never run and no data is
+            // transferred. Pinned here because the client does not pre-validate the combination - this
+            // records what a caller actually gets back if they try it.
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 14, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2025, 9, 5, 14, 31, 0, TimeSpan.Zero);
+
+            DatabentoHttpException ex = await Assert.ThrowsAsync<DatabentoHttpException>(
+                () => client.GetCbbo1mAsync(
+                    Datasets.OpraPillar,
+                    ["SPXW  250908C06475000", "ALL_SYMBOLS"],
+                    start,
+                    end));
+
+            Assert.Equal(422, ex.StatusCode);
+            Assert.Equal(DatabentoErrorCase.SymbologyInvalidRequest, ex.Code);
+        }
+
+        [SkippableFact]
         public async Task GetCbbo1m_SingleSymbol_DoesNotCarrySymbol()
         {
             // The caller already knows the symbol, so the field is not requested and the extra bytes are

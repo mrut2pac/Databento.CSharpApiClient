@@ -36,6 +36,12 @@ namespace Databento.CSharpApiClient
         private readonly DatabentoOptions options;
         private readonly IHttpTransport transport;
 
+        /// <summary>
+        /// Transport used for batch artifact downloads, which must deliver a body exactly as stored.
+        /// The same instance as <see cref="transport"/> when the caller supplied its own.
+        /// </summary>
+        private readonly IHttpTransport downloadTransport;
+
         // STJ options: property names are set via [JsonPropertyName] attributes on each model class,
         // so no special naming policy is needed here. Unknown JSON properties are silently ignored
         // by default. DateTime values from Databento carry Z-suffix when pretty_ts=true, so STJ
@@ -67,27 +73,57 @@ namespace Databento.CSharpApiClient
 
             if(transport != null)
             {
+                // a caller bringing its own transport owns this decision for every request it carries
                 this.transport = transport;
+                this.downloadTransport = transport;
             }
             else
             {
-                HttpClient httpClient = new HttpClient(HttpCompression.CreateDecompressingHandler(), disposeHandler: true)
-                {
-                    BaseAddress = this.options.BaseUri,
-                    Timeout = this.options.Timeout,
-                };
-                httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(this.options.UserAgent ?? "DatabentoJsonClient/1.0");
-                httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                HttpClientHandler handler = this.options.RequestCompressedResponses
+                    ? HttpCompression.CreateDecompressingHandler()
+                    : HttpCompression.CreatePlainHandler();
 
-                string apiKeyBase64 = Convert.ToBase64String(Encoding.ASCII.GetBytes(this.options.ApiKey + ":"));
-                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", apiKeyBase64);
+                this.transport = new DefaultHttpTransport(this.CreateHttpClient(handler));
 
-                this.transport = new DefaultHttpTransport(httpClient);
+                // an artifact is already compressed, so negotiating it back gains nothing and risks the
+                // runtime decoding a stored file in flight
+                this.downloadTransport = this.options.RequestCompressedResponses
+                    ? new DefaultHttpTransport(this.CreateHttpClient(HttpCompression.CreatePlainHandler()))
+                    : this.transport;
             }
         }
 
-        /// <summary>Releases the underlying HTTP transport (and its <see cref="HttpClient"/>).</summary>
-        public void Dispose() => this.transport.Dispose();
+        /// <summary>
+        /// Builds the authenticated <see cref="HttpClient"/> the transports send through.
+        /// </summary>
+        /// <param name="handler">Handler deciding whether the response is negotiated compressed.</param>
+        /// <returns>The configured client, which takes ownership of the handler.</returns>
+        private HttpClient CreateHttpClient(HttpClientHandler handler)
+        {
+            HttpClient httpClient = new HttpClient(handler, disposeHandler: true)
+            {
+                BaseAddress = this.options.BaseUri,
+                Timeout = this.options.Timeout,
+            };
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(this.options.UserAgent ?? "DatabentoJsonClient/1.0");
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            string apiKeyBase64 = Convert.ToBase64String(Encoding.ASCII.GetBytes(this.options.ApiKey + ":"));
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", apiKeyBase64);
+
+            return httpClient;
+        }
+
+        /// <summary>Releases the underlying HTTP transports (and their <see cref="HttpClient"/>s).</summary>
+        public void Dispose()
+        {
+            if(!ReferenceEquals(this.downloadTransport, this.transport))
+            {
+                this.downloadTransport.Dispose();
+            }
+
+            this.transport.Dispose();
+        }
 
         // ================================================================
         // Metadata
@@ -554,7 +590,7 @@ namespace Databento.CSharpApiClient
         public async Task<Stream> DownloadBatchFileAsync(string httpsUrl, CancellationToken ct = default)
         {
             HttpResponseMessage response = await HttpRetryExecutor.SendWithRetryAsync(
-                this.transport,
+                this.downloadTransport,
                 () => new HttpRequestMessage(HttpMethod.Get, httpsUrl),
                 this.options,
                 retryEnabled: true,

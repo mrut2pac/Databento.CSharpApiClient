@@ -34,15 +34,15 @@
 v1.4.0 — 2026-09-17
 
 Added
-- Responses are now requested compressed. The client sends Accept-Encoding and decodes the
-  Content-Encoding the API answers with, transparently, before the body reaches the caller.
-  Market data is highly repetitive, so a timeseries response is roughly an order of magnitude
-  smaller on the wire - measured at ~14x on one session of option CBBO.
+- DatabentoOptions.RequestCompressedResponses (default true) to turn response compression off.
 
 Changed
-- Both DatabentoClient and DatabentoJsonClient build their HttpClient on a handler with
-  AutomaticDecompression enabled. A caller supplying its own IHttpTransport is unaffected and
-  configures compression however it likes.
+- Requests now negotiate a compressed response: the client sends Accept-Encoding and the runtime
+  decodes the Content-Encoding the API answers with, transparently, before the body reaches the
+  caller. Market data is highly repetitive, so a timeseries response is substantially smaller on
+  the wire - one session of option CBBO measured 117 KB uncompressed against 8.1 KB gzipped.
+- DownloadBatchFileAsync is exempt and negotiates nothing, so a stored artifact is delivered
+  exactly as stored rather than being decoded in flight.
 
 v1.3.0 — 2026-09-17
 

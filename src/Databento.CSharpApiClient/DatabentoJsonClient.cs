@@ -71,7 +71,7 @@ namespace Databento.CSharpApiClient
             }
             else
             {
-                HttpClient httpClient = new HttpClient
+                HttpClient httpClient = new HttpClient(HttpCompression.CreateDecompressingHandler(), disposeHandler: true)
                 {
                     BaseAddress = this.options.BaseUri,
                     Timeout = this.options.Timeout,

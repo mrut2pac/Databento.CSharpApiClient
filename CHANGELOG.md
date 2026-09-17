@@ -6,6 +6,18 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-09-17
+
+### Added
+- Responses are requested compressed. Both `DatabentoClient` and `DatabentoJsonClient` now build their `HttpClient` on a handler with `AutomaticDecompression` enabled, so the client sends `Accept-Encoding` and transparently decodes whatever `Content-Encoding` the API answers with. The API honours this and replies `Content-Encoding: gzip`.
+
+### Changed
+- Nothing in the response handling. Decompression happens in the transport, below the deserializer, so a response stream reads exactly as it did before and `Symbol`, prices, timestamps and framing are untouched.
+
+**Impact:** transparent and backward compatible. Market data is highly repetitive, so a timeseries response is roughly an order of magnitude smaller on the wire — measured at ~14x on one session of option CBBO (117 KB to 8.1 KB). The saving is bandwidth and transfer time only; the decompressed bytes the caller deserializes are identical, so memory use is unchanged. A caller that supplies its own `IHttpTransport` is unaffected and configures compression however it likes.
+
+This is deliberately transport-level rather than the API's own `compression` query parameter, which frames the payload itself and would require a decoder this package does not carry.
+
 ## [1.3.0] - 2026-09-17
 
 ### Added

@@ -28,5 +28,13 @@ namespace Databento.CSharpApiClient
 
         /// <summary>Upper bound for a single backoff delay (also caps a server-provided Retry-After). Default: 30 seconds.</summary>
         public TimeSpan MaxRetryDelay { get; set; } = TimeSpan.FromSeconds(30);
+
+        /// <summary>
+        /// Whether responses are requested compressed, which the runtime then decodes transparently.
+        /// Default: <c>true</c>, and worth roughly an order of magnitude on a timeseries response. Set it
+        /// to <c>false</c> only to work around an intermediary that mishandles a content encoding. Batch
+        /// artifact downloads never negotiate compression, and this does not affect them.
+        /// </summary>
+        public bool RequestCompressedResponses { get; set; } = true;
     }
 }

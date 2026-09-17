@@ -6,6 +6,20 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-09-17
+
+### Added
+- `DatabentoOptions.RequestCompressedResponses` — defaults to `true`, set it to `false` to work around an intermediary that mishandles a content encoding.
+
+### Changed
+- Requests now negotiate a compressed response. Both `DatabentoClient` and `DatabentoJsonClient` build their `HttpClient` on a handler with `AutomaticDecompression` enabled, so the client sends `Accept-Encoding` and the runtime transparently decodes whatever `Content-Encoding` the API answers with. Previously neither client sent the header and every response arrived uncompressed.
+- Nothing in the response handling. Decompression happens in the transport, below the deserializer, so a response stream reads exactly as it did before and prices, timestamps, symbols and DBN framing are untouched.
+- `DownloadBatchFileAsync` is deliberately exempt and sends no `Accept-Encoding`. A batch artifact is already compressed, so negotiating it back gains nothing — and were such a file ever served with a `Content-Encoding` header, the runtime would decode it in flight and hand back bytes matching neither the file name it is saved under nor its published hash. The exemption applies only to the built-in transport; a caller supplying its own `IHttpTransport` owns that decision for every request.
+
+**Impact:** transparent and backward compatible. Market data is highly repetitive, so a timeseries response is substantially smaller on the wire — one session of option CBBO measured 117 KB uncompressed against 8.1 KB gzipped, and the ratio will vary by schema and symbol count. The saving is bandwidth and transfer time only: the decompressed bytes the caller deserializes are identical, so nothing downstream changes and peak memory is unchanged.
+
+This is deliberately transport-level rather than the API's own `compression` query parameter, which frames the payload itself and would require a decoder this package does not carry — zero runtime dependencies is the point of it.
+
 ## [1.3.0] - 2026-09-17
 
 ### Added
@@ -70,7 +84,10 @@ Initial release.
 - HTTP retry with exponential back-off and jitter
 - Zero external dependencies — pure `System.Text.Json` on .NET 8+
 
-[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.2.3...v1.3.0
+[1.2.3]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.2.1...v1.2.3
 [1.2.1]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.0.1...v1.1.0

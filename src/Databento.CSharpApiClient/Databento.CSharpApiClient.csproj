@@ -21,7 +21,7 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>1.3.0</Version>
+    <Version>1.4.0</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
@@ -31,6 +31,19 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
+v1.4.0 — 2026-09-17
+
+Added
+- DatabentoOptions.RequestCompressedResponses (default true) to turn response compression off.
+
+Changed
+- Requests now negotiate a compressed response: the client sends Accept-Encoding and the runtime
+  decodes the Content-Encoding the API answers with, transparently, before the body reaches the
+  caller. Market data is highly repetitive, so a timeseries response is substantially smaller on
+  the wire - one session of option CBBO measured 117 KB uncompressed against 8.1 KB gzipped.
+- DownloadBatchFileAsync is exempt and negotiates nothing, so a stored artifact is delivered
+  exactly as stored rather than being decoded in flight.
+
 v1.3.0 — 2026-09-17
 
 Added

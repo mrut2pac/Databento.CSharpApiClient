@@ -64,7 +64,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonConverter(typeof(NanoPriceConverter))]
         public double ContractMultiplier { get; set; }
 
-        /// <summary>Option strike price (display-scaled). Zero for non-option instruments.</summary>
+        /// <summary>Option strike price (display-scaled). <see cref="double.NaN"/> when undefined (e.g. non-option instruments).</summary>
         [JsonPropertyName("strike_price")]
         [JsonConverter(typeof(NanoPriceConverter))]
         public double StrikePrice { get; set; }
@@ -101,7 +101,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
         public string Underlying { get; set; }
 
         /// <summary>Action that caused this definition message: "A" add, "M" modify, "D" delete.</summary>
-        [JsonPropertyName("action")]
+        [JsonPropertyName("security_update_action")]
         public string Action { get; set; }
 
         /// <summary>Gateway send timestamp (UTC). Present when <c>ts_out</c> was requested.</summary>

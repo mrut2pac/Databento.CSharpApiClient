@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Databento.CSharpApiClient.DataModel;
 using Databento.CSharpApiClient.DataModel.Json;
 using Databento.CSharpApiClient.DataModel.Metadata;
+using Databento.CSharpApiClient.DataModel.Symbology;
 using Databento.CSharpApiClient.Exceptions;
 using Databento.CSharpApiClient.Transport;
 
@@ -256,17 +257,78 @@ namespace Databento.CSharpApiClient.UnitTests
         [TestMethod]
         public async Task GetStatusAsync_ValidJsonLine_ReturnsParsedRecord()
         {
+            // Shape of a live XNAS.ITCH status record: action, reason and trading_event are numeric codes.
             string json = "{" + MakeHeader(rtype: 18) + ",\"ts_recv\":\"2022-05-16T13:30:00.000000000Z\","
-                + "\"action\":\"H\",\"reason\":\"T1\",\"trading_event\":\"0\","
-                + "\"is_trading\":\"N\",\"is_quoting\":\"N\",\"is_short_sell_restricted\":\"U\"}";
+                + "\"action\":7,\"reason\":2,\"trading_event\":1,"
+                + "\"is_trading\":\"N\",\"is_quoting\":\"~\",\"is_short_sell_restricted\":\"N\"}";
 
             using DatabentoJsonClient client = BuildClient(json);
             StatusRecordJson[] records = await client.GetStatusAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
 
             Assert.AreEqual(1, records.Length);
-            Assert.AreEqual("H", records[0].Action);
-            Assert.AreEqual("T1", records[0].Reason);
+            Assert.AreEqual((ushort)7, records[0].Action);
+            Assert.AreEqual((ushort)2, records[0].Reason);
+            Assert.AreEqual((ushort)1, records[0].TradingEvent);
             Assert.AreEqual("N", records[0].IsTrading);
+            Assert.AreEqual("~", records[0].IsQuoting);
+        }
+
+        // =====================================================================
+        // Statistics
+        // =====================================================================
+
+        [TestMethod]
+        public async Task GetStatisticsAsync_UndefinedQuantity_ParsesTheInt64Sentinel()
+        {
+            // A live GLBX.MDP3 statistics record as the client requests it (pretty timestamps and prices): quantity is a 64-bit integer sent
+            // as a string, INT64_MAX when undefined, and an undefined ts_ref is null.
+            string json = "{\"ts_recv\":\"2024-03-15T00:22:48.057050737Z\",\"hd\":{\"ts_event\":\"2024-03-15T00:22:48.056637873Z\",\"rtype\":24,"
+                + "\"publisher_id\":1,\"instrument_id\":17077},\"ts_ref\":null,\"price\":\"5155.250000000\",\"quantity\":\"9223372036854775807\","
+                + "\"sequence\":58896890,\"ts_in_delta\":15240,\"stat_type\":5,\"channel_id\":0,\"update_action\":1,\"stat_flags\":0}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            StatisticsRecordJson[] records = await client.GetStatisticsAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
+
+            Assert.AreEqual(1, records.Length);
+            Assert.AreEqual(long.MaxValue, records[0].Quantity);
+            Assert.IsNull(records[0].TsRefUtc);
+            Assert.AreEqual(58896890u, records[0].Sequence);
+            Assert.AreEqual((ushort)5, records[0].StatType);
+        }
+
+        [TestMethod]
+        public async Task GetStatisticsAsync_QuantityBeyondInt32_ParsesIt()
+        {
+            string json = "{" + MakeHeader(rtype: 24) + ",\"ts_recv\":\"2024-03-15T00:22:48.057050737Z\","
+                + "\"price\":\"5155.25\",\"quantity\":\"4294967296\",\"sequence\":1,\"ts_in_delta\":0,"
+                + "\"stat_type\":6,\"channel_id\":0,\"update_action\":1,\"stat_flags\":0}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            StatisticsRecordJson[] records = await client.GetStatisticsAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
+
+            Assert.AreEqual(4294967296L, records[0].Quantity);
+        }
+
+        // =====================================================================
+        // Definition
+        // =====================================================================
+
+        [TestMethod]
+        public async Task GetDefinitionsAsync_LiveOptionDefinition_ReadsTheSecurityUpdateAction()
+        {
+            // A live OPRA.PILLAR definition as the client requests it (pretty timestamps and prices), trimmed to the fields under test.
+            string json = "{\"ts_recv\":\"2022-02-07T14:31:00.000000000Z\",\"hd\":{\"ts_event\":\"2022-02-07T14:31:00.000000000Z\",\"rtype\":19,"
+                + "\"publisher_id\":30,\"instrument_id\":1310693},\"raw_symbol\":\"SPXW  220207C04295000\",\"security_update_action\":\"A\","
+                + "\"instrument_class\":\"C\",\"expiration\":\"2022-02-07T00:00:00.000000000Z\",\"activation\":null,\"exchange\":\"OPRA\","
+                + "\"asset\":\"SPXW\",\"security_type\":\"OPT\",\"underlying\":\"SPXW\",\"strike_price\":\"4295.000000000\"}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            DefinitionRecordJson[] records = await client.GetDefinitionsAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
+
+            Assert.AreEqual(1, records.Length);
+            Assert.AreEqual("A", records[0].Action);
+            Assert.AreEqual("C", records[0].InstrumentClass);
+            Assert.AreEqual(4295.0, records[0].StrikePrice, 1e-9);
         }
 
         // =====================================================================
@@ -548,6 +610,40 @@ namespace Databento.CSharpApiClient.UnitTests
 
             Assert.AreEqual(1, records.Length);
             Assert.IsNull(records[0].Symbol);
+        }
+
+        // =====================================================================
+        // Symbology
+        // =====================================================================
+
+        [TestMethod]
+        public async Task ResolveSymbolsAsync_SeveralSymbols_SendsThemInOneCommaJoinedField()
+        {
+            // symbology.resolve keeps only the last of repeated "symbols" fields, so every symbol has to travel in one field
+            List<string> capturedBodies = new List<string>();
+            Mock<IHttpTransport> transport = new Mock<IHttpTransport>(MockBehavior.Strict);
+            transport
+                .Setup(t => t.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+                .Callback<HttpRequestMessage, CancellationToken>((request, _) => capturedBodies.Add(request.Content.ReadAsStringAsync().GetAwaiter().GetResult()))
+                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{\"result\":{}}", Encoding.UTF8, "application/json"),
+                });
+            transport.Setup(t => t.Dispose());
+
+            using DatabentoJsonClient client = new DatabentoJsonClient(new DatabentoOptions { ApiKey = AnyApiKey }, transport.Object);
+            await client.ResolveSymbolsAsync(new SymbologyRequest
+            {
+                Dataset = Datasets.OpraPillar,
+                Symbols = new[] { "SPXW  140207C01275000", "SPXW  140207P02050000" },
+                StartDate = "2014-02-07",
+                EndDate = "2014-02-08",
+            });
+
+            Assert.AreEqual(1, capturedBodies.Count);
+            string[] symbolFields = Array.FindAll(capturedBodies[0].Split('&'), field => field.StartsWith("symbols=", StringComparison.Ordinal));
+            Assert.AreEqual(1, symbolFields.Length);
+            Assert.AreEqual("SPXW  140207C01275000,SPXW  140207P02050000", WebUtility.UrlDecode(symbolFields[0].Substring("symbols=".Length)));
         }
     }
 }

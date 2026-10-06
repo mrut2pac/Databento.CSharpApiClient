@@ -648,6 +648,64 @@ namespace Databento.CSharpApiClient.UnitTests
             }
         }
 
+        [TestMethod]
+        public async Task GetStatistics_DbnV3Records_ParseTheWideQuantityAndEveryFieldAfterIt()
+        {
+            // The API serves DBN v3, whose 80-byte Statistics record widens quantity to 64 bits; reading it as 32 bits shifts every later field.
+            StatisticsSeed[] seeds = new[]
+            {
+                new StatisticsSeed
+                {
+                    PublisherId = 1, InstrumentId = 17077,
+                    TsEvent = Start.AddSeconds(1),
+                    TsReceived = Start.AddSeconds(1).AddMicroseconds(100),
+                    TsRef = Start,
+                    TsRefUndefined = true,
+                    Price = 5155.25, Quantity = long.MaxValue,
+                    Sequence = 58896890, TsInDelta = 15240,
+                    StatType = 5, ChannelId = 3, UpdateAction = 1, StatFlags = 0x02,
+                },
+                new StatisticsSeed
+                {
+                    PublisherId = 1, InstrumentId = 17077,
+                    TsEvent = Start.AddSeconds(2),
+                    TsReceived = Start.AddSeconds(2).AddMicroseconds(80),
+                    TsRef = Start,
+                    Price = 5160.00, Quantity = 4294967296L,
+                    Sequence = 58896891, TsInDelta = 15000,
+                    StatType = 9, ChannelId = 3, UpdateAction = 2, StatFlags = 0x01,
+                },
+            };
+
+            byte[] streamBytes = DbnBinaryBuilder.BuildStatisticsStreamV3(seeds);
+            DatabentoClient client = BuildClientWithBytes(streamBytes);
+
+            StatisticsRecordDbn[] records = await client.GetStatisticsAsync(AnyDataset, AnySymbol, Start, End);
+
+            Assert.AreEqual(2, records.Length, "Expected both Statistics records.");
+
+            for(int i = 0; i < seeds.Length; i++)
+            {
+                StatisticsSeed s = seeds[i];
+                StatisticsRecordDbn r = records[i];
+                AssertPriceEqual(s.Price, r.Price, $"records[{i}].Price");
+                Assert.AreEqual(s.Quantity, r.Quantity, $"records[{i}].Quantity");
+                Assert.AreEqual(s.Sequence, r.Sequence, $"records[{i}].Sequence");
+                Assert.AreEqual(s.TsInDelta, r.TsInDelta, $"records[{i}].TsInDelta");
+                Assert.AreEqual(s.StatType, r.StatType, $"records[{i}].StatType");
+                Assert.AreEqual(s.ChannelId, r.ChannelId, $"records[{i}].ChannelId");
+                Assert.AreEqual(s.UpdateAction, r.UpdateAction, $"records[{i}].UpdateAction");
+                Assert.AreEqual(s.StatFlags, (byte)r.StatFlags, $"records[{i}].StatFlags");
+                Assert.AreEqual(s.InstrumentId, r.InstrumentId, $"records[{i}].InstrumentId");
+                AssertUtcClose(s.TsEvent, r.TsEventUtc, $"records[{i}].TsEventUtc");
+                AssertUtcClose(s.TsReceived, r.TsReceivedUtc, $"records[{i}].TsReceivedUtc");
+            }
+
+            // DBN's undefined timestamp (u64::MAX) is null, as the JSON encoding reports it
+            Assert.IsNull(records[0].TsRefUtc, "records[0].TsRefUtc");
+            AssertUtcClose(seeds[1].TsRef, records[1].TsRefUtc.Value, "records[1].TsRefUtc");
+        }
+
         // =====================================================================================
         // Status framing
         // =====================================================================================

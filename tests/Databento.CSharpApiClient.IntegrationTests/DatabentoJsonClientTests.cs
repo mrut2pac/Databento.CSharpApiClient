@@ -139,6 +139,41 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Assert.NotNull(resolution.Result);
         }
 
+        [SkippableFact]
+        public async Task ResolveSymbols_SeveralListedOptions_ResolvesEveryOne()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            // three contracts listed on their 2014-02-07 expiration; a request carrying only the last would resolve one
+            string[] symbols = ["SPXW  140207C01275000", "SPXW  140207C01300000", "SPXW  140207P02050000"];
+
+            SymbologyResolution resolution;
+            try
+            {
+                resolution = await client.ResolveSymbolsAsync(new SymbologyRequest
+                {
+                    Dataset   = Datasets.OpraPillar,
+                    Symbols   = symbols,
+                    StypeIn   = SymbolTypes.RawSymbol,
+                    StypeOut  = SymbolTypes.InstrumentId,
+                    StartDate = "2014-02-07",
+                    EndDate   = "2014-02-08",
+                });
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.NotNull(resolution.Result);
+            foreach(string symbol in symbols)
+            {
+                Assert.True(resolution.Result.TryGetValue(symbol, out MappedSymbol[] mappings) && mappings.Length > 0, $"{symbol} was not resolved");
+            }
+        }
+
         // =====================================================================
         // Batch
         // =====================================================================

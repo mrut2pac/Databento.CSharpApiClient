@@ -425,10 +425,10 @@ namespace Databento.CSharpApiClient
             List<KeyValuePair<string, string>> form = new List<KeyValuePair<string, string>>();
             if(!string.IsNullOrEmpty(request.Dataset))
                 form.Add(new KeyValuePair<string, string>("dataset", request.Dataset));
-            if(request.Symbols != null)
+            if(request.Symbols != null && request.Symbols.Length > 0)
             {
-                foreach(string sym in request.Symbols)
-                    form.Add(new KeyValuePair<string, string>("symbols", sym));
+                // One comma-joined field: the endpoint keeps only the last of repeated "symbols" fields.
+                form.Add(new KeyValuePair<string, string>("symbols", string.Join(",", request.Symbols)));
             }
             if(!string.IsNullOrEmpty(request.StypeIn))
                 form.Add(new KeyValuePair<string, string>("stype_in", request.StypeIn));

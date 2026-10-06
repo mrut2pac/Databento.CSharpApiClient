@@ -11,7 +11,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
     /// </summary>
     public sealed class DbnMetadata
     {
-        /// <summary>DBN format version (1 or 2).</summary>
+        /// <summary>DBN format version (1, 2 or 3; the API currently serves 3).</summary>
         public byte Version { get; set; }
 
         /// <summary>Dataset identifier embedded in the stream (e.g. <c>"XNAS.ITCH"</c>).</summary>

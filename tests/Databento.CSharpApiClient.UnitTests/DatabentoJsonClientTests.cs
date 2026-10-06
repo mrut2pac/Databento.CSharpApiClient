@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Databento.CSharpApiClient.DataModel;
 using Databento.CSharpApiClient.DataModel.Json;
 using Databento.CSharpApiClient.DataModel.Metadata;
+using Databento.CSharpApiClient.DataModel.Symbology;
 using Databento.CSharpApiClient.Exceptions;
 using Databento.CSharpApiClient.Transport;
 
@@ -548,6 +549,40 @@ namespace Databento.CSharpApiClient.UnitTests
 
             Assert.AreEqual(1, records.Length);
             Assert.IsNull(records[0].Symbol);
+        }
+
+        // =====================================================================
+        // Symbology
+        // =====================================================================
+
+        [TestMethod]
+        public async Task ResolveSymbolsAsync_SeveralSymbols_SendsThemInOneCommaJoinedField()
+        {
+            // symbology.resolve keeps only the last of repeated "symbols" fields, so every symbol has to travel in one field
+            List<string> capturedBodies = new List<string>();
+            Mock<IHttpTransport> transport = new Mock<IHttpTransport>(MockBehavior.Strict);
+            transport
+                .Setup(t => t.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+                .Callback<HttpRequestMessage, CancellationToken>((request, _) => capturedBodies.Add(request.Content.ReadAsStringAsync().GetAwaiter().GetResult()))
+                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{\"result\":{}}", Encoding.UTF8, "application/json"),
+                });
+            transport.Setup(t => t.Dispose());
+
+            using DatabentoJsonClient client = new DatabentoJsonClient(new DatabentoOptions { ApiKey = AnyApiKey }, transport.Object);
+            await client.ResolveSymbolsAsync(new SymbologyRequest
+            {
+                Dataset = Datasets.OpraPillar,
+                Symbols = new[] { "SPXW  140207C01275000", "SPXW  140207P02050000" },
+                StartDate = "2014-02-07",
+                EndDate = "2014-02-08",
+            });
+
+            Assert.AreEqual(1, capturedBodies.Count);
+            string[] symbolFields = Array.FindAll(capturedBodies[0].Split('&'), field => field.StartsWith("symbols=", StringComparison.Ordinal));
+            Assert.AreEqual(1, symbolFields.Length);
+            Assert.AreEqual("SPXW  140207C01275000,SPXW  140207P02050000", WebUtility.UrlDecode(symbolFields[0].Substring("symbols=".Length)));
         }
     }
 }

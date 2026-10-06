@@ -6,6 +6,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+- `ResolveSymbols` / `ResolveSymbolsAsync` resolved only the **last** symbol of a multi-symbol request ([#27](https://github.com/mrut2pac/Databento.CSharpApiClient/issues/27)). Each symbol went out as its own repeated `symbols` form field and `symbology.resolve` keeps only the last one, so every other symbol was silently absent from `result` — indistinguishable from not being listed. The symbols now travel in one comma-joined field, as `batch.submit_job` and the timeseries endpoints already send them.
+
 ## [1.4.0] - 2026-09-17
 
 ### Added

@@ -310,6 +310,28 @@ namespace Databento.CSharpApiClient.UnitTests
         }
 
         // =====================================================================
+        // Definition
+        // =====================================================================
+
+        [TestMethod]
+        public async Task GetDefinitionsAsync_LiveOptionDefinition_ReadsTheSecurityUpdateAction()
+        {
+            // A live OPRA.PILLAR definition as the client requests it (pretty timestamps and prices), trimmed to the fields under test.
+            string json = "{\"ts_recv\":\"2022-02-07T14:31:00.000000000Z\",\"hd\":{\"ts_event\":\"2022-02-07T14:31:00.000000000Z\",\"rtype\":19,"
+                + "\"publisher_id\":30,\"instrument_id\":1310693},\"raw_symbol\":\"SPXW  220207C04295000\",\"security_update_action\":\"A\","
+                + "\"instrument_class\":\"C\",\"expiration\":\"2022-02-07T00:00:00.000000000Z\",\"activation\":null,\"exchange\":\"OPRA\","
+                + "\"asset\":\"SPXW\",\"security_type\":\"OPT\",\"underlying\":\"SPXW\",\"strike_price\":\"4295.000000000\"}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            DefinitionRecordJson[] records = await client.GetDefinitionsAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
+
+            Assert.AreEqual(1, records.Length);
+            Assert.AreEqual("A", records[0].Action);
+            Assert.AreEqual("C", records[0].InstrumentClass);
+            Assert.AreEqual(4295.0, records[0].StrikePrice, 1e-9);
+        }
+
+        // =====================================================================
         // Imbalance
         // =====================================================================
 

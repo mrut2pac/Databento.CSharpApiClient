@@ -698,6 +698,73 @@ namespace Databento.CSharpApiClient.IntegrationTests
             catch(DatabentoHttpException ex) { SkipIfNoLicense(ex); throw; }
         }
 
+        [SkippableFact]
+        public async Task GetDefinitions_OpraOptionServedAsDbnV1_MatchesTheJsonEncoding()
+        {
+            await this.AssertDefinitionsMatchTheJsonEncoding(
+                Datasets.OpraPillar,
+                "SPXW  220207C04295000",
+                new DateTimeOffset(2022, 2, 7, 0, 0, 0, TimeSpan.Zero));
+        }
+
+        [SkippableFact]
+        public async Task GetDefinitions_XnasEquityServedAsDbnV1_MatchesTheJsonEncoding()
+        {
+            await this.AssertDefinitionsMatchTheJsonEncoding(
+                Datasets.XnasItch,
+                "SPY",
+                new DateTimeOffset(2022, 5, 16, 0, 0, 0, TimeSpan.Zero));
+        }
+
+        [SkippableFact]
+        public async Task GetDefinitions_GlbxOptionServedAsDbnV3_MatchesTheJsonEncoding()
+        {
+            await this.AssertDefinitionsMatchTheJsonEncoding(
+                Datasets.GlbxMdp3,
+                "ESH4 P3350",
+                new DateTimeOffset(2024, 3, 15, 0, 0, 0, TimeSpan.Zero));
+        }
+
+        // A misread binary layout yields plausible-looking garbage, so every decoded field is pinned to the JSON encoding of the same
+        // request, which reads fields by name and shares no layout code with the binary decoder.
+        private async Task AssertDefinitionsMatchTheJsonEncoding(string dataset, string symbol, DateTimeOffset day)
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoClient client = this.CreateBinaryClient();
+            using DatabentoJsonClient jsonClient = this.CreateJsonClient();
+
+            try
+            {
+                DefinitionRecordDbn[] records = await client.GetDefinitionsAsync(dataset, symbol, day, day.AddDays(1));
+                DefinitionRecordJson[] jsonRecords = await jsonClient.GetDefinitionsAsync(dataset, symbol, day, day.AddDays(1));
+
+                Assert.NotEmpty(records);
+                Assert.Equal(jsonRecords.Length, records.Length);
+                for(int i = 0; i < records.Length; ++i)
+                {
+                    Assert.Equal(symbol, records[i].RawSymbol);
+                    Assert.Equal(jsonRecords[i].RawSymbol, records[i].RawSymbol);
+                    Assert.Equal(jsonRecords[i].TsReceivedUtc, records[i].TsReceivedUtc);
+                    Assert.Equal(jsonRecords[i].MinPriceIncrement, records[i].MinPriceIncrement, 9);
+                    Assert.Equal(jsonRecords[i].DisplayFactor, records[i].DisplayFactor, 9);
+                    Assert.Equal(jsonRecords[i].HighLimitPrice, records[i].HighLimitPrice, 9);
+                    Assert.Equal(jsonRecords[i].LowLimitPrice, records[i].LowLimitPrice, 9);
+                    Assert.Equal(jsonRecords[i].MaxPriceVariation, records[i].MaxPriceVariation, 9);
+                    Assert.Equal(jsonRecords[i].UnitOfMeasureQty, records[i].UnitOfMeasureQty, 9);
+                    Assert.Equal(jsonRecords[i].StrikePrice, records[i].StrikePrice, 9);
+                    Assert.Equal(jsonRecords[i].InstrumentClass, records[i].InstrumentClass?.ToString());
+                    Assert.Equal(jsonRecords[i].Action, records[i].Action?.ToString());
+                    Assert.Equal(jsonRecords[i].Exchange, records[i].Exchange);
+                    Assert.Equal(jsonRecords[i].Asset, records[i].Asset);
+                    Assert.Equal(jsonRecords[i].Cfi, records[i].Cfi);
+                    Assert.Equal(jsonRecords[i].SecurityType, records[i].SecurityType);
+                    Assert.Equal(jsonRecords[i].Expiration, records[i].Expiration);
+                    Assert.Equal(jsonRecords[i].Activation, records[i].Activation);
+                }
+            }
+            catch(DatabentoHttpException ex) { SkipIfNoLicense(ex); throw; }
+        }
+
         // =====================================================================
         // Status (DBN binary)
         // =====================================================================

@@ -1,4 +1,5 @@
 using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.Text;
 
@@ -7,9 +8,8 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
     /// <summary>
     /// An instrument-definition record deserialized from a DBN binary stream.
     /// Schema: <c>definition</c> — rtype <c>InstrumentDef</c> (0x13).
-    /// This is a partial decoder: key pricing and identification fields are decoded;
-    /// the remaining body bytes (v2 total body ≈ 500 bytes) are silently dropped since
-    /// the full body is buffered before parsing begins.
+    /// This is a partial decoder: key pricing and identification fields are decoded and the rest of the body is skipped.
+    /// Decodes DBN v1 (360-byte) and v3 (520-byte) records, both of which the API serves; any other length is refused.
     /// </summary>
     public sealed class DefinitionRecordDbn
     {
@@ -52,7 +52,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         /// <summary>Contract unit-of-measure quantity (display-scaled).</summary>
         public double UnitOfMeasureQty { get; set; }
 
-        /// <summary>Option strike price (display-scaled). Zero for non-option instruments.</summary>
+        /// <summary>Option strike price (display-scaled). <see cref="double.NaN"/> when undefined (e.g. non-option instruments).</summary>
         public double StrikePrice { get; set; }
 
         /// <summary>Venue-native symbol string.</summary>
@@ -80,12 +80,12 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         public char? Action { get; set; }
 
         /// <summary>
-        /// Deserialises a definition record body from <paramref name="reader"/> using the
-        /// already-parsed <paramref name="header"/>. Decodes the key fields and silently
-        /// drops any remaining body bytes beyond what is decoded here.
+        /// Deserialises a definition record body from <paramref name="reader"/> using the already-parsed <paramref name="header"/>,
+        /// choosing the DBN v1 or v3 layout by record length. Consumes the whole body, so the reader is left at the next record.
         /// </summary>
         /// <param name="header">Pre-read 16-byte record header.</param>
         /// <param name="reader">Reader positioned immediately after the header bytes.</param>
+        /// <exception cref="InvalidDataException">If the record is truncated or its length matches no supported DBN version.</exception>
         public static DefinitionRecordDbn ReadFromBytes(DbnRecordHeader header, BinaryReader reader)
         {
             try
@@ -96,56 +96,39 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                 record.InstrumentId = header.InstrumentId;
                 record.TsEventUtc = header.TsEventUtc;
 
-                // Buffer the entire body; the sub-reader may stop before the end — that is safe.
-                byte[] bodyBytes = reader.ReadBytes(header.RecordLength - DbnRecordHeader.SizeBytes);
-
-                using(System.IO.MemoryStream ms = new System.IO.MemoryStream(bodyBytes, writable: false))
-                using(BinaryReader body = new BinaryReader(ms))
+                // the API serves several DBN versions and each lays the record out differently, so pick the layout by record length -
+                // before reading, so an unknown or corrupt length never reaches the read
+                DefinitionLayout layout = header.RecordLength switch
                 {
-                    // ── i64 block (13 × 8 = 104 bytes) ──────────────────────────
-                    record.TsReceivedUtc    = Utils.FromUnixNs(body.ReadUInt64()).UtcDateTime;
-                    record.MinPriceIncrement = Utils.NanoToDouble(body.ReadInt64());
-                    record.DisplayFactor     = Utils.NanoToDouble(body.ReadInt64());
+                    DefinitionLayout.V1RecordBytes => DefinitionLayout.V1,
+                    DefinitionLayout.V3RecordBytes => DefinitionLayout.V3,
+                    _ => throw new InvalidDataException(
+                        $"Unsupported DBN Definition record length {header.RecordLength}: only DBN v1 ({DefinitionLayout.V1RecordBytes} bytes) and v3 ({DefinitionLayout.V3RecordBytes} bytes) are decoded."),
+                };
 
-                    ulong expNs = body.ReadUInt64();
-                    record.Expiration = expNs == 0 ? (DateTime?)null : Utils.FromUnixNs(expNs).UtcDateTime;
-
-                    ulong actNs = body.ReadUInt64();
-                    record.Activation = actNs == 0 ? (DateTime?)null : Utils.FromUnixNs(actNs).UtcDateTime;
-
-                    record.HighLimitPrice   = Utils.NanoToDouble(body.ReadInt64());
-                    record.LowLimitPrice    = Utils.NanoToDouble(body.ReadInt64());
-                    record.MaxPriceVariation = Utils.NanoToDouble(body.ReadInt64());
-                    body.ReadInt64();  // trading_reference_price
-                    record.UnitOfMeasureQty  = Utils.NanoToDouble(body.ReadInt64());
-                    body.ReadInt64();  // min_price_increment_amount
-                    body.ReadInt64();  // price_ratio
-                    record.StrikePrice = Utils.NanoToDouble(body.ReadInt64());
-
-                    // ── i32/u32 block (14 × 4 = 56 bytes) ─ skip ────────────────
-                    body.ReadBytes(56);
-
-                    // ── u16 block (5 × 2 = 10 bytes) ─ skip ─────────────────────
-                    body.ReadBytes(10);
-
-                    // ── string fields ────────────────────────────────────────────
-                    body.ReadBytes(4);  // currency[4] - skip
-                    body.ReadBytes(10); // settl_currency[4] + secsubtype[6] - skip
-                    record.RawSymbol    = ReadAscii(body, 22);
-                    body.ReadBytes(21); // group[21] - skip
-                    record.Exchange     = ReadAscii(body, 5);
-                    record.Asset        = ReadAscii(body, 7);
-                    record.Cfi          = ReadAscii(body, 7);
-                    record.SecurityType = ReadAscii(body, 7);
-                    body.ReadBytes(73); // unit_of_measure[31] + underlying[21] + related[21] - skip
-
-                    // ── single-byte fields ───────────────────────────────────────
-                    body.ReadBytes(7);  // match_algorithm through underlying_product - skip
-                    record.Action = ReadChar(body); // security_update_action
-                    body.ReadBytes(7);  // maturity_month/day/week + user_defined_instrument + multiplier_unit + flow_schedule_type + tick_rule - skip
-                    record.InstrumentClass = ReadChar(body);
-                    // remaining body bytes dropped when MemoryStream is disposed
+                byte[] body = reader.ReadBytes(header.RecordLength - DbnRecordHeader.SizeBytes);
+                if(body.Length != header.RecordLength - DbnRecordHeader.SizeBytes)
+                {
+                    throw new EndOfStreamException();
                 }
+
+                record.TsReceivedUtc     = Utils.FromUnixNs(BinaryPrimitives.ReadUInt64LittleEndian(body.AsSpan(0))).UtcDateTime;
+                record.MinPriceIncrement = ReadPrice(body, 8);
+                record.DisplayFactor     = ReadPrice(body, 16);
+                record.Expiration        = ReadTimestamp(body, 24);
+                record.Activation        = ReadTimestamp(body, 32);
+                record.HighLimitPrice    = ReadPrice(body, 40);
+                record.LowLimitPrice     = ReadPrice(body, 48);
+                record.MaxPriceVariation = ReadPrice(body, 56);
+                record.UnitOfMeasureQty  = ReadPrice(body, layout.UnitOfMeasureQty);
+                record.StrikePrice       = ReadPrice(body, layout.StrikePrice);
+                record.RawSymbol         = ReadAscii(body, layout.RawSymbol, layout.RawSymbolWidth);
+                record.Exchange          = ReadAscii(body, layout.Exchange, 5);
+                record.Asset             = ReadAscii(body, layout.Asset, layout.AssetWidth);
+                record.Cfi               = ReadAscii(body, layout.Cfi, 7);
+                record.SecurityType      = ReadAscii(body, layout.SecurityType, 7);
+                record.InstrumentClass   = ReadChar(body, layout.InstrumentClass);
+                record.Action            = ReadChar(body, layout.SecurityUpdateAction);
 
                 return record;
             }
@@ -155,27 +138,102 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             }
         }
 
-        private static string ReadAscii(BinaryReader r, int width)
+        private static double ReadPrice(byte[] body, int offset)
         {
-            byte[] buf = r.ReadBytes(width);
-            int end = Array.IndexOf(buf, (byte)0);
+            // DBN is little-endian whatever the host is, as the BinaryReader-based decoders read it
+            return Utils.NanoToDouble(BinaryPrimitives.ReadInt64LittleEndian(body.AsSpan(offset)));
+        }
+
+        private static DateTime? ReadTimestamp(byte[] body, int offset)
+        {
+            // 0 and u64::MAX (DBN's undefined timestamp) both mean "not set"
+            ulong ns = BinaryPrimitives.ReadUInt64LittleEndian(body.AsSpan(offset));
+            return ns == 0 || ns == ulong.MaxValue ? (DateTime?)null : Utils.FromUnixNs(ns).UtcDateTime;
+        }
+
+        private static string ReadAscii(byte[] body, int offset, int width)
+        {
+            int end = Array.IndexOf(body, (byte)0, offset, width);
             if(end < 0)
             {
-                end = width;
+                end = offset + width;
             }
 
-            while(end > 0 && buf[end - 1] == (byte)' ')
+            while(end > offset && body[end - 1] == (byte)' ')
             {
                 end--;
             }
 
-            return end == 0 ? string.Empty : Encoding.ASCII.GetString(buf, 0, end);
+            return end == offset ? string.Empty : Encoding.ASCII.GetString(body, offset, end - offset);
         }
 
-        private static char? ReadChar(BinaryReader r)
+        private static char? ReadChar(byte[] body, int offset)
         {
-            byte b = r.ReadByte();
+            byte b = body[offset];
             return b == 0 ? (char?)null : (char)b;
+        }
+
+        /// <summary>
+        /// Body offsets (after the 16-byte header) of the decoded fields in one DBN version's definition record. The leading block, from
+        /// <c>ts_recv</c> to <c>max_price_variation</c>, is the same in every version and is read at fixed offsets.
+        /// </summary>
+        private sealed class DefinitionLayout
+        {
+            public const int V1RecordBytes = 360;
+            public const int V3RecordBytes = 520;
+
+            // v1 keeps trading_reference_price in the i64 block and strike_price after the strings; v3 drops the former and moves the latter up.
+            public static readonly DefinitionLayout V1 = new DefinitionLayout
+            {
+                UnitOfMeasureQty = 72,
+                StrikePrice = 312,
+                RawSymbol = 184,
+                RawSymbolWidth = 22,
+                Exchange = 227,
+                Asset = 232,
+                AssetWidth = 7,
+                Cfi = 239,
+                SecurityType = 246,
+                InstrumentClass = 309,
+                SecurityUpdateAction = 333,
+            };
+
+            public static readonly DefinitionLayout V3 = new DefinitionLayout
+            {
+                UnitOfMeasureQty = 64,
+                StrikePrice = 88,
+                RawSymbol = 222,
+                RawSymbolWidth = 71,
+                Exchange = 314,
+                Asset = 319,
+                AssetWidth = 11,
+                Cfi = 330,
+                SecurityType = 337,
+                InstrumentClass = 471,
+                SecurityUpdateAction = 477,
+            };
+
+            public int UnitOfMeasureQty { get; private init; }
+
+            public int StrikePrice { get; private init; }
+
+            public int RawSymbol { get; private init; }
+
+            public int RawSymbolWidth { get; private init; }
+
+            public int Exchange { get; private init; }
+
+            public int Asset { get; private init; }
+
+            public int AssetWidth { get; private init; }
+
+            public int Cfi { get; private init; }
+
+            public int SecurityType { get; private init; }
+
+            public int InstrumentClass { get; private init; }
+
+            public int SecurityUpdateAction { get; private init; }
         }
     }
 }

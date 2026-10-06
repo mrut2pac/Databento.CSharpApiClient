@@ -26,9 +26,9 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         public DateTime TsReceivedUtc { get; set; }
 
         /// <summary>
-        /// Trading-status action code. Common values: 0=None, 1=PreOpen, 2=PreCross,
-        /// 3=Quoting, 4=Cross, 5=Rotation, 6=NewPriceIndication, 7=Trading,
-        /// 8=Halt, 9=TradingRangeIndication.
+        /// Trading-status action code, as Databento's <c>StatusAction</c> numbering. Common values: 0=None, 1=PreOpen, 2=PreCross,
+        /// 3=Quoting, 4=Cross, 5=Rotation, 6=NewPriceIndication, 7=Trading, 8=Halt, 9=Pause, 10=Suspend, 11=PreClose,
+        /// 12=Close, 13=PostClose, 14=SsrChange, 15=NotAvailableForTrading.
         /// </summary>
         public ushort Action { get; set; }
 
@@ -42,7 +42,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         /// </summary>
         public ushort TradingEvent { get; set; }
 
-        /// <summary><see langword="true"/> if trading is currently active for this instrument.</summary>
+        /// <summary><see langword="true"/> if trading is currently active for this instrument; "not available" (<c>~</c>) decodes as <see langword="false"/>.</summary>
         public bool IsTrading { get; set; }
 
         /// <summary><see langword="true"/> if quoting is currently permitted for this instrument.</summary>

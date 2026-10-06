@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 
 using Databento.CSharpApiClient.DataModel.Dbn;
+using Databento.CSharpApiClient.DataModel.Json;
 using Databento.CSharpApiClient.Exceptions;
 
 using Xunit;
@@ -596,20 +597,36 @@ namespace Databento.CSharpApiClient.IntegrationTests
         // =====================================================================
 
         [SkippableFact]
-        public async Task GetStatistics_Spy_ReturnsRecords()
+        public async Task GetStatistics_EsH4_MatchesTheJsonEncoding()
         {
             this.SkipIfNoApiKey();
             using DatabentoClient client = this.CreateBinaryClient();
 
-            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 0, 0, 0, TimeSpan.Zero);
-            DateTimeOffset end   = new DateTimeOffset(2022, 5, 17, 0, 0, 0, TimeSpan.Zero);
+            // GLBX.MDP3 2024 data is served as DBN v3 (80-byte Statistics records); older XNAS.ITCH data still comes back as v1.
+            DateTimeOffset start = new DateTimeOffset(2024, 3, 15, 0, 0, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2024, 3, 16, 0, 0, 0, TimeSpan.Zero);
 
             try
             {
-                StatisticsRecordDbn[] records = await client.GetStatisticsAsync(Datasets.XnasItch, "SPY", start, end);
+                StatisticsRecordDbn[] records = await client.GetStatisticsAsync(Datasets.GlbxMdp3, "ESH4", start, end);
                 Assert.NotNull(records);
                 Assert.NotEmpty(records);
-                Assert.True(records[0].StatType > 0 || records[0].Price > 0, "expected at least one decoded field to be non-zero");
+
+                // A misread binary layout shifts the fields after quantity while staying plausible, so pin every decoded field to the
+                // JSON encoding of the same request, which shares no layout code with the binary decoder.
+                using DatabentoJsonClient jsonClient = this.CreateJsonClient();
+                StatisticsRecordJson[] jsonRecords = await jsonClient.GetStatisticsAsync(Datasets.GlbxMdp3, "ESH4", start, end);
+
+                Assert.Equal(jsonRecords.Length, records.Length);
+                for(int i = 0; i < records.Length; ++i)
+                {
+                    Assert.Equal(jsonRecords[i].Quantity, records[i].Quantity);
+                    Assert.Equal(jsonRecords[i].Sequence, records[i].Sequence);
+                    Assert.Equal(jsonRecords[i].StatType, records[i].StatType);
+                    Assert.Equal(jsonRecords[i].ChannelId, records[i].ChannelId);
+                    Assert.Equal(jsonRecords[i].UpdateAction, records[i].UpdateAction);
+                    Assert.Equal(jsonRecords[i].TsRefUtc, records[i].TsRefUtc);
+                }
             }
             catch(DatabentoHttpException ex) { SkipIfNoLicense(ex); throw; }
         }

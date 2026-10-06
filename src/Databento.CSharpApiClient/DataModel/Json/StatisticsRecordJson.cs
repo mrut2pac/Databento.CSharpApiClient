@@ -30,10 +30,10 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonConverter(typeof(NanoPriceConverter))]
         public double Price { get; set; }
 
-        /// <summary>Statistic quantity value (e.g. open interest).</summary>
+        /// <summary>Statistic quantity value (e.g. open interest); <see cref="long.MaxValue"/> when the statistic carries no quantity.</summary>
         [JsonPropertyName("quantity")]
         [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
-        public int Quantity { get; set; }
+        public long Quantity { get; set; }
 
         /// <summary>Venue sequence number.</summary>
         [JsonPropertyName("sequence")]

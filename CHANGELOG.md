@@ -8,6 +8,16 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 - `ResolveSymbols` / `ResolveSymbolsAsync` resolved only the **last** symbol of a multi-symbol request ([#27](https://github.com/mrut2pac/Databento.CSharpApiClient/issues/27)). Each symbol went out as its own repeated `symbols` form field and `symbology.resolve` keeps only the last one, so every other symbol was silently absent from `result` — indistinguishable from not being listed. The symbols now travel in one comma-joined field, as `batch.submit_job` and the timeseries endpoints already send them.
+- `GetStatistics` / `GetStatisticsAsync` (JSON) failed on any response carrying a quantity outside 32 bits — including `INT64_MAX`, which the API sends when a statistic has no quantity — so in practice every futures statistics request threw.
+- `GetStatistics` / `GetStatisticsAsync` (DBN) misread every field after `price` on DBN v3 data. The API serves newer data as DBN v3 (e.g. GLBX.MDP3 in 2024), whose 80-byte Statistics record widens `quantity` to 64 bits; the decoder read 32, which shifted `sequence`, `ts_in_delta`, `stat_type`, `channel_id`, `update_action` and `stat_flags` without any error. Some older data (e.g. XNAS.ITCH in 2022) still arrives as v1, so both layouts are now decoded, chosen by record length.
+- `GetStatus` / `GetStatusAsync` (JSON) threw on every record: the API sends `action`, `reason` and `trading_event` as numeric codes, not strings.
+- `StatisticsRecordDbn.TsRefUtc` decoded DBN's undefined timestamp (`u64::MAX`) as `DateTime.MinValue`; it is now `null`, as in the JSON encoding.
+
+### Changed
+- **Breaking (public property types), required by the fixes above — the next release is therefore 2.0.0:**
+  - `StatisticsRecordJson.Quantity` and `StatisticsRecordDbn.Quantity`: `int` → `long`. Binary-breaking; source-breaking where `Quantity` is assigned to an `int`.
+  - `StatusRecordJson.Action`, `Reason` and `TradingEvent`: `string` → `ushort`, matching `StatusRecordDbn`. These never deserialized from a live response before, so no working caller depended on the string form.
+  - The `is_trading` / `is_quoting` / `is_short_sell_restricted` docs now list `"~"` (not available), which the API sends, instead of `"U"`.
 
 ## [1.4.0] - 2026-09-17
 

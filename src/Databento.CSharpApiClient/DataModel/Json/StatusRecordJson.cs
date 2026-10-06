@@ -20,31 +20,32 @@ namespace Databento.CSharpApiClient.DataModel.Json
         public DateTime TsReceivedUtc { get; set; }
 
         /// <summary>
-        /// The status action code that generated this update (e.g. <c>"H"</c> = halt,
-        /// <c>"Q"</c> = quote-only, <c>"T"</c> = trading).
+        /// Status action code that generated this update, as Databento's <c>StatusAction</c> numbering
+        /// (e.g. <c>7</c> = trading, <c>8</c> = halt, <c>14</c> = short-sell restriction change).
         /// </summary>
         [JsonPropertyName("action")]
-        public string Action { get; set; }
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public ushort Action { get; set; }
 
-        /// <summary>
-        /// Trading halt reason code (e.g. <c>"0"</c> = not halted / normal, <c>"T12"</c> = regulatory halt).
-        /// </summary>
+        /// <summary>Reason code for the status change, as Databento's <c>StatusReason</c> numbering (<c>0</c> = none).</summary>
         [JsonPropertyName("reason")]
-        public string Reason { get; set; }
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public ushort Reason { get; set; }
 
-        /// <summary>Trading event code describing the specific event (e.g. <c>"0"</c> = no event).</summary>
+        /// <summary>Further detail on the trading event, as Databento's <c>TradingEvent</c> numbering (<c>0</c> = none).</summary>
         [JsonPropertyName("trading_event")]
-        public string TradingEvent { get; set; }
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+        public ushort TradingEvent { get; set; }
 
-        /// <summary>Indicates whether the instrument is currently in a tradeable state (<c>"Y"</c>, <c>"N"</c>, or <c>"U"</c> = unknown).</summary>
+        /// <summary>Whether the instrument is currently in a tradeable state (<c>"Y"</c>, <c>"N"</c>, or <c>"~"</c> = not available).</summary>
         [JsonPropertyName("is_trading")]
         public string IsTrading { get; set; }
 
-        /// <summary>Indicates whether the instrument is currently in a quotable state (<c>"Y"</c>, <c>"N"</c>, or <c>"U"</c> = unknown).</summary>
+        /// <summary>Whether the instrument is currently in a quotable state (<c>"Y"</c>, <c>"N"</c>, or <c>"~"</c> = not available).</summary>
         [JsonPropertyName("is_quoting")]
         public string IsQuoting { get; set; }
 
-        /// <summary>Indicates whether short-selling is restricted for this instrument (<c>"Y"</c>, <c>"N"</c>, or <c>"U"</c> = unknown).</summary>
+        /// <summary>Whether short-selling is restricted for this instrument (<c>"Y"</c>, <c>"N"</c>, or <c>"~"</c> = not available).</summary>
         [JsonPropertyName("is_short_sell_restricted")]
         public string IsShortSellRestricted { get; set; }
 

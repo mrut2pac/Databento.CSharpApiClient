@@ -7,10 +7,13 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
     /// A publisher-statistics record deserialized from a DBN binary stream.
     /// Schema: <c>statistics</c> — rtype <c>Statistics</c> (0x18).
     /// Carries settlement price, open interest, and other per-instrument statistics.
-    /// Record body is 44 bytes; total record = 60 bytes (length_byte = 15).
+    /// Decodes both layouts by record length: DBN v3 (80 bytes, 64-bit quantity) and the earlier 32-bit-quantity layout.
     /// </summary>
     public sealed class StatisticsRecordDbn
     {
+        // Body size of a DBN v3 Statistics record: 80 bytes less the 16-byte header.
+        private const int StatisticsV3BodyBytes = 64;
+
         /// <summary>DBN record-type discriminator (<see cref="RType.Statistics"/>).</summary>
         public RType RecordType { get; set; }
 
@@ -32,8 +35,11 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         /// <summary>Statistic price value (display-scaled).</summary>
         public double Price { get; set; }
 
-        /// <summary>Statistic quantity value (e.g. open interest).</summary>
-        public int Quantity { get; set; }
+        /// <summary>
+        /// Statistic quantity value (e.g. open interest). When the statistic carries no quantity it is <see cref="long.MaxValue"/> in DBN v3
+        /// records and <see cref="int.MaxValue"/> in the older 32-bit layout.
+        /// </summary>
+        public long Quantity { get; set; }
 
         /// <summary>Venue sequence number.</summary>
         public uint Sequence { get; set; }
@@ -81,9 +87,11 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                 {
                     record.TsReceivedUtc = Utils.FromUnixNs(body.ReadUInt64()).UtcDateTime;
                     ulong tsRefNs = body.ReadUInt64();
-                    record.TsRefUtc = tsRefNs == 0 ? (DateTime?)null : Utils.FromUnixNs(tsRefNs).UtcDateTime;
+                    // u64::MAX is DBN's undefined timestamp, which the JSON encoding reports as null too
+                    record.TsRefUtc = tsRefNs == 0 || tsRefNs == ulong.MaxValue ? (DateTime?)null : Utils.FromUnixNs(tsRefNs).UtcDateTime;
                     record.Price       = Utils.NanoToDouble(body.ReadInt64());
-                    record.Quantity    = body.ReadInt32();
+                    // DBN v3 widened quantity to 64 bits (80-byte record); reading it as 32 bits would shift every field after it
+                    record.Quantity    = bodyBytes.Length >= StatisticsV3BodyBytes ? body.ReadInt64() : body.ReadInt32();
                     record.Sequence    = body.ReadUInt32();
                     record.TsInDelta   = body.ReadInt32();
                     record.StatType    = body.ReadUInt16();

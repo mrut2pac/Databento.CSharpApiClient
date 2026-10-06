@@ -257,17 +257,56 @@ namespace Databento.CSharpApiClient.UnitTests
         [TestMethod]
         public async Task GetStatusAsync_ValidJsonLine_ReturnsParsedRecord()
         {
+            // Shape of a live XNAS.ITCH status record: action, reason and trading_event are numeric codes.
             string json = "{" + MakeHeader(rtype: 18) + ",\"ts_recv\":\"2022-05-16T13:30:00.000000000Z\","
-                + "\"action\":\"H\",\"reason\":\"T1\",\"trading_event\":\"0\","
-                + "\"is_trading\":\"N\",\"is_quoting\":\"N\",\"is_short_sell_restricted\":\"U\"}";
+                + "\"action\":7,\"reason\":2,\"trading_event\":1,"
+                + "\"is_trading\":\"N\",\"is_quoting\":\"~\",\"is_short_sell_restricted\":\"N\"}";
 
             using DatabentoJsonClient client = BuildClient(json);
             StatusRecordJson[] records = await client.GetStatusAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
 
             Assert.AreEqual(1, records.Length);
-            Assert.AreEqual("H", records[0].Action);
-            Assert.AreEqual("T1", records[0].Reason);
+            Assert.AreEqual((ushort)7, records[0].Action);
+            Assert.AreEqual((ushort)2, records[0].Reason);
+            Assert.AreEqual((ushort)1, records[0].TradingEvent);
             Assert.AreEqual("N", records[0].IsTrading);
+            Assert.AreEqual("~", records[0].IsQuoting);
+        }
+
+        // =====================================================================
+        // Statistics
+        // =====================================================================
+
+        [TestMethod]
+        public async Task GetStatisticsAsync_UndefinedQuantity_ParsesTheInt64Sentinel()
+        {
+            // A live GLBX.MDP3 statistics record as the client requests it (pretty timestamps and prices): quantity is a 64-bit integer sent
+            // as a string, INT64_MAX when undefined, and an undefined ts_ref is null.
+            string json = "{\"ts_recv\":\"2024-03-15T00:22:48.057050737Z\",\"hd\":{\"ts_event\":\"2024-03-15T00:22:48.056637873Z\",\"rtype\":24,"
+                + "\"publisher_id\":1,\"instrument_id\":17077},\"ts_ref\":null,\"price\":\"5155.250000000\",\"quantity\":\"9223372036854775807\","
+                + "\"sequence\":58896890,\"ts_in_delta\":15240,\"stat_type\":5,\"channel_id\":0,\"update_action\":1,\"stat_flags\":0}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            StatisticsRecordJson[] records = await client.GetStatisticsAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
+
+            Assert.AreEqual(1, records.Length);
+            Assert.AreEqual(long.MaxValue, records[0].Quantity);
+            Assert.IsNull(records[0].TsRefUtc);
+            Assert.AreEqual(58896890u, records[0].Sequence);
+            Assert.AreEqual((ushort)5, records[0].StatType);
+        }
+
+        [TestMethod]
+        public async Task GetStatisticsAsync_QuantityBeyondInt32_ParsesIt()
+        {
+            string json = "{" + MakeHeader(rtype: 24) + ",\"ts_recv\":\"2024-03-15T00:22:48.057050737Z\","
+                + "\"price\":\"5155.25\",\"quantity\":\"4294967296\",\"sequence\":1,\"ts_in_delta\":0,"
+                + "\"stat_type\":6,\"channel_id\":0,\"update_action\":1,\"stat_flags\":0}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            StatisticsRecordJson[] records = await client.GetStatisticsAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
+
+            Assert.AreEqual(4294967296L, records[0].Quantity);
         }
 
         // =====================================================================

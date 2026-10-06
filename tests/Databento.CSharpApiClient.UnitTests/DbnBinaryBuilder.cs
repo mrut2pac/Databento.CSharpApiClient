@@ -49,6 +49,9 @@ namespace Databento.CSharpApiClient.UnitTests
         /// <summary>Total byte size of a Statistics record (header=16 + body=44).</summary>
         internal const int StatisticsRecordBytes = 60;
 
+        /// <summary>Total byte size of a DBN v3 Statistics record (header=16 + body=64).</summary>
+        internal const int StatisticsRecordBytesV3 = 80;
+
         /// <summary>Total byte size of a Status record (header=16 + body=24).</summary>
         internal const int StatusRecordBytes = 40;
 
@@ -213,6 +216,20 @@ namespace Databento.CSharpApiClient.UnitTests
             }
         }
 
+        /// <summary>Returns a byte stream of DBN v3 Statistics records, whose 80-byte layout carries a 64-bit quantity.</summary>
+        public static byte[] BuildStatisticsStreamV3(params StatisticsSeed[] records)
+        {
+            using(MemoryStream ms = new MemoryStream())
+            using(BinaryWriter w = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
+            {
+                WriteMetadata(w, schema: 0x18 /*Statistics*/, version: 3);
+                foreach(StatisticsSeed rec in records)
+                    WriteStatisticsRecordV3(w, rec);
+                w.Flush();
+                return ms.ToArray();
+            }
+        }
+
         /// <summary>Returns a DBN v2 byte stream containing the supplied Status records.</summary>
         public static byte[] BuildStatusStream(params StatusSeed[] records)
         {
@@ -245,13 +262,13 @@ namespace Databento.CSharpApiClient.UnitTests
         // Metadata block
         // =====================================================================================
 
-        private static void WriteMetadata(BinaryWriter w, ushort schema)
+        private static void WriteMetadata(BinaryWriter w, ushort schema, byte version = 2)
         {
-            // DBN v2 prelude: 'D','B','N', version=2
+            // DBN prelude: 'D','B','N', version (v2 metadata layout, which v3 shares)
             w.Write((byte)'D');
             w.Write((byte)'B');
             w.Write((byte)'N');
-            w.Write((byte)2);
+            w.Write(version);
 
             // metadata_length (u32 LE) — must match the body we write next (120 bytes)
             const uint metaLen = 120;
@@ -547,7 +564,7 @@ namespace Databento.CSharpApiClient.UnitTests
             w.Write(DateTimeOffsetToNs(rec.TsReceived));
             w.Write(DateTimeOffsetToNs(rec.TsRef));
             w.Write(PriceToNano(rec.Price));
-            w.Write(rec.Quantity);
+            w.Write((int)rec.Quantity);
             w.Write(rec.Sequence);
             w.Write(rec.TsInDelta);
             w.Write(rec.StatType);
@@ -555,6 +572,29 @@ namespace Databento.CSharpApiClient.UnitTests
             w.Write(rec.UpdateAction);
             w.Write((byte)0x00); // stat_flags
             w.Write((ushort)0);  // _reserved (2 bytes)
+        }
+
+        private static void WriteStatisticsRecordV3(BinaryWriter w, StatisticsSeed rec)
+        {
+            w.Write((byte)(StatisticsRecordBytesV3 / 4)); // length_byte = 20
+            w.Write((byte)0x18);                           // rtype = Statistics
+            w.Write(rec.PublisherId);
+            w.Write(rec.InstrumentId);
+            w.Write(DateTimeOffsetToNs(rec.TsEvent));
+
+            // Body (64 bytes):
+            // ts_recv(8)+ts_ref(8)+price(8)+quantity(8)+sequence(4)+ts_in_delta(4)+stat_type(2)+channel_id(2)+update_action(1)+stat_flags(1)+_reserved(18)
+            w.Write(DateTimeOffsetToNs(rec.TsReceived));
+            w.Write(rec.TsRefUndefined ? ulong.MaxValue : DateTimeOffsetToNs(rec.TsRef));
+            w.Write(PriceToNano(rec.Price));
+            w.Write(rec.Quantity);
+            w.Write(rec.Sequence);
+            w.Write(rec.TsInDelta);
+            w.Write(rec.StatType);
+            w.Write(rec.ChannelId);
+            w.Write(rec.UpdateAction);
+            w.Write(rec.StatFlags);
+            w.Write(new byte[18]); // _reserved
         }
 
         private static void WriteStatusRecord(BinaryWriter w, StatusSeed rec)
@@ -805,12 +845,14 @@ namespace Databento.CSharpApiClient.UnitTests
         public DateTimeOffset TsReceived { get; set; }
         public DateTimeOffset TsRef { get; set; }
         public double Price { get; set; }
-        public int Quantity { get; set; }
+        public long Quantity { get; set; }
         public uint Sequence { get; set; }
         public int TsInDelta { get; set; }
         public ushort StatType { get; set; }
         public ushort ChannelId { get; set; }
         public byte UpdateAction { get; set; }
+        public byte StatFlags { get; set; }
+        public bool TsRefUndefined { get; set; }
     }
 
     internal sealed class StatusSeed

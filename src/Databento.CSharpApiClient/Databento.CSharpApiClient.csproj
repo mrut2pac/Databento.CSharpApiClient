@@ -21,7 +21,7 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>1.4.0</Version>
+    <Version>2.0.0</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
@@ -31,6 +31,25 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
+v2.0.0 — 2026-10-06
+
+Breaking (public property types, required by the fixes below)
+- StatisticsRecordJson.Quantity and StatisticsRecordDbn.Quantity: int -> long.
+- StatusRecordJson.Action, Reason and TradingEvent: string -> ushort, matching StatusRecordDbn.
+
+Fixed
+- ResolveSymbols resolved only the last symbol of a multi-symbol request: symbols now travel in
+  one comma-joined field, as symbology.resolve keeps only the last of repeated fields.
+- Statistics (JSON) threw on any 64-bit quantity, including INT64_MAX for "no quantity".
+- Statistics (DBN) misread every field after price on DBN v3 data (80-byte records); both the
+  v3 and the older layout are now decoded, chosen by record length.
+- Status (JSON) threw on every record: action, reason and trading_event are numeric codes.
+- Definitions (DBN) misread the strike and instrument class in DBN v1 (360-byte records) and
+  almost every field in DBN v3 (520-byte records); both layouts are now decoded, verified
+  against live records, and any other length is refused instead of misread.
+- DefinitionRecordJson.Action was always null: the API names the field security_update_action.
+- Undefined DBN timestamps (u64::MAX) now decode as null rather than a bogus date.
+
 v1.4.0 — 2026-09-17
 
 Added

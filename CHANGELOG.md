@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-06
+
 ### Fixed
 - `ResolveSymbols` / `ResolveSymbolsAsync` resolved only the **last** symbol of a multi-symbol request ([#27](https://github.com/mrut2pac/Databento.CSharpApiClient/issues/27)). Each symbol went out as its own repeated `symbols` form field and `symbology.resolve` keeps only the last one, so every other symbol was silently absent from `result` — indistinguishable from not being listed. The symbols now travel in one comma-joined field, as `batch.submit_job` and the timeseries endpoints already send them.
 - `GetStatistics` / `GetStatisticsAsync` (JSON) failed on any response carrying a quantity outside 32 bits — including `INT64_MAX`, which the API sends when a statistic has no quantity — so in practice every futures statistics request threw.
@@ -102,7 +104,8 @@ Initial release.
 - HTTP retry with exponential back-off and jitter
 - Zero external dependencies — pure `System.Text.Json` on .NET 8+
 
-[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.4.0...v2.0.0
 [1.4.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.2.3...v1.3.0
 [1.2.3]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.2.1...v1.2.3

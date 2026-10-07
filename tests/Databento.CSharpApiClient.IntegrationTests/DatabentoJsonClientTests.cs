@@ -171,6 +171,11 @@ namespace Databento.CSharpApiClient.IntegrationTests
             foreach(string symbol in symbols)
             {
                 Assert.True(resolution.Result.TryGetValue(symbol, out MappedSymbol[] mappings) && mappings.Length > 0, $"{symbol} was not resolved");
+
+                // each interval read in full: the instrument it maps to and the day it starts and ends on
+                Assert.False(string.IsNullOrEmpty(mappings[0].Symbol), $"{symbol} resolved without an instrument");
+                Assert.Equal("2014-02-07", mappings[0].StartDate);
+                Assert.Equal("2014-02-08", mappings[0].EndDate);
             }
         }
 

@@ -645,5 +645,30 @@ namespace Databento.CSharpApiClient.UnitTests
             Assert.AreEqual(1, symbolFields.Length);
             Assert.AreEqual("SPXW  140207C01275000,SPXW  140207P02050000", WebUtility.UrlDecode(symbolFields[0].Substring("symbols=".Length)));
         }
+
+        [TestMethod]
+        public async Task ResolveSymbolsAsync_IntervalsAsTheApiSendsThem_MapTheirSymbolAndDates()
+        {
+            // a live symbology.resolve response: each interval is {"d0","d1","s"}, not named after the request's fields
+            string json = "{\"result\":{\"SPY   220520P00450000\":[{\"d0\":\"2021-10-27\",\"d1\":\"2022-05-21\",\"s\":\"240846\"}]},"
+                + "\"symbols\":[\"SPY   220520P00450000\"],\"stype_in\":\"raw_symbol\",\"stype_out\":\"instrument_id\","
+                + "\"start_date\":\"2016-05-20\",\"end_date\":\"2022-05-21\",\"partial\":[\"SPY   220520P00450000\"],\"not_found\":[],"
+                + "\"message\":\"Partially resolved\",\"status\":1}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            SymbologyResolution resolution = await client.ResolveSymbolsAsync(new SymbologyRequest
+            {
+                Dataset = Datasets.OpraPillar,
+                Symbols = new[] { "SPY   220520P00450000" },
+                StartDate = "2016-05-20",
+                EndDate = "2022-05-21",
+            });
+
+            MappedSymbol[] intervals = resolution.Result["SPY   220520P00450000"];
+            Assert.AreEqual(1, intervals.Length);
+            Assert.AreEqual("240846", intervals[0].Symbol);
+            Assert.AreEqual("2021-10-27", intervals[0].StartDate);
+            Assert.AreEqual("2022-05-21", intervals[0].EndDate);
+        }
     }
 }

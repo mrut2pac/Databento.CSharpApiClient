@@ -16,8 +16,8 @@ namespace Databento.CSharpApiClient.UnitTests
         // Header is always 16 bytes (1+1+2+4+8).
         // =====================================================================================
 
-        /// <summary>Total byte size of a CBBO record (header=16 + body=52).</summary>
-        internal const int CbboRecordBytes = 68;
+        /// <summary>Total byte size of a CBBO record (header=16 + body=64).</summary>
+        internal const int CbboRecordBytes = 80;
 
         /// <summary>Total byte size of a Trades record (header=16 + body=32).</summary>
         internal const int TradesRecordBytes = 48;
@@ -25,8 +25,8 @@ namespace Databento.CSharpApiClient.UnitTests
         /// <summary>Total byte size of an MBP-1 record (header=16 + body=64).</summary>
         internal const int Mbp1RecordBytes = 80;
 
-        /// <summary>Total byte size of an MBO record (header=16 + body=48).</summary>
-        internal const int MboRecordBytes = 64;
+        /// <summary>Total byte size of an MBO record (header=16 + body=40).</summary>
+        internal const int MboRecordBytes = 56;
 
         /// <summary>Total byte size of an MBP-10 record (header=16 + body=352).</summary>
         internal const int Mbp10RecordBytes = 368;
@@ -37,11 +37,11 @@ namespace Databento.CSharpApiClient.UnitTests
         /// <summary>Total byte size of a TBBO record (header=16 + body=64).</summary>
         internal const int TbboRecordBytes = 80;
 
-        /// <summary>Total byte size of a TCBBO record (header=16 + body=60).</summary>
-        internal const int TcbboRecordBytes = 76;
+        /// <summary>Total byte size of a TCBBO record (header=16 + body=64).</summary>
+        internal const int TcbboRecordBytes = 80;
 
-        /// <summary>Total byte size of a CMBP-1 record (header=16 + body=60).</summary>
-        internal const int Cmbp1RecordBytes = 76;
+        /// <summary>Total byte size of a CMBP-1 record (header=16 + body=64).</summary>
+        internal const int Cmbp1RecordBytes = 80;
 
         /// <summary>Total byte size of an OHLCV record (header=16 + body=40).</summary>
         internal const int OhlcvRecordBytes = 56;
@@ -331,13 +331,13 @@ namespace Databento.CSharpApiClient.UnitTests
 
         private static void WriteCbboRecord(BinaryWriter w, CbboSeed rec)
         {
-            w.Write((byte)(CbboRecordBytes / 4)); // length_byte = 17
+            w.Write((byte)(CbboRecordBytes / 4)); // length_byte = 20
             w.Write((byte)0xC0);                  // rtype = Cbbo1S
             w.Write(rec.PublisherId);
             w.Write(rec.InstrumentId);
             w.Write(DateTimeOffsetToNs(rec.TsEvent));
 
-            // Body (52 bytes)
+            // Body (64 bytes)
             w.Write(PriceToNano(rec.Price));
             w.Write(rec.Size);
             w.Write((byte)0x00);                    // skip
@@ -345,12 +345,15 @@ namespace Databento.CSharpApiClient.UnitTests
             w.Write((byte)0x00);                    // flags
             w.Write((byte)0x00);                    // skip
             w.Write(DateTimeOffsetToNs(rec.TsReceived));
+            w.Write(0UL);                           // reserved
             w.Write(PriceToNano(rec.BidPrice));
             w.Write(PriceToNano(rec.AskPrice));
             w.Write(rec.BidSize);
             w.Write(rec.AskSize);
             w.Write(rec.BidPublisherId);
+            w.Write((ushort)0);                     // reserved
             w.Write(rec.AskPublisherId);
+            w.Write((ushort)0);                     // reserved
         }
 
         private static void WriteTradesRecord(BinaryWriter w, TradesSeed rec)
@@ -401,23 +404,21 @@ namespace Databento.CSharpApiClient.UnitTests
 
         private static void WriteMboRecord(BinaryWriter w, MboSeed rec)
         {
-            w.Write((byte)(MboRecordBytes / 4));    // length_byte = 16
+            w.Write((byte)(MboRecordBytes / 4));    // length_byte = 14
             w.Write((byte)0xA0);                    // rtype = Mbo
             w.Write(rec.PublisherId);
             w.Write(rec.InstrumentId);
             w.Write(DateTimeOffsetToNs(rec.TsEvent));
 
-            // Body (48 bytes):
-            // order_id(8)+price(8)+size(4)+flags(1)+_pad(1)+channel_id(2)+action(1)+side(1)+_pad(6)+ts_recv(8)+ts_in_delta(4)+sequence(4)
+            // Body (40 bytes):
+            // order_id(8)+price(8)+size(4)+flags(1)+channel_id(1)+action(1)+side(1)+ts_recv(8)+ts_in_delta(4)+sequence(4)
             w.Write(rec.OrderId);
             w.Write(PriceToNano(rec.Price));
             w.Write(rec.Size);
             w.Write((byte)rec.Flags);
-            w.Write((byte)0x00);                    // _pad
-            w.Write(rec.ChannelId);
+            w.Write((byte)rec.ChannelId);
             w.Write((byte)rec.Action);
             w.Write((byte)'B');                     // side = Buyer
-            w.Write(new byte[6]);                   // _pad (align ts_recv to 8 bytes)
             w.Write(DateTimeOffsetToNs(rec.TsReceived));
             w.Write(rec.TsInDelta);
             w.Write(rec.Sequence);
@@ -509,7 +510,7 @@ namespace Databento.CSharpApiClient.UnitTests
 
         private static void WriteTcbboRecord(BinaryWriter w, byte rtype, TcbboSeed rec)
         {
-            w.Write((byte)(TcbboRecordBytes / 4)); // length_byte = 19
+            w.Write((byte)(TcbboRecordBytes / 4)); // length_byte = 20
             w.Write(rtype);                         // 0xC2=Tcbbo or 0xB1=Cmbp1
             w.Write(rec.PublisherId);
             w.Write(rec.InstrumentId);
@@ -526,13 +527,15 @@ namespace Databento.CSharpApiClient.UnitTests
             w.Write(rec.TsInDelta);
             w.Write(rec.Sequence);
 
-            // CbboLevel (28 bytes)
+            // CbboLevel (32 bytes): bid_pb and ask_pb are each followed by 2 reserved bytes
             w.Write(PriceToNano(rec.BidPrice));
             w.Write(PriceToNano(rec.AskPrice));
             w.Write(rec.BidSize);
             w.Write(rec.AskSize);
             w.Write(rec.BidPublisherId);
+            w.Write((ushort)0);                     // reserved
             w.Write(rec.AskPublisherId);
+            w.Write((ushort)0);                     // reserved
         }
 
         private static void WriteOhlcvRecord(BinaryWriter w, byte rtype, OhlcvSeed rec)

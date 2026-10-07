@@ -83,11 +83,13 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                     cbboRecord.Flags = (MessageInfoBits)bodyBytesReader.ReadByte();
                     bodyBytesReader.ReadByte();
                     cbboRecord.TsReceivedUtc = Utils.FromUnixNs(bodyBytesReader.ReadUInt64()).UtcDateTime;
+                    bodyBytesReader.ReadUInt64(); // reserved: the level starts at body offset 32
                     cbboRecord.BidPrice = Utils.NanoToDouble(bodyBytesReader.ReadInt64());
                     cbboRecord.AskPrice = Utils.NanoToDouble(bodyBytesReader.ReadInt64());
                     cbboRecord.BidSize = bodyBytesReader.ReadUInt32();
                     cbboRecord.AskSize = bodyBytesReader.ReadUInt32();
                     cbboRecord.BidPublisherId = bodyBytesReader.ReadUInt16();
+                    bodyBytesReader.ReadUInt16(); // reserved
                     cbboRecord.AskPublisherId = bodyBytesReader.ReadUInt16();
                 }
 

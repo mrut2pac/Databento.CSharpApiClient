@@ -3,8 +3,7 @@ using System.Text.Json.Serialization;
 namespace Databento.CSharpApiClient.DataModel.Batch
 {
     /// <summary>
-    /// Metadata for a single output file produced by a Databento batch job.
-    /// Returned inside <see cref="BatchJob.Files"/>.
+    /// Metadata for a single output file produced by a Databento batch job, as returned by <c>batch.list_files</c>.
     /// </summary>
     public sealed class BatchFile
     {
@@ -12,7 +11,7 @@ namespace Databento.CSharpApiClient.DataModel.Batch
         [JsonPropertyName("filename")]
         public string Filename { get; set; }
 
-        /// <summary>File size in bytes (uncompressed).</summary>
+        /// <summary>File size in bytes.</summary>
         [JsonPropertyName("size")]
         public long Size { get; set; }
 
@@ -20,12 +19,28 @@ namespace Databento.CSharpApiClient.DataModel.Batch
         [JsonPropertyName("hash")]
         public string Hash { get; set; }
 
-        /// <summary>HTTPS download URL. Use with <see cref="DatabentoJsonClient.DownloadBatchFileAsync"/>.</summary>
-        [JsonPropertyName("https_url")]
-        public string HttpsUrl { get; set; }
+        /// <summary>The file's download URLs, by protocol.</summary>
+        [JsonPropertyName("urls")]
+        public BatchFileUrls Urls { get; set; }
 
-        /// <summary>FTP download URL (alternative delivery path).</summary>
-        [JsonPropertyName("ftp_url")]
-        public string FtpUrl { get; set; }
+        /// <summary>HTTPS download URL, from <see cref="Urls"/>. Use with <see cref="DatabentoJsonClient.DownloadBatchFileAsync"/>.</summary>
+        [JsonIgnore]
+        public string HttpsUrl
+        {
+            get => this.httpsUrl ?? this.Urls?.Https;
+            set => this.httpsUrl = value;
+        }
+
+        /// <summary>FTP download URL (alternative delivery path), from <see cref="Urls"/>.</summary>
+        [JsonIgnore]
+        public string FtpUrl
+        {
+            get => this.ftpUrl ?? this.Urls?.Ftp;
+            set => this.ftpUrl = value;
+        }
+
+        private string httpsUrl;
+
+        private string ftpUrl;
     }
 }

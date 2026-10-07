@@ -42,6 +42,8 @@ namespace Databento.CSharpApiClient.JsonSupport
                 case 'U': return OrderBookAction.Update;
                 case 'F': return OrderBookAction.Fill;
                 case 'T': return OrderBookAction.Trade;
+                case 'C': return OrderBookAction.Cancel;
+                case 'N': return OrderBookAction.None;
                 default: return OrderBookAction.Unknown;
             }
         }

@@ -100,6 +100,45 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [Fact]
+        public void Check_DefinitionLayouts_MayOnlyMissTheOtherLayoutsKeys()
+        {
+            // a v3 record (it carries leg_count) that lost leg_price must fail; a v1 record never carries legs
+            string v3 = DefinitionWith("\"leg_count\":0,\"leg_index\":0,\"leg_instrument_id\":0,\"leg_raw_symbol\":\"\",\"leg_instrument_class\":null,"
+                + "\"leg_side\":\"N\",\"leg_delta\":null,\"leg_ratio_price_numerator\":0,\"leg_ratio_price_denominator\":0,"
+                + "\"leg_ratio_qty_numerator\":0,\"leg_ratio_qty_denominator\":0,\"leg_underlying_id\":0");
+            string v1 = DefinitionWith("\"trading_reference_price\":null,\"trading_reference_date\":65535,\"md_security_trading_status\":255,\"settl_price_type\":255");
+
+            Assert.Empty(Check("timeseries.get_range?dataset=OPRA.PILLAR&schema=definition", v1));
+            Assert.Contains(
+                Check("timeseries.get_range?dataset=GLBX.MDP3&schema=definition", v3),
+                problem => problem.StartsWith("never sent: DefinitionRecordJson.LegPrice", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void Check_SummaryEndpoint_RequiresOnlyMappedKeys()
+        {
+            string summary = "[{\"id\":\"XNAS-20261007-QNNA8K8TYH\",\"state\":\"done\",\"ts_received\":\"2026-10-07T15:27:59.842454000Z\"}]";
+
+            Assert.Empty(Check("batch.list_jobs", summary));
+            Assert.Single(Check("batch.list_jobs", summary.Replace("\"state\"", "\"status\"", StringComparison.Ordinal)));
+        }
+
+        // a definition carrying every key both layouts share, plus the layout-specific ones given
+        private static string DefinitionWith(string layoutKeys)
+            => "{\"ts_recv\":\"2024-05-01T00:00:00.000000000Z\"," + Header + ",\"raw_symbol\":\"X\",\"security_update_action\":\"A\","
+                + "\"instrument_class\":\"F\",\"min_price_increment\":null,\"display_factor\":null,\"expiration\":null,\"activation\":null,"
+                + "\"high_limit_price\":null,\"low_limit_price\":null,\"max_price_variation\":null,\"unit_of_measure_qty\":null,"
+                + "\"min_price_increment_amount\":null,\"price_ratio\":null,\"inst_attrib_value\":0,\"underlying_id\":0,\"raw_instrument_id\":0,"
+                + "\"market_depth_implied\":0,\"market_depth\":0,\"market_segment_id\":0,\"max_trade_vol\":0,\"min_lot_size\":0,"
+                + "\"min_lot_size_block\":0,\"min_lot_size_round_lot\":0,\"min_trade_vol\":0,\"contract_multiplier\":0,\"decay_quantity\":0,"
+                + "\"original_contract_size\":0,\"appl_id\":0,\"maturity_year\":0,\"decay_start_date\":0,\"channel_id\":0,\"currency\":\"\","
+                + "\"settl_currency\":\"\",\"secsubtype\":\"\",\"group\":\"\",\"exchange\":\"\",\"asset\":\"\",\"cfi\":\"\",\"security_type\":\"\","
+                + "\"unit_of_measure\":\"\",\"underlying\":\"\",\"strike_price_currency\":\"\",\"strike_price\":null,\"match_algorithm\":\" \","
+                + "\"main_fraction\":0,\"price_display_format\":0,\"sub_fraction\":0,\"underlying_product\":0,\"maturity_month\":0,"
+                + "\"maturity_day\":0,\"maturity_week\":0,\"user_defined_instrument\":\"N\",\"contract_multiplier_unit\":0,"
+                + "\"flow_schedule_type\":0,\"tick_rule\":0," + layoutKeys + "}";
+
+        [Fact]
         public void Check_SchemaInAPostedForm_SelectsTheModel()
         {
             string trade = Trade.Replace("\"sequence\":1}", "\"sequence\":1,\"new_field\":7}", StringComparison.Ordinal);

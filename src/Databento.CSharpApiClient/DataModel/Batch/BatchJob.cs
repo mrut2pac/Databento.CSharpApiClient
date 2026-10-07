@@ -2,25 +2,52 @@ using System;
 
 using System.Text.Json.Serialization;
 
+using Databento.CSharpApiClient.JsonSupport;
+
 namespace Databento.CSharpApiClient.DataModel.Batch
 {
     /// <summary>
     /// Represents a Databento batch-download job as returned by <c>batch.submit_job</c>,
     /// <c>batch.list_jobs</c>, and <c>batch.get_job_details</c>.
     /// </summary>
+    /// <remarks>
+    /// <c>batch.list_jobs</c> returns a summary of each job: only <see cref="JobId"/>, <see cref="State"/> and
+    /// <see cref="TsReceived"/> are filled. <see cref="DatabentoJsonClient.GetBatchJobDetailsAsync"/> returns the rest.
+    /// </remarks>
     public sealed class BatchJob
     {
         /// <summary>Unique batch job identifier assigned by Databento.</summary>
-        [JsonPropertyName("job_id")]
+        [JsonPropertyName("id")]
         public string JobId { get; set; }
+
+        /// <summary>The account that submitted the job.</summary>
+        [JsonPropertyName("user_id")]
+        public string UserId { get; set; }
+
+        /// <summary>The bill the job is charged to; <see langword="null"/> until it is billed.</summary>
+        [JsonPropertyName("bill_id")]
+        public string BillId { get; set; }
 
         /// <summary>Dataset the job was submitted against (e.g. <c>"OPRA.PILLAR"</c>).</summary>
         [JsonPropertyName("dataset")]
         public string Dataset { get; set; }
 
-        /// <summary>Symbols requested (as submitted, before resolution).</summary>
+        /// <summary>Symbols requested (as submitted, before resolution). The API sends them comma-joined in one string.</summary>
         [JsonPropertyName("symbols")]
+        [JsonConverter(typeof(CommaSeparatedListConverter))]
         public string[] Symbols { get; set; }
+
+        /// <summary>Symbology type of <see cref="Symbols"/> (e.g. <c>"raw_symbol"</c>).</summary>
+        [JsonPropertyName("stype_in")]
+        public string StypeIn { get; set; }
+
+        /// <summary>Symbology type the output maps symbols to (e.g. <c>"instrument_id"</c>).</summary>
+        [JsonPropertyName("stype_out")]
+        public string StypeOut { get; set; }
+
+        /// <summary>Maximum number of records requested; <see langword="null"/> for no limit.</summary>
+        [JsonPropertyName("limit")]
+        public long? Limit { get; set; }
 
         /// <summary>Schema string (e.g. <c>"cbbo-1s"</c>).</summary>
         [JsonPropertyName("schema")]
@@ -62,6 +89,18 @@ namespace Databento.CSharpApiClient.DataModel.Batch
         [JsonPropertyName("split_duration")]
         public string SplitDuration { get; set; }
 
+        /// <summary>Maximum size of each output file in bytes; <see langword="null"/> when files aren't split by size.</summary>
+        [JsonPropertyName("split_size")]
+        public long? SplitSize { get; set; }
+
+        /// <summary>Archive the output is packaged in (e.g. <c>"zip"</c>); <see langword="null"/> for none.</summary>
+        [JsonPropertyName("packaging")]
+        public string Packaging { get; set; }
+
+        /// <summary>How the output is delivered (e.g. <c>"download"</c>).</summary>
+        [JsonPropertyName("delivery")]
+        public string Delivery { get; set; }
+
         /// <summary>
         /// Job lifecycle state: <c>"received"</c>, <c>"queued"</c>, <c>"processing"</c>,
         /// <c>"done"</c>, or <c>"expired"</c>.
@@ -101,11 +140,20 @@ namespace Databento.CSharpApiClient.DataModel.Batch
         [JsonPropertyName("actual_size")]
         public long? ActualSize { get; set; }
 
+        /// <summary>Size of the delivered package in bytes, including metadata files.</summary>
+        [JsonPropertyName("package_size")]
+        public long? PackageSize { get; set; }
+
+        /// <summary>Processing progress in percent (0-100).</summary>
+        [JsonPropertyName("progress")]
+        public int? Progress { get; set; }
+
         /// <summary>Cost charged for this job in US dollars.</summary>
         [JsonPropertyName("cost_usd")]
         public decimal? CostUsd { get; set; }
 
-        /// <summary>Output files available for download once the job is in state <c>"done"</c>.</summary>
+        /// <summary>Always <c>null</c>: the job responses list no files. Use <see cref="DatabentoJsonClient.ListBatchFilesAsync"/>.</summary>
+        [Obsolete("The batch job responses list no files, so this is always null. Use ListBatchFiles.")]
         [JsonPropertyName("files")]
         public BatchFile[] Files { get; set; }
     }

@@ -5,7 +5,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
     /// <summary>
     /// A single consolidated BBO price level used by TCBBO and CMBP-1 DBN records.
     /// Carries publisher IDs (bid_pb / ask_pb) instead of order counts.
-    /// Each level occupies exactly 28 bytes on the wire.
+    /// Each level occupies 32 bytes on the wire: each publisher ID is followed by 2 reserved bytes.
     /// </summary>
     public sealed class CbboLevelDbn
     {
@@ -27,7 +27,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         /// <summary>Publisher ID of the venue contributing the best ask.</summary>
         public ushort AskPublisherId { get; set; }
 
-        /// <summary>Reads one 28-byte consolidated BBO level from <paramref name="reader"/>.</summary>
+        /// <summary>Reads one 32-byte consolidated BBO level from <paramref name="reader"/>.</summary>
         /// <param name="reader">Reader positioned at the start of the level.</param>
         public static CbboLevelDbn ReadFromBytes(BinaryReader reader)
         {
@@ -39,7 +39,9 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                 level.BidSize = reader.ReadUInt32();
                 level.AskSize = reader.ReadUInt32();
                 level.BidPublisherId = reader.ReadUInt16();
+                reader.ReadUInt16(); // reserved
                 level.AskPublisherId = reader.ReadUInt16();
+                reader.ReadUInt16(); // reserved
                 return level;
             }
             catch(System.IO.EndOfStreamException)

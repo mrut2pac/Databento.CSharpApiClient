@@ -7,7 +7,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
     /// A trade-plus-consolidated-BBO record deserialized from a DBN binary stream.
     /// Schema: <c>tcbbo</c> — rtype <c>Tcbbo</c> (0xC2).
     /// Carries the last trade event (32 bytes) plus the NBBO level immediately preceding
-    /// the trade (28 bytes). Total record body is 60 bytes (length_byte = 19).
+    /// the trade (32 bytes). Total record body is 64 bytes (length_byte = 20).
     /// </summary>
     public sealed class TcbboRecordDbn
     {
@@ -89,7 +89,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                     record.TsInDelta = body.ReadInt32();
                     body.ReadUInt32();                  // reserved
 
-                    // Consolidated BBO level (28 bytes)
+                    // Consolidated BBO level (32 bytes)
                     record.Level = CbboLevelDbn.ReadFromBytes(body);
                 }
 

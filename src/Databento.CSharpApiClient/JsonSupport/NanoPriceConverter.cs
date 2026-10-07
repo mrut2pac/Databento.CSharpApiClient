@@ -6,8 +6,7 @@ namespace Databento.CSharpApiClient.JsonSupport
 {
     internal class NanoPriceConverter : JsonConverter<double>
     {
-        // Without this, System.Text.Json short-circuits null tokens for the non-nullable
-        // double target and throws before Read runs, so the null → NaN branch never executes.
+        // a value-type converter receives null tokens anyway; this states that reading null (as NaN) is intended
         public override bool HandleNull => true;
 
         public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

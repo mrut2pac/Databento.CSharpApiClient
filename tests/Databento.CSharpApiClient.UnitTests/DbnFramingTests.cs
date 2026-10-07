@@ -817,7 +817,25 @@ namespace Databento.CSharpApiClient.UnitTests
                 Assert.AreEqual(s.InstrumentId, r.InstrumentId, $"records[{i}].InstrumentId");
                 AssertUtcClose(s.TsEvent, r.TsEventUtc, $"records[{i}].TsEventUtc");
                 AssertUtcClose(s.TsReceived, r.TsReceivedUtc, $"records[{i}].TsReceivedUtc");
+                AssertUtcClose(s.AuctionTime, r.AuctionTime.Value, $"records[{i}].AuctionTime");
             }
+        }
+
+        [TestMethod]
+        public async Task GetImbalance_UndefinedAuctionTime_ReadsAsNull()
+        {
+            // a venue that doesn't set the auction time sends 0 (XNAS.ITCH does)
+            ImbalanceSeed seed = new ImbalanceSeed
+            {
+                PublisherId = 2, InstrumentId = 15144,
+                TsEvent = Start, TsReceived = Start,
+                AuctionTime = DateTimeOffset.MinValue,
+            };
+
+            DatabentoClient client = BuildClientWithBytes(DbnBinaryBuilder.BuildImbalanceStream(seed));
+            ImbalanceRecordDbn record = (await client.GetImbalanceAsync(AnyDataset, AnySymbol, Start, End))[0];
+
+            Assert.IsNull(record.AuctionTime);
         }
 
         // =====================================================================================

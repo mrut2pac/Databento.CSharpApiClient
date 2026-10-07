@@ -7,7 +7,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
     /// A consolidated market-by-price depth-1 record deserialized from a DBN binary stream.
     /// Schema: <c>cmbp-1</c> — rtype <c>Cmbp1</c> (0xB1).
     /// Binary layout is identical to TCBBO (<see cref="TcbboRecordDbn"/>); only the rtype differs.
-    /// Record body is 60 bytes (32-byte event + 28-byte consolidated level); total record = 76 bytes (length_byte = 19).
+    /// Record body is 64 bytes (32-byte event + 32-byte consolidated level); total record = 80 bytes (length_byte = 20).
     /// </summary>
     public sealed class Cmbp1RecordDbn
     {
@@ -89,7 +89,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                     record.TsInDelta = body.ReadInt32();
                     body.ReadUInt32();                  // reserved
 
-                    // Consolidated BBO level (28 bytes)
+                    // Consolidated BBO level (32 bytes)
                     record.Level = CbboLevelDbn.ReadFromBytes(body);
                 }
 

@@ -64,9 +64,13 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonConverter(typeof(NanoPriceConverter))]
         public double UnitOfMeasureQty { get; set; }
 
-        /// <summary>Contract size multiplier (e.g. 100 shares per equity option contract).</summary>
+        /// <summary>
+        /// Contract size multiplier, of the type given by <see cref="ContractMultiplierUnit"/>; <see cref="double.NaN"/> when undefined.
+        /// Venues often leave it undefined (OPRA.PILLAR options and GLBX.MDP3 futures both do),
+        /// so don't rely on it for contract size.
+        /// </summary>
         [JsonPropertyName("contract_multiplier")]
-        [JsonConverter(typeof(NanoPriceConverter))]
+        [JsonConverter(typeof(UndefinedInt32Converter))]
         public double ContractMultiplier { get; set; }
 
         /// <summary>Option strike price (display-scaled). <see cref="double.NaN"/> when undefined (e.g. non-option instruments).</summary>

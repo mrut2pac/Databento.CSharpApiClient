@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 using Databento.CSharpApiClient.DataModel;
@@ -225,15 +227,43 @@ namespace Databento.CSharpApiClient.IntegrationTests
         // =====================================================================
 
         [SkippableFact]
-        public async Task ListBatchJobs_ReturnsArray()
+        public async Task ListBatchJobs_StatesFilter_ReturnsOnlyThoseStates()
         {
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
 
-            // Lists historical jobs (may be empty on a fresh account — that is acceptable).
-            BatchJob[] jobs = await client.ListBatchJobsAsync();
+            BatchJob[] all = await client.ListBatchJobsAsync();
+            Skip.If(all.Length == 0, "The account has no batch jobs.");
+            BatchJob[] notDone = await client.ListBatchJobsAsync(new[] { "queued", "processing", "expired" });
 
-            Assert.NotNull(jobs);
+            // a job can change state between the calls, so only what the filter returned is pinned
+            Assert.All(all, job => Assert.False(string.IsNullOrEmpty(job.JobId)));
+            Assert.All(notDone, job => Assert.NotEqual("done", job.State));
+        }
+
+        [SkippableFact]
+        public async Task BatchJob_DoneJob_HasItsDetailsAndDownloadableFiles()
+        {
+            // reads a job the account already has; submitting one per run would be billed every run
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            BatchJob summary = (await client.ListBatchJobsAsync(new[] { "done" })).FirstOrDefault();
+            Skip.If(summary == null, "The account has no batch job in state done.");
+
+            BatchJob job = await client.GetBatchJobDetailsAsync(summary.JobId);
+            BatchFile[] files = await client.ListBatchFilesAsync(job.JobId);
+
+            Assert.Equal(summary.JobId, job.JobId);
+            Assert.NotEmpty(job.Symbols);
+            Assert.NotEmpty(files);
+            Assert.All(files, file => Assert.StartsWith("https://", file.HttpsUrl, StringComparison.Ordinal));
+
+            BatchFile smallest = files.OrderBy(file => file.Size).First();
+            using Stream content = await client.DownloadBatchFileAsync(smallest.HttpsUrl);
+            using MemoryStream copy = new MemoryStream();
+            await content.CopyToAsync(copy);
+            Assert.Equal(smallest.Size, copy.Length);
         }
 
         // =====================================================================

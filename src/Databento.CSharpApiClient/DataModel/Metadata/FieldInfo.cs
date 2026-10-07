@@ -1,3 +1,4 @@
+using System;
 using System.Text.Json.Serialization;
 
 namespace Databento.CSharpApiClient.DataModel.Metadata
@@ -16,7 +17,8 @@ namespace Databento.CSharpApiClient.DataModel.Metadata
         [JsonPropertyName("type")]
         public string Type { get; set; }
 
-        /// <summary>Human-readable description of the field's meaning.</summary>
+        /// <summary>Always <c>null</c>: the API sends only each field's name and type.</summary>
+        [Obsolete("metadata.list_fields sends only name and type, so this is always null.")]
         [JsonPropertyName("description")]
         public string Description { get; set; }
     }

@@ -552,22 +552,21 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public async Task GetOhlcvEod_Spy_ReturnsRecords()
+        public async Task GetOhlcvEod_NoDatasetServesTheSchema_Refuses()
         {
+            // why GetOhlcvEod is obsolete: this test fails once the dataset starts serving ohlcv-eod
             this.SkipIfNoApiKey();
             using DatabentoClient client = this.CreateBinaryClient();
 
             DateTimeOffset start = new DateTimeOffset(2022, 5, 1, 0, 0, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2022, 5, 31, 0, 0, 0, TimeSpan.Zero);
 
-            try
-            {
-                OhlcvRecordDbn[] records = await client.GetOhlcvEodAsync(Datasets.XnasItch, "SPY", start, end);
-                Assert.NotNull(records);
-                Assert.NotEmpty(records);
-                Assert.True(records[0].Open > 0);
-            }
-            catch(DatabentoHttpException ex) { SkipIfNoLicense(ex); throw; }
+#pragma warning disable CS0618 // exercising the obsolete method on purpose
+            DatabentoHttpException ex = await Assert.ThrowsAsync<DatabentoHttpException>(
+                () => client.GetOhlcvEodAsync(Datasets.XnasItch, "SPY", start, end));
+#pragma warning restore CS0618
+
+            Assert.Equal("dataset_schema_not_supported", ex.ErrorCase);
         }
 
         [SkippableFact]

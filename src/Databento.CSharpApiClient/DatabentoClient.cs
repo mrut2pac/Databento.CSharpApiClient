@@ -623,6 +623,7 @@ namespace Databento.CSharpApiClient
         }
 
         /// <summary>Gets OHLCV end-of-day bar records for a single symbol.</summary>
+        [Obsolete("No Databento dataset serves the ohlcv-eod schema, so this always fails. Use GetOhlcv1d.")]
         public Task<OhlcvRecordDbn[]> GetOhlcvEodAsync(
             string dataset,
             string symbol,
@@ -634,6 +635,7 @@ namespace Databento.CSharpApiClient
         }
 
         /// <summary>Gets OHLCV end-of-day bar records for multiple symbols.</summary>
+        [Obsolete("No Databento dataset serves the ohlcv-eod schema, so this always fails. Use GetOhlcv1d.")]
         public Task<OhlcvRecordDbn[]> GetOhlcvEodAsync(
             string dataset,
             IReadOnlyList<string> symbols,
@@ -693,12 +695,14 @@ namespace Databento.CSharpApiClient
         }
 
         /// <summary>Synchronous convenience wrapper for <see cref="GetOhlcvEodAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        [Obsolete("No Databento dataset serves the ohlcv-eod schema, so this always fails. Use GetOhlcv1d.")]
         public OhlcvRecordDbn[] GetOhlcvEod(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
         {
             return this.GetOhlcvEodAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
         }
 
         /// <summary>Synchronous convenience wrapper for <see cref="GetOhlcvEodAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        [Obsolete("No Databento dataset serves the ohlcv-eod schema, so this always fails. Use GetOhlcv1d.")]
         public OhlcvRecordDbn[] GetOhlcvEod(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
         {
             return this.GetOhlcvEodAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();

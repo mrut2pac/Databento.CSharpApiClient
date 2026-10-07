@@ -6,6 +6,31 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+- `UnitPriceInfo.UnitPrices`: the price per GB for each schema, keyed by schema name, as `metadata.list_unit_prices` sends it.
+- `DatasetCondition.Date`: the day the condition describes.
+
+### Fixed
+- `GetDatasetCondition` / `GetDatasetConditionAsync` with a date returned the dataset's **first** day instead of the requested one. The client sent `date=`, which `metadata.get_dataset_condition` ignores; it now sends `start_date` and `end_date`, and returns `null` for a day without an entry (a weekend, or before the dataset starts). A day after the dataset's available end throws `DatabentoHttpException` (`422`). Without a date it returns the most recent day, as documented, instead of the oldest.
+- `ListConditions` / `ListConditionsAsync` always failed with `404 Not Found`: `metadata.list_conditions` doesn't exist. They now call `metadata.get_dataset_condition`, and `endDateStr` is documented as inclusive, which is how the API reads it.
+
+### Deprecated
+These are marked `[Obsolete]` and will be removed in the next major version:
+- `GetSymbolMappings` / `GetSymbolMappingsAsync`: they always fail with `400`, because `timeseries.get_range` has no `symbol_mapping` schema. Use `ResolveSymbols`.
+- `GetOhlcvEod` / `GetOhlcvEodAsync` (both clients): no dataset serves the `ohlcv-eod` schema. Use `GetOhlcv1d`.
+- Properties the API never sends, so they are always `null` or `0`:
+  - `UnitPriceInfo.UnitPrice`; use `UnitPrices`.
+  - `DatasetCondition.DateGenerated`.
+  - `PublisherInfo.Name`.
+  - `FieldInfo.Description`.
+  - `BboRecordJson.TsInDelta`.
+  - `TcbboRecordJson.Depth` and `.Sequence`.
+  - `Cmbp1RecordJson.Depth` and `.Sequence`.
+  - In the DBN records, the same fields read bytes the format reserves, so they are always 0 too, and the decoder no longer reads them. Nothing else changes, because every other field keeps its offset:
+    - `BboRecordDbn.TsInDelta`.
+    - `TcbboRecordDbn.Depth` and `.Sequence`.
+    - `Cmbp1RecordDbn.Depth` and `.Sequence`.
+
 ## [2.0.1] - 2026-10-07
 
 ### Fixed

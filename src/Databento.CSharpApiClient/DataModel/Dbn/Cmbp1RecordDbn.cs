@@ -38,7 +38,8 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         /// <summary>Message info flags.</summary>
         public MessageInfoBits Flags { get; set; }
 
-        /// <summary>Price level at which the event occurred.</summary>
+        /// <summary>Always 0: the cmbp-1 record has no depth; DBN reserves this byte.</summary>
+        [Obsolete("The cmbp-1 record has no depth, so this is always 0.")]
         public byte Depth { get; set; }
 
         /// <summary>Timestamp when the gateway received this message, in UTC.</summary>
@@ -47,7 +48,8 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         /// <summary>Nanosecond latency delta from venue receipt to gateway receipt.</summary>
         public int TsInDelta { get; set; }
 
-        /// <summary>Venue sequence number for ordering within the same nanosecond.</summary>
+        /// <summary>Always 0: the cmbp-1 record has no sequence; DBN reserves these bytes.</summary>
+        [Obsolete("The cmbp-1 record has no sequence, so this is always 0.")]
         public uint Sequence { get; set; }
 
         /// <summary>Consolidated NBBO level after this event.</summary>
@@ -75,17 +77,17 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                 using(BinaryReader body = new BinaryReader(ms))
                 {
                     // Event section (32 bytes):
-                    // price(8) + size(4) + action(1) + side(1) + flags(1) + depth(1)
-                    // + ts_recv(8) + ts_in_delta(4) + sequence(4)
+                    // price(8) + size(4) + action(1) + side(1) + flags(1) + reserved(1)
+                    // + ts_recv(8) + ts_in_delta(4) + reserved(4)
                     record.Price     = Utils.NanoToDouble(body.ReadInt64());
                     record.Size      = body.ReadUInt32();
                     record.Action    = (OrderBookAction)body.ReadByte();
                     record.Side      = Utils.ReadSide(body.ReadByte());
                     record.Flags     = (MessageInfoBits)body.ReadByte();
-                    record.Depth     = body.ReadByte();
+                    body.ReadByte();                    // reserved
                     record.TsReceivedUtc = Utils.FromUnixNs(body.ReadUInt64()).UtcDateTime;
                     record.TsInDelta = body.ReadInt32();
-                    record.Sequence  = body.ReadUInt32();
+                    body.ReadUInt32();                  // reserved
 
                     // Consolidated BBO level (28 bytes)
                     record.Level = CbboLevelDbn.ReadFromBytes(body);

@@ -21,7 +21,7 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>2.1.0</Version>
+    <Version>2.2.0</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
@@ -31,6 +31,24 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
+v2.2.0 — 2026-10-07
+
+Added
+- DefinitionRecordDbn decodes every field of both DBN layouts (it read 19), with the same properties as
+  DefinitionRecordJson.
+- ImbalanceRecordDbn.AuctionTime (null when undefined), OrderBookAction.Cancel / None,
+  ListBatchJobs(states, since), BatchFile.Urls, and the BatchJob fields the API sends.
+
+Fixed
+- DBN decoders: MBO read the channel as Action and the action as Side; tcbbo / cmbp-1 AskPublisherId
+  was always 0; cbbo-1s / cbbo-1m read the book level 8 bytes early.
+- BatchJob.JobId was always null (the API sends id); BatchJob.Symbols failed to read the comma-joined
+  string the API sends; BatchFile.HttpsUrl / FtpUrl were always null; ListBatchJobs ignored its filters.
+- DefinitionRecordJson.ContractMultiplier read its undefined value as 2147483647; it now reads NaN.
+
+Deprecated (to be removed in the next major version)
+- ListBatchJobs(dataset, state), BatchJob.Files and ImbalanceRecordDbn.AuctionTimeUtc.
+
 v2.1.0 — 2026-10-07
 
 Added

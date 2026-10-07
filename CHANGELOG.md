@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-10-07
+
 ### Added
 - `DefinitionRecordDbn` decodes every field of both DBN layouts, including `Underlying`. Before, it read 19 of them. It now has the same properties as `DefinitionRecordJson`: the leg fields come from the v3 layout, and the trading reference fields from v1.
 - `ImbalanceRecordDbn.AuctionTime`: `null` when the venue doesn't set the auction time.
@@ -176,7 +178,8 @@ Initial release.
 - HTTP retry with exponential back-off and jitter
 - Zero external dependencies — pure `System.Text.Json` on .NET 8+
 
-[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.4.0...v2.0.0

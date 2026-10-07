@@ -42,7 +42,8 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonConverter(typeof(FlagsConverter))]
         public MessageInfoBits Flags { get; set; }
 
-        /// <summary>Level at which the trade occurred (0-indexed).</summary>
+        /// <summary>Always 0: the tcbbo schema carries no <c>depth</c>.</summary>
+        [Obsolete("The tcbbo schema carries no depth, so this is always 0.")]
         [JsonPropertyName("depth")]
         [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public uint Depth { get; set; }
@@ -56,7 +57,8 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public long TsInDelta { get; set; }
 
-        /// <summary>Venue sequence number for ordering within the same nanosecond.</summary>
+        /// <summary>Always 0: the tcbbo schema carries no <c>sequence</c>.</summary>
+        [Obsolete("The tcbbo schema carries no sequence, so this is always 0.")]
         [JsonPropertyName("sequence")]
         [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public uint Sequence { get; set; }

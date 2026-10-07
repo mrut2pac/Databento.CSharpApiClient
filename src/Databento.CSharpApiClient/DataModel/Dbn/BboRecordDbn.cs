@@ -37,7 +37,8 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         /// <summary>Timestamp when the gateway received this message, in UTC.</summary>
         public DateTime TsReceivedUtc { get; set; }
 
-        /// <summary>Nanosecond latency delta from venue receipt to gateway receipt.</summary>
+        /// <summary>Always 0: the BBO records have no ts_in_delta; DBN reserves these bytes.</summary>
+        [Obsolete("The bbo-1s and bbo-1m records have no ts_in_delta, so this is always 0.")]
         public int TsInDelta { get; set; }
 
         /// <summary>Venue sequence number for ordering within the same nanosecond.</summary>
@@ -69,7 +70,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                 {
                     // Layout (64 bytes):
                     // price(8) + size(4) + _reserved(1) + side(1) + flags(1) + _reserved(1)
-                    // + ts_recv(8) + ts_in_delta(4) + sequence(4) + Mbp1Level(32)
+                    // + ts_recv(8) + _reserved(4) + sequence(4) + Mbp1Level(32)
                     record.Price     = Utils.NanoToDouble(body.ReadInt64());
                     record.Size      = body.ReadUInt32();
                     body.ReadByte();  // _reserved (action slot)
@@ -77,7 +78,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                     record.Flags     = (MessageInfoBits)body.ReadByte();
                     body.ReadByte();  // _reserved (depth slot)
                     record.TsReceivedUtc = Utils.FromUnixNs(body.ReadUInt64()).UtcDateTime;
-                    record.TsInDelta = body.ReadInt32();
+                    body.ReadInt32();  // _reserved
                     record.Sequence  = body.ReadUInt32();
                     record.Level     = Mbp1LevelDbn.ReadFromBytes(body);
                 }

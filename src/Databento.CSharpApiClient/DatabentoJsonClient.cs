@@ -176,61 +176,34 @@ namespace Databento.CSharpApiClient
         public UnitPriceInfo[] ListUnitPrices(string dataset) => this.ListUnitPricesAsync(dataset).GetAwaiter().GetResult();
 
         /// <summary>
-        /// Returns the data-quality condition for <paramref name="dataset"/> on a given date.
-        /// When <paramref name="dateStr"/> is omitted the most recent condition entry is returned.
+        /// Returns the data-quality condition of <paramref name="dataset"/> on one day, or <c>null</c> when the dataset has no entry
+        /// for that day (a weekend, or before the dataset starts); a day after its available end throws <see cref="DatabentoHttpException"/>.
+        /// When <paramref name="dateStr"/> is omitted the most recent day is returned, which downloads the dataset's whole daily history.
         /// </summary>
         /// <param name="dataset">The dataset identifier.</param>
         /// <param name="dateStr">Optional ISO-8601 date string (e.g. <c>"2024-01-15"</c>).</param>
         /// <param name="ct">Cancellation token.</param>
         public async Task<DatasetCondition> GetDatasetConditionAsync(string dataset, string dateStr = null, CancellationToken ct = default)
         {
-            string path = "metadata.get_dataset_condition?dataset=" + Uri.EscapeDataString(dataset);
-            if(!string.IsNullOrEmpty(dateStr))
+            DatasetCondition[] days = await this.ListConditionsAsync(dataset, dateStr, dateStr, ct).ConfigureAwait(false);
+
+            // ISO dates order as strings, so the latest day wins whatever order the API lists them in
+            DatasetCondition latest = null;
+            foreach(DatasetCondition day in days)
             {
-                path += "&date=" + Uri.EscapeDataString(dateStr);
-            }
-
-            string json = await this.GetRawJsonAsync(path, ct).ConfigureAwait(false);
-
-            // The API returns an array of daily conditions (no "dataset" field in each element —
-            // only "date", "condition", "last_modified_date"). Return the first entry and back-fill
-            // the dataset identifier from the request parameter.
-            DatasetCondition result;
-            using(JsonDocument doc = JsonDocument.Parse(json))
-            {
-                if(doc.RootElement.ValueKind == JsonValueKind.Array)
+                if(latest == null || string.CompareOrdinal(day.Date, latest.Date) > 0)
                 {
-                    string firstElementJson = null;
-                    foreach(JsonElement element in doc.RootElement.EnumerateArray())
-                    {
-                        firstElementJson = element.GetRawText();
-                        break;
-                    }
-
-                    if(firstElementJson == null)
-                    {
-                        return null;
-                    }
-
-                    result = JsonSerializer.Deserialize<DatasetCondition>(firstElementJson, RecordDeserializeOptions);
-                }
-                else
-                {
-                    result = JsonSerializer.Deserialize<DatasetCondition>(json, RecordDeserializeOptions);
+                    latest = day;
                 }
             }
 
-            if(result != null && result.Dataset == null)
-            {
-                result.Dataset = dataset;
-            }
-
-            return result;
+            return latest;
         }
 
         /// <summary>
-        /// Returns the data-quality condition for <paramref name="dataset"/> on a given date.
-        /// When <paramref name="dateStr"/> is omitted the most recent condition entry is returned.
+        /// Returns the data-quality condition of <paramref name="dataset"/> on one day, or <c>null</c> when the dataset has no entry
+        /// for that day (a weekend, or before the dataset starts); a day after its available end throws <see cref="DatabentoHttpException"/>.
+        /// When <paramref name="dateStr"/> is omitted the most recent day is returned, which downloads the dataset's whole daily history.
         /// </summary>
         /// <param name="dataset">The dataset identifier.</param>
         /// <param name="dateStr">Optional ISO-8601 date string (e.g. <c>"2024-01-15"</c>).</param>
@@ -252,16 +225,16 @@ namespace Databento.CSharpApiClient
         public DateRange GetDatasetRange(string dataset) => this.GetDatasetRangeAsync(dataset).GetAwaiter().GetResult();
 
         /// <summary>
-        /// Returns all daily data-quality conditions for <paramref name="dataset"/>,
-        /// optionally filtered to a date range.
+        /// Returns the daily data-quality conditions of <paramref name="dataset"/>, oldest first,
+        /// optionally limited to a date range.
         /// </summary>
         /// <param name="dataset">The dataset identifier.</param>
         /// <param name="startDateStr">Optional ISO-8601 start date string (inclusive), e.g. <c>"2024-01-01"</c>.</param>
-        /// <param name="endDateStr">Optional ISO-8601 end date string (exclusive), e.g. <c>"2024-02-01"</c>.</param>
+        /// <param name="endDateStr">Optional ISO-8601 end date string (inclusive), e.g. <c>"2024-01-31"</c>.</param>
         /// <param name="ct">Cancellation token.</param>
         public async Task<DatasetCondition[]> ListConditionsAsync(string dataset, string startDateStr = null, string endDateStr = null, CancellationToken ct = default)
         {
-            StringBuilder path = new StringBuilder("metadata.list_conditions?dataset=").Append(Uri.EscapeDataString(dataset));
+            StringBuilder path = new StringBuilder("metadata.get_dataset_condition?dataset=").Append(Uri.EscapeDataString(dataset));
             if(!string.IsNullOrEmpty(startDateStr))
             {
                 path.Append("&start_date=").Append(Uri.EscapeDataString(startDateStr));
@@ -319,12 +292,12 @@ namespace Databento.CSharpApiClient
         }
 
         /// <summary>
-        /// Returns all daily data-quality conditions for <paramref name="dataset"/>,
-        /// optionally filtered to a date range.
+        /// Returns the daily data-quality conditions of <paramref name="dataset"/>, oldest first,
+        /// optionally limited to a date range.
         /// </summary>
         /// <param name="dataset">The dataset identifier.</param>
         /// <param name="startDateStr">Optional ISO-8601 start date string (inclusive).</param>
-        /// <param name="endDateStr">Optional ISO-8601 end date string (exclusive).</param>
+        /// <param name="endDateStr">Optional ISO-8601 end date string (inclusive).</param>
         public DatasetCondition[] ListConditions(string dataset, string startDateStr = null, string endDateStr = null)
             => this.ListConditionsAsync(dataset, startDateStr, endDateStr).GetAwaiter().GetResult();
 
@@ -711,6 +684,7 @@ namespace Databento.CSharpApiClient
         /// <summary>Returns end-of-day OHLCV bars for a single symbol. Filters on <c>ts_recv</c>.</summary>
         /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
         /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        [Obsolete("No Databento dataset serves the ohlcv-eod schema, so this always fails. Use GetOhlcv1d.")]
         public Task<OhlcvRecordJson[]> GetOhlcvEodAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetOhlcvAsync(dataset, new[] { symbol }, Schema.OhlcvEod, startUtc, endUtc, ct);
 
@@ -741,6 +715,7 @@ namespace Databento.CSharpApiClient
         /// <summary>Returns end-of-day OHLCV bars for a single symbol.</summary>
         /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
         /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        [Obsolete("No Databento dataset serves the ohlcv-eod schema, so this always fails. Use GetOhlcv1d.")]
         public OhlcvRecordJson[] GetOhlcvEod(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetOhlcvEodAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
 
@@ -771,6 +746,7 @@ namespace Databento.CSharpApiClient
         /// <summary>Returns end-of-day OHLCV bars for multiple symbols. Filters on <c>ts_recv</c>.</summary>
         /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
         /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        [Obsolete("No Databento dataset serves the ohlcv-eod schema, so this always fails. Use GetOhlcv1d.")]
         public Task<OhlcvRecordJson[]> GetOhlcvEodAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetOhlcvAsync(dataset, symbols, Schema.OhlcvEod, startUtc, endUtc, ct);
 
@@ -801,6 +777,7 @@ namespace Databento.CSharpApiClient
         /// <summary>Returns end-of-day OHLCV bars for multiple symbols.</summary>
         /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
         /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        [Obsolete("No Databento dataset serves the ohlcv-eod schema, so this always fails. Use GetOhlcv1d.")]
         public OhlcvRecordJson[] GetOhlcvEod(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetOhlcvEodAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
 
@@ -1175,24 +1152,28 @@ namespace Databento.CSharpApiClient
         /// <summary>Returns symbol-mapping records for a single symbol.</summary>
         /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
         /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        [Obsolete("timeseries.get_range has no symbol_mapping schema, so this always fails with 400. Use ResolveSymbols for symbol mappings.")]
         public Task<SymbolMappingRecordJson[]> GetSymbolMappingsAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetGenericRecordsAsync(dataset, new[] { symbol }, Schema.SymbolMapping, startUtc, endUtc, DeserializeSymbolMappingJson, ct);
 
         /// <summary>Returns symbol-mapping records for multiple symbols.</summary>
         /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
         /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param><param name="ct">Cancellation token.</param>
+        [Obsolete("timeseries.get_range has no symbol_mapping schema, so this always fails with 400. Use ResolveSymbols for symbol mappings.")]
         public Task<SymbolMappingRecordJson[]> GetSymbolMappingsAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
             => this.GetGenericRecordsAsync(dataset, symbols, Schema.SymbolMapping, startUtc, endUtc, DeserializeSymbolMappingJson, ct);
 
         /// <summary>Returns symbol-mapping records for a single symbol.</summary>
         /// <param name="dataset">The dataset code.</param><param name="symbol">Instrument raw symbol.</param>
         /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        [Obsolete("timeseries.get_range has no symbol_mapping schema, so this always fails with 400. Use ResolveSymbols for symbol mappings.")]
         public SymbolMappingRecordJson[] GetSymbolMappings(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetSymbolMappingsAsync(dataset, symbol, startUtc, endUtc).GetAwaiter().GetResult();
 
         /// <summary>Returns symbol-mapping records for multiple symbols.</summary>
         /// <param name="dataset">The dataset code.</param><param name="symbols">Instrument raw symbols (up to 2,000).</param>
         /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        [Obsolete("timeseries.get_range has no symbol_mapping schema, so this always fails with 400. Use ResolveSymbols for symbol mappings.")]
         public SymbolMappingRecordJson[] GetSymbolMappings(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
             => this.GetSymbolMappingsAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
 

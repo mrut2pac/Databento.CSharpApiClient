@@ -77,6 +77,9 @@ namespace Databento.CSharpApiClient.IntegrationTests
 
             Assert.NotNull(prices);
             Assert.NotEmpty(prices);
+            Assert.All(prices, p => Assert.False(string.IsNullOrEmpty(p.Mode)));
+            UnitPriceInfo historical = Assert.Single(prices, p => p.Mode == "historical");
+            Assert.True(historical.UnitPrices[Schema.Trades] > 0m);
         }
 
         [SkippableFact]
@@ -89,6 +92,44 @@ namespace Databento.CSharpApiClient.IntegrationTests
 
             Assert.NotNull(condition);
             Assert.False(string.IsNullOrEmpty(condition.Dataset));
+            Assert.False(string.IsNullOrEmpty(condition.Condition));
+            // the most recent day, not the dataset's first
+            DateTime day = DateTime.ParseExact(condition.Date, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            Assert.InRange(day, DateTime.UtcNow.Date.AddDays(-10), DateTime.UtcNow.Date.AddDays(1));
+        }
+
+        [SkippableFact]
+        public async Task GetDatasetCondition_XnasItchOnADate_ReturnsThatDay()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DatasetCondition condition = await client.GetDatasetConditionAsync(Datasets.XnasItch, "2022-05-16");
+
+            Assert.NotNull(condition);
+            Assert.Equal("2022-05-16", condition.Date);
+            Assert.False(string.IsNullOrEmpty(condition.Condition));
+        }
+
+        [SkippableFact]
+        public async Task GetDatasetCondition_XnasItchOnASunday_ReturnsNull()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            Assert.Null(await client.GetDatasetConditionAsync(Datasets.XnasItch, "2022-05-15"));
+        }
+
+        [SkippableFact]
+        public async Task GetDatasetCondition_XnasItchAfterItsAvailableEnd_Throws()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DatabentoHttpException ex = await Assert.ThrowsAsync<DatabentoHttpException>(
+                () => client.GetDatasetConditionAsync(Datasets.XnasItch, "2099-01-02"));
+
+            Assert.Equal("data_start_date_after_available_end_date", ex.ErrorCase);
         }
 
         [SkippableFact]
@@ -1012,28 +1053,22 @@ namespace Databento.CSharpApiClient.IntegrationTests
         // =====================================================================
 
         [SkippableFact]
-        public async Task GetSymbolMappings_SpxwOption_ReturnsRecordsWithSymbols()
+        public async Task GetSymbolMappings_ApiHasNoSymbolMappingSchema_Refuses()
         {
+            // why GetSymbolMappings is obsolete: this test fails once the API starts serving the schema
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
 
             DateTimeOffset start = new DateTimeOffset(2025, 9, 5, 0, 0, 0, TimeSpan.Zero);
             DateTimeOffset end   = new DateTimeOffset(2025, 9, 6, 0, 0, 0, TimeSpan.Zero);
 
-            SymbolMappingRecordJson[] records;
-            try
-            {
-                records = await client.GetSymbolMappingsAsync(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
-            }
-            catch(DatabentoHttpException ex)
-            {
-                SkipIfNoLicense(ex);
-                throw;
-            }
+#pragma warning disable CS0618 // exercising the obsolete method on purpose
+            DatabentoHttpException ex = await Assert.ThrowsAsync<DatabentoHttpException>(
+                () => client.GetSymbolMappingsAsync(Datasets.OpraPillar, "SPXW  250908C06475000", start, end));
+#pragma warning restore CS0618
 
-            Assert.NotNull(records);
-            Assert.NotEmpty(records);
-            Assert.False(string.IsNullOrEmpty(records[0].StypeInSymbol));
+            Assert.Equal(400, ex.StatusCode);
+            Assert.Equal("validation_invalid_parameter", ex.ErrorCase);
         }
 
         // =====================================================================
@@ -1119,20 +1154,25 @@ namespace Databento.CSharpApiClient.IntegrationTests
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
 
-            DatasetCondition[] conditions;
-            try
-            {
-                conditions = await client.ListConditionsAsync(Datasets.OpraPillar);
-            }
-            catch(DatabentoHttpException ex)
-            {
-                SkipIfNoLicense(ex);
-                throw;
-            }
+            DatasetCondition[] conditions = await client.ListConditionsAsync(Datasets.OpraPillar);
 
             Assert.NotNull(conditions);
             Assert.NotEmpty(conditions);
             Assert.All(conditions, c => Assert.False(string.IsNullOrEmpty(c.Condition)));
+            Assert.All(conditions, c => Assert.False(string.IsNullOrEmpty(c.Date)));
+        }
+
+        [SkippableFact]
+        public async Task ListConditions_XnasItchDateRange_ReturnsEachTradingDayInTheRange()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            // Friday 2022-05-13 through Tuesday 2022-05-17, both ends inclusive; no weekend entries
+            DatasetCondition[] conditions = await client.ListConditionsAsync(Datasets.XnasItch, "2022-05-13", "2022-05-17");
+
+            Assert.Equal(new[] { "2022-05-13", "2022-05-16", "2022-05-17" }, Array.ConvertAll(conditions, c => c.Date));
+            Assert.All(conditions, c => Assert.Equal(Datasets.XnasItch, c.Dataset));
         }
     }
 }

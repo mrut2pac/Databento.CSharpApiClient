@@ -69,6 +69,9 @@ namespace Databento.CSharpApiClient.UnitTests
         }
 
         private static DatabentoJsonClient BuildClientCapturingRequest(out List<HttpRequestMessage> captured)
+            => BuildClientCapturingRequest(string.Empty, out captured);
+
+        private static DatabentoJsonClient BuildClientCapturingRequest(string responseBody, out List<HttpRequestMessage> captured)
         {
             List<HttpRequestMessage> requests = new List<HttpRequestMessage>();
             captured = requests;
@@ -79,7 +82,7 @@ namespace Databento.CSharpApiClient.UnitTests
                 .Callback<HttpRequestMessage, CancellationToken>((request, _) => requests.Add(request))
                 .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = new StringContent(string.Empty, Encoding.UTF8, "application/json"),
+                    Content = new StringContent(responseBody, Encoding.UTF8, "application/json"),
                 });
             transport.Setup(t => t.Dispose());
 
@@ -361,19 +364,51 @@ namespace Databento.CSharpApiClient.UnitTests
         // =====================================================================
 
         [TestMethod]
-        public async Task GetSymbolMappingsAsync_ValidJsonLine_ReturnsParsedRecord()
+        public void MethodsTheHistoricalApiCannotServe_AreObsolete()
         {
-            string json = "{" + MakeHeader(rtype: 90) + ",\"ts_recv\":\"2022-05-16T00:00:00.000000000Z\","
-                + "\"stype_in_symbol\":\"SPY\",\"stype_out_symbol\":\"10005003\","
-                + "\"start_date\":\"2022-01-01\",\"end_date\":\"2023-01-01\"}";
+            // timeseries.get_range has no symbol_mapping schema, and no dataset lists ohlcv-eod
+            string[] names = { "GetSymbolMappings", "GetSymbolMappingsAsync", "GetOhlcvEod", "GetOhlcvEodAsync" };
+            int checkedMethods = 0;
+            foreach(Type type in new[] { typeof(DatabentoJsonClient), typeof(DatabentoClient) })
+            {
+                foreach(System.Reflection.MethodInfo method in type.GetMethods())
+                {
+                    if(Array.IndexOf(names, method.Name) >= 0)
+                    {
+                        Assert.IsNotNull(Attribute.GetCustomAttribute(method, typeof(ObsoleteAttribute)), type.Name + "." + method.Name);
+                        checkedMethods++;
+                    }
+                }
+            }
 
-            using DatabentoJsonClient client = BuildClient(json);
-            SymbolMappingRecordJson[] records = await client.GetSymbolMappingsAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
+            Assert.AreEqual(12, checkedMethods);
+        }
 
-            Assert.AreEqual(1, records.Length);
-            Assert.AreEqual("SPY", records[0].StypeInSymbol);
-            Assert.AreEqual("10005003", records[0].StypeOutSymbol);
-            Assert.IsNotNull(records[0].StartDate);
+        [TestMethod]
+        public void PropertiesTheApiNeverSends_AreObsolete()
+        {
+            (Type Type, string Property)[] neverSent =
+            {
+                (typeof(UnitPriceInfo), "UnitPrice"),
+                (typeof(DatasetCondition), "DateGenerated"),
+                (typeof(PublisherInfo), "Name"),
+                (typeof(FieldInfo), "Description"),
+                (typeof(BboRecordJson), "TsInDelta"),
+                (typeof(TcbboRecordJson), "Depth"),
+                (typeof(TcbboRecordJson), "Sequence"),
+                (typeof(Cmbp1RecordJson), "Depth"),
+                (typeof(Cmbp1RecordJson), "Sequence"),
+                (typeof(DataModel.Dbn.BboRecordDbn), "TsInDelta"),
+                (typeof(DataModel.Dbn.TcbboRecordDbn), "Depth"),
+                (typeof(DataModel.Dbn.TcbboRecordDbn), "Sequence"),
+                (typeof(DataModel.Dbn.Cmbp1RecordDbn), "Depth"),
+                (typeof(DataModel.Dbn.Cmbp1RecordDbn), "Sequence"),
+            };
+
+            foreach((Type type, string property) in neverSent)
+            {
+                Assert.IsNotNull(Attribute.GetCustomAttribute(type.GetProperty(property), typeof(ObsoleteAttribute)), type.Name + "." + property);
+            }
         }
 
         // =====================================================================
@@ -440,17 +475,130 @@ namespace Databento.CSharpApiClient.UnitTests
         // Metadata: ListConditions
         // =====================================================================
 
+        // A live metadata.get_dataset_condition response: one element per day, oldest first
+        private const string TwoDayConditions = "[{\"date\":\"2026-10-06\",\"condition\":\"available\",\"last_modified_date\":\"2026-10-07\"},"
+            + "{\"date\":\"2026-10-07\",\"condition\":\"degraded\",\"last_modified_date\":\"2026-10-07\"}]";
+
         [TestMethod]
         public async Task ListConditionsAsync_ArrayResponse_ReturnsParsedConditions()
         {
-            string json = "[{\"date\":\"2024-01-15\",\"condition\":\"good\",\"last_modified_date\":\"2024-01-16\"},"
-                + "{\"date\":\"2024-01-16\",\"condition\":\"good\",\"last_modified_date\":\"2024-01-17\"}]";
-
-            using DatabentoJsonClient client = BuildClient(json);
+            using DatabentoJsonClient client = BuildClient(TwoDayConditions);
             DatasetCondition[] conditions = await client.ListConditionsAsync("OPRA.PILLAR");
 
             Assert.AreEqual(2, conditions.Length);
             Assert.AreEqual("OPRA.PILLAR", conditions[0].Dataset);
+            Assert.AreEqual("2026-10-06", conditions[0].Date);
+            Assert.AreEqual("2026-10-07", conditions[1].Date);
+        }
+
+        [TestMethod]
+        public async Task ListConditionsAsync_DateRange_RequestsGetDatasetConditionWithTheRange()
+        {
+            // metadata.list_conditions doesn't exist; the per-day list comes from get_dataset_condition
+            using DatabentoJsonClient client = BuildClientCapturingRequest("[]", out List<HttpRequestMessage> captured);
+            await client.ListConditionsAsync("XNAS.ITCH", "2026-09-30", "2026-10-02");
+
+            Assert.AreEqual(1, captured.Count);
+            string uri = captured[0].RequestUri.ToString();
+            StringAssert.Contains(uri, "metadata.get_dataset_condition?dataset=XNAS.ITCH");
+            StringAssert.Contains(uri, "start_date=2026-09-30");
+            StringAssert.Contains(uri, "end_date=2026-10-02");
+        }
+
+        // =====================================================================
+        // Metadata: GetDatasetCondition
+        // =====================================================================
+
+        [TestMethod]
+        public async Task GetDatasetConditionAsync_Date_RequestsThatDayOnly()
+        {
+            // the endpoint ignores "date" and answers every day of the dataset
+            using DatabentoJsonClient client = BuildClientCapturingRequest("[]", out List<HttpRequestMessage> captured);
+            await client.GetDatasetConditionAsync("XNAS.ITCH", "2022-05-16");
+
+            Assert.AreEqual(1, captured.Count);
+            string uri = captured[0].RequestUri.ToString();
+            StringAssert.Contains(uri, "start_date=2022-05-16");
+            StringAssert.Contains(uri, "end_date=2022-05-16");
+            Assert.IsFalse(uri.Contains("&date="), uri);
+        }
+
+        [TestMethod]
+        public async Task GetDatasetConditionAsync_Date_ReturnsThatDay()
+        {
+            string json = "[{\"date\":\"2022-05-16\",\"condition\":\"available\",\"last_modified_date\":\"2025-11-27\"}]";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            DatasetCondition condition = await client.GetDatasetConditionAsync("XNAS.ITCH", "2022-05-16");
+
+            Assert.AreEqual("2022-05-16", condition.Date);
+            Assert.AreEqual("available", condition.Condition);
+            Assert.AreEqual("2025-11-27", condition.LastModifiedDate);
+            Assert.AreEqual("XNAS.ITCH", condition.Dataset);
+        }
+
+        [TestMethod]
+        public async Task GetDatasetConditionAsync_NoDate_ReturnsTheMostRecentDay()
+        {
+            using DatabentoJsonClient client = BuildClient(TwoDayConditions);
+            DatasetCondition condition = await client.GetDatasetConditionAsync("XNAS.ITCH");
+
+            Assert.AreEqual("2026-10-07", condition.Date);
+            Assert.AreEqual("degraded", condition.Condition);
+        }
+
+        [TestMethod]
+        public async Task GetDatasetConditionAsync_NoDate_ReturnsTheMostRecentDayWhateverTheOrder()
+        {
+            string newestFirst = "[{\"date\":\"2026-10-07\",\"condition\":\"degraded\",\"last_modified_date\":\"2026-10-07\"},"
+                + "{\"date\":\"2026-10-06\",\"condition\":\"available\",\"last_modified_date\":\"2026-10-07\"}]";
+
+            using DatabentoJsonClient client = BuildClient(newestFirst);
+            DatasetCondition condition = await client.GetDatasetConditionAsync("XNAS.ITCH");
+
+            Assert.AreEqual("2026-10-07", condition.Date);
+        }
+
+        [TestMethod]
+        public async Task GetDatasetConditionAsync_NoDate_RequestsNoRange()
+        {
+            using DatabentoJsonClient client = BuildClientCapturingRequest("[]", out List<HttpRequestMessage> captured);
+            await client.GetDatasetConditionAsync("XNAS.ITCH");
+
+            Assert.AreEqual(1, captured.Count);
+            string uri = captured[0].RequestUri.ToString();
+            Assert.IsFalse(uri.Contains("start_date"), uri);
+            Assert.IsFalse(uri.Contains("end_date"), uri);
+        }
+
+        [TestMethod]
+        public async Task GetDatasetConditionAsync_NoDays_ReturnsNull()
+        {
+            using DatabentoJsonClient client = BuildClient("[]");
+
+            Assert.IsNull(await client.GetDatasetConditionAsync("XNAS.ITCH", "2022-05-15"));
+        }
+
+        // =====================================================================
+        // Metadata: ListUnitPrices
+        // =====================================================================
+
+        [TestMethod]
+        public async Task ListUnitPricesAsync_LiveResponse_MapsThePricePerSchema()
+        {
+            // a live metadata.list_unit_prices response (shortened): one map of schema -> price per mode
+            string json = "[{\"mode\":\"historical\",\"unit_prices\":{\"mbo\":1.2,\"trades\":6.0,\"ohlcv-1d\":30.0}},"
+                + "{\"mode\":\"live\",\"unit_prices\":{\"mbo\":0.6,\"trades\":3.0}}]";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            UnitPriceInfo[] prices = await client.ListUnitPricesAsync("XNAS.ITCH");
+
+            Assert.AreEqual(2, prices.Length);
+            Assert.AreEqual("historical", prices[0].Mode);
+            Assert.AreEqual(3, prices[0].UnitPrices.Count);
+            Assert.AreEqual(1.2m, prices[0].UnitPrices["mbo"]);
+            Assert.AreEqual(30.0m, prices[0].UnitPrices["ohlcv-1d"]);
+            Assert.AreEqual(3.0m, prices[1].UnitPrices[Schema.Trades]);
         }
 
         // =====================================================================

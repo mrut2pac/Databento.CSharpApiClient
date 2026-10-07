@@ -1,3 +1,4 @@
+using System;
 using System.Text.Json.Serialization;
 
 namespace Databento.CSharpApiClient.DataModel.Metadata
@@ -24,7 +25,8 @@ namespace Databento.CSharpApiClient.DataModel.Metadata
         [JsonPropertyName("description")]
         public string Description { get; set; }
 
-        /// <summary>Short publisher name.</summary>
+        /// <summary>Always <c>null</c>: the API sends no publisher name. Use <see cref="Venue"/> or <see cref="Description"/>.</summary>
+        [Obsolete("metadata.list_publishers sends no name, so this is always null. Use Venue or Description.")]
         [JsonPropertyName("name")]
         public string Name { get; set; }
     }

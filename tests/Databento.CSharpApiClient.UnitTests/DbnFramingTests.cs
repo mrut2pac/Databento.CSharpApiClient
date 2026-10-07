@@ -484,7 +484,7 @@ namespace Databento.CSharpApiClient.UnitTests
                 TcbboRecordDbn r = records[i];
                 AssertPriceEqual(s.Price, r.Price, $"records[{i}].Price");
                 Assert.AreEqual(s.Size, r.Size, $"records[{i}].Size");
-                Assert.AreEqual(s.Sequence, r.Sequence, $"records[{i}].Sequence");
+                Assert.AreEqual(s.TsInDelta, r.TsInDelta, $"records[{i}].TsInDelta");
                 Assert.IsNotNull(r.Level, $"records[{i}].Level not null");
                 AssertPriceEqual(s.BidPrice, r.Level.BidPrice, $"records[{i}].Level.BidPrice");
                 AssertPriceEqual(s.AskPrice, r.Level.AskPrice, $"records[{i}].Level.AskPrice");
@@ -540,7 +540,7 @@ namespace Databento.CSharpApiClient.UnitTests
                 TcbboSeed s = seeds[i];
                 Cmbp1RecordDbn r = records[i];
                 AssertPriceEqual(s.Price, r.Price, $"records[{i}].Price");
-                Assert.AreEqual(s.Sequence, r.Sequence, $"records[{i}].Sequence");
+                Assert.AreEqual(s.TsInDelta, r.TsInDelta, $"records[{i}].TsInDelta");
                 Assert.IsNotNull(r.Level, $"records[{i}].Level not null");
                 AssertPriceEqual(s.BidPrice, r.Level.BidPrice, $"records[{i}].Level.BidPrice");
                 Assert.AreEqual(s.BidPublisherId, r.Level.BidPublisherId, $"records[{i}].Level.BidPublisherId");

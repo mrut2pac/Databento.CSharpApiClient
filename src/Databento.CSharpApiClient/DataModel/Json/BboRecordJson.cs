@@ -42,7 +42,8 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonPropertyName("ts_recv")]
         public DateTime TsReceivedUtc { get; set; }
 
-        /// <summary>Nanosecond latency delta from venue receipt to gateway receipt.</summary>
+        /// <summary>Always 0: the bbo-1s and bbo-1m schemas carry no <c>ts_in_delta</c>.</summary>
+        [Obsolete("The bbo-1s and bbo-1m schemas carry no ts_in_delta, so this is always 0.")]
         [JsonPropertyName("ts_in_delta")]
         [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public long TsInDelta { get; set; }

@@ -9,6 +9,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 - `UnitPriceInfo.UnitPrices`: the price per GB for each schema, keyed by schema name, as `metadata.list_unit_prices` sends it.
 - `DatasetCondition.Date`: the day the condition describes.
+- `DefinitionRecordJson`: the 54 fields the API sends that weren't mapped. Among them:
+  - currencies, lot and trade-size limits, maturity parts, `UnderlyingId` and `RawInstrumentId`, `Group`, `MatchAlgorithm`, `UnitOfMeasure`;
+  - `TradingReferencePrice` / `TradingReferenceDate`, sent in the DBN v1 layout only (e.g. OPRA.PILLAR, XNAS.ITCH);
+  - the `Leg*` fields of multi-leg instruments, sent in the DBN v3 layout only (e.g. GLBX.MDP3).
+- `ImbalanceRecordJson.AuctionTime`: the scheduled auction time as the venue sends it; `null` where the venue doesn't set it (e.g. XNAS.ITCH).
+- `DateRange.Schemas`: the available range of each schema, from `metadata.get_dataset_range`, as `SchemaRange` values.
+- `SymbologyResolution.Message` and `.Status`: the summary of a `symbology.resolve` call.
 
 ### Fixed
 - `GetDatasetCondition` / `GetDatasetConditionAsync` with a date returned the dataset's **first** day instead of the requested one. The client sent `date=`, which `metadata.get_dataset_condition` ignores; it now sends `start_date` and `end_date`, and returns `null` for a day without an entry (a weekend, or before the dataset starts). A day after the dataset's available end throws `DatabentoHttpException` (`422`). Without a date it returns the most recent day, as documented, instead of the oldest.

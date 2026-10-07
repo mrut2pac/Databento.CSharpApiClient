@@ -57,6 +57,14 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonConverter(typeof(NanoPriceConverter))]
         public double LowerCollar { get; set; }
 
+        /// <summary>
+        /// Scheduled time of the auction as the venue sends it; <see langword="null"/> when the venue doesn't set it (e.g. XNAS.ITCH).
+        /// NYSE venues send the date with the exchange-local time, e.g. 16:00 for the close, although it is labelled UTC and
+        /// reads with <see cref="DateTimeKind.Utc"/>, so converting it to local time shifts it.
+        /// </summary>
+        [JsonPropertyName("auction_time")]
+        public DateTime? AuctionTime { get; set; }
+
         /// <summary>Quantity matched (paired) at the indicative price, in lots.</summary>
         [JsonPropertyName("paired_qty")]
         [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]

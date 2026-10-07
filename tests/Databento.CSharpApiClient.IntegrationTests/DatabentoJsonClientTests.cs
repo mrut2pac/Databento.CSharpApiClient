@@ -614,6 +614,22 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
+        public async Task GetTrades_DefaultTransport_ReturnsRecordsWithPriceAndSize()
+        {
+            // the other tests run on a capturing transport for the response guard; this one keeps the client's own under test
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateDefaultJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 13, 35, 0, TimeSpan.Zero);
+
+            TradeRecordJson[] records = await client.GetTradesAsync(Datasets.XnasItch, "SPY", start, end);
+
+            Assert.NotEmpty(records);
+            Assert.All(records, r => Assert.True(r.Price > 0 && r.Size > 0));
+        }
+
+        [SkippableFact]
         public async Task GetTrades_MultiSymbol_ReturnsRecords()
         {
             this.SkipIfNoApiKey();

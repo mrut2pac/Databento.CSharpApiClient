@@ -1,14 +1,13 @@
 using System;
-using System.Collections.Generic;
 
 using System.Text.Json.Serialization;
 
 namespace Databento.CSharpApiClient.DataModel.Metadata
 {
     /// <summary>
-    /// Available date range returned by <c>metadata.get_dataset_range</c>.
+    /// Available range of one schema of a dataset, as listed in <see cref="DateRange.Schemas"/>.
     /// </summary>
-    public sealed class DateRange
+    public sealed class SchemaRange
     {
         /// <summary>Earliest available data timestamp (inclusive).</summary>
         [JsonPropertyName("start")]
@@ -17,9 +16,5 @@ namespace Databento.CSharpApiClient.DataModel.Metadata
         /// <summary>Latest available data timestamp (exclusive).</summary>
         [JsonPropertyName("end")]
         public DateTimeOffset End { get; set; }
-
-        /// <summary>The available range of each schema the dataset serves, keyed by schema (e.g. <c>"mbo"</c>, <c>"ohlcv-1d"</c>).</summary>
-        [JsonPropertyName("schema")]
-        public Dictionary<string, SchemaRange> Schemas { get; set; }
     }
 }

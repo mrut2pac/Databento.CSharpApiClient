@@ -53,6 +53,31 @@ namespace Databento.CSharpApiClient.UnitTests
             Assert.AreEqual("OPT", record.SecurityType);
             Assert.AreEqual(new DateTime(2022, 2, 7, 0, 0, 0, DateTimeKind.Utc), record.Expiration);
             Assert.IsNull(record.Activation, "u64::MAX is DBN's undefined timestamp");
+
+            // the rest of the record, as the JSON encoding of the same request reads it
+            Assert.AreEqual(477u, record.UnderlyingId);
+            Assert.AreEqual(0UL, record.RawInstrumentId);
+            Assert.AreEqual("SPXW", record.Underlying);
+            Assert.AreEqual("USD", record.Currency);
+            Assert.AreEqual("USD", record.UnitOfMeasure);
+            Assert.AreEqual("USD", record.StrikePriceCurrency);
+            Assert.AreEqual(string.Empty, record.Group);
+            Assert.AreEqual(int.MaxValue, record.InstrumentAttributeValue);
+            Assert.AreEqual(uint.MaxValue, record.MaxTradeVolume);
+            Assert.AreEqual(int.MaxValue, record.OriginalContractSize);
+            Assert.IsTrue(double.IsNaN(record.ContractMultiplier));
+            Assert.IsTrue(double.IsNaN(record.TradingReferencePrice));
+            Assert.AreEqual(ushort.MaxValue, record.TradingReferenceDate);
+            Assert.AreEqual((short)32767, record.ApplId);
+            Assert.AreEqual(ushort.MaxValue, record.ChannelId);
+            Assert.AreEqual(' ', record.MatchAlgorithm);
+            Assert.AreEqual((byte)255, record.MdSecurityTradingStatus);
+            Assert.AreEqual((byte)255, record.SettlementPriceType);
+            Assert.AreEqual('N', record.UserDefinedInstrument);
+            Assert.AreEqual((sbyte)127, record.ContractMultiplierUnit);
+            Assert.AreEqual((byte)255, record.TickRule);
+            Assert.AreEqual((ushort)0, record.LegCount, "v1 has no legs");
+            Assert.IsTrue(double.IsNaN(record.LegPrice), "v1 has no legs");
         }
 
         [TestMethod]
@@ -71,6 +96,33 @@ namespace Databento.CSharpApiClient.UnitTests
             Assert.AreEqual(new DateTime(2024, 3, 15, 13, 30, 0, DateTimeKind.Utc), record.Expiration);
             Assert.AreEqual("OOF", record.SecurityType);
             Assert.AreEqual(50.0, record.UnitOfMeasureQty, 1e-9);
+
+            // the rest of the record, as the JSON encoding of the same request reads it
+            Assert.AreEqual(17077u, record.UnderlyingId);
+            Assert.AreEqual(182831UL, record.RawInstrumentId);
+            Assert.AreEqual("ESH4", record.Underlying);
+            Assert.AreEqual("EW", record.Group);
+            Assert.AreEqual("IPNT", record.UnitOfMeasure);
+            Assert.AreEqual(270339, record.InstrumentAttributeValue);
+            Assert.AreEqual(3, record.MarketDepth);
+            Assert.AreEqual(54u, record.MarketSegmentId);
+            Assert.AreEqual(3000u, record.MaxTradeVolume);
+            Assert.AreEqual(1u, record.MinTradeVolume);
+            Assert.AreEqual(0.0, record.MinPriceIncrementAmount, 1e-9);
+            Assert.IsTrue(double.IsNaN(record.ContractMultiplier));
+            Assert.AreEqual((short)311, record.ApplId);
+            Assert.AreEqual((ushort)2024, record.MaturityYear);
+            Assert.AreEqual((ushort)1, record.ChannelId);
+            Assert.AreEqual('F', record.MatchAlgorithm);
+            Assert.AreEqual((byte)5, record.UnderlyingProduct);
+            Assert.AreEqual((byte)3, record.MaturityMonth);
+            Assert.AreEqual((byte)15, record.TickRule);
+            Assert.AreEqual((ushort)0, record.LegCount);
+            Assert.AreEqual('N', record.LegSide);
+            Assert.IsNull(record.LegInstrumentClass);
+            Assert.IsTrue(double.IsNaN(record.LegPrice));
+            Assert.IsTrue(double.IsNaN(record.TradingReferencePrice), "v3 has no trading reference price");
+            Assert.AreEqual(ushort.MaxValue, record.TradingReferenceDate, "v3 has no trading reference date");
         }
 
         [TestMethod]

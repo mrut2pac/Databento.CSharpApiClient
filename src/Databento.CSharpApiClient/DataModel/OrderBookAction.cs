@@ -30,5 +30,11 @@ namespace Databento.CSharpApiClient.DataModel
 
         /// <summary>A trade occurred ('T').</summary>
         Trade =      (byte)'T',
+
+        /// <summary>An order was cancelled, in whole or in part ('C').</summary>
+        Cancel =     (byte)'C',
+
+        /// <summary>No action: the record carries state without changing the book ('N').</summary>
+        None =       (byte)'N',
     }
 }

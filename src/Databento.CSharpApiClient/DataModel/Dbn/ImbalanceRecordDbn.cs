@@ -28,8 +28,15 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         /// <summary>Reference price used by the exchange (display-scaled).</summary>
         public double RefPrice { get; set; }
 
-        /// <summary>Scheduled auction time, in UTC.</summary>
+        /// <summary>Scheduled auction time; <see cref="DateTime.MinValue"/> when the venue doesn't set it. Use <see cref="AuctionTime"/>.</summary>
+        [Obsolete("Reads an undefined auction time as DateTime.MinValue. Use AuctionTime, which is null then.")]
         public DateTime AuctionTimeUtc { get; set; }
+
+        /// <summary>
+        /// Scheduled time of the auction as the venue sends it; <see langword="null"/> when the venue doesn't set it (e.g. XNAS.ITCH).
+        /// NYSE venues send the date with the exchange-local time, e.g. 16:00 for the close, although it reads as UTC.
+        /// </summary>
+        public DateTime? AuctionTime { get; set; }
 
         /// <summary>Continuous-book clearing price (display-scaled).</summary>
         public double ContBookClrPrice { get; set; }
@@ -106,7 +113,11 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                     // i64/u64 block (9 × 8 = 72 bytes)
                     record.TsReceivedUtc         = Utils.FromUnixNs(body.ReadUInt64()).UtcDateTime;
                     record.RefPrice              = Utils.NanoToDouble(body.ReadInt64());
-                    record.AuctionTimeUtc        = Utils.FromUnixNs(body.ReadUInt64()).UtcDateTime;
+                    ulong auctionTimeNs          = body.ReadUInt64();
+                    record.AuctionTime           = auctionTimeNs == 0 || auctionTimeNs == ulong.MaxValue ? null : Utils.FromUnixNs(auctionTimeNs).UtcDateTime;
+#pragma warning disable CS0618 // kept filled for existing callers
+                    record.AuctionTimeUtc        = Utils.FromUnixNs(auctionTimeNs).UtcDateTime;
+#pragma warning restore CS0618
                     record.ContBookClrPrice      = Utils.NanoToDouble(body.ReadInt64());
                     record.AuctInterestClrPrice  = Utils.NanoToDouble(body.ReadInt64());
                     record.SsrFillingPrice       = Utils.NanoToDouble(body.ReadInt64());

@@ -247,48 +247,15 @@ namespace Databento.CSharpApiClient
 
             string json = await this.GetRawJsonAsync(path.ToString(), ct).ConfigureAwait(false);
 
-            DatasetCondition[] results;
-            using(JsonDocument doc = JsonDocument.Parse(json))
+            // the API answers with a JSON array, one element per day
+            DatasetCondition[] results = JsonSerializer.Deserialize<DatasetCondition[]>(json, RecordDeserializeOptions) ?? Array.Empty<DatasetCondition>();
+            foreach(DatasetCondition condition in results)
             {
-                JsonElement root = doc.RootElement;
-                if(root.ValueKind == JsonValueKind.Array)
-                {
-                    results = JsonSerializer.Deserialize<DatasetCondition[]>(json, RecordDeserializeOptions);
-                }
-                else if(root.ValueKind == JsonValueKind.Object)
-                {
-                    // Unwrap common envelope keys.
-                    DatasetCondition[] wrapped = null;
-                    foreach(string key in new[] { "result", "data", "items" })
-                    {
-                        JsonElement arr;
-                        if(root.TryGetProperty(key, out arr) && arr.ValueKind == JsonValueKind.Array)
-                        {
-                            wrapped = JsonSerializer.Deserialize<DatasetCondition[]>(arr.GetRawText(), RecordDeserializeOptions);
-                            break;
-                        }
-                    }
-
-                    results = wrapped;
-                }
-                else
-                {
-                    results = null;
-                }
+                // the API doesn't send the dataset
+                condition.Dataset = dataset;
             }
 
-            if(results != null)
-            {
-                foreach(DatasetCondition c in results)
-                {
-                    if(c != null && c.Dataset == null)
-                    {
-                        c.Dataset = dataset;
-                    }
-                }
-            }
-
-            return results ?? Array.Empty<DatasetCondition>();
+            return results;
         }
 
         /// <summary>
@@ -501,32 +468,55 @@ namespace Databento.CSharpApiClient
             string compression = "zstd")
             => this.SubmitBatchJobAsync(dataset, symbols, schema, startUtc, endUtc, encoding, compression).GetAwaiter().GetResult();
 
-        /// <summary>Returns all batch jobs, optionally filtered by dataset and/or state.</summary>
-        /// <param name="dataset">Optional dataset filter.</param>
-        /// <param name="state">Optional state filter (e.g. <c>"received"</c>, <c>"done"</c>).</param>
+        /// <summary>
+        /// Returns a summary of each batch job (its ID, state and received time), optionally limited to some states and to jobs
+        /// received since a time. <see cref="GetBatchJobDetailsAsync"/> returns a job's full details.
+        /// </summary>
+        /// <param name="states">
+        /// States to include, e.g. <c>"queued"</c>, <c>"processing"</c>, <c>"done"</c>, <c>"expired"</c>; <see langword="null"/> or empty
+        /// leaves the filter to the API, which then lists jobs in every state.
+        /// </param>
+        /// <param name="since">Only jobs received at or after this time; <see langword="null"/> for no limit.</param>
         /// <param name="ct">Cancellation token.</param>
-        public async Task<BatchJob[]> ListBatchJobsAsync(string dataset = null, string state = null, CancellationToken ct = default)
+        public async Task<BatchJob[]> ListBatchJobsAsync(IReadOnlyList<string> states = null, DateTimeOffset? since = null, CancellationToken ct = default)
         {
             StringBuilder path = new StringBuilder("batch.list_jobs");
             string sep = "?";
-            if(!string.IsNullOrEmpty(dataset))
+            if(states != null && states.Count > 0)
             {
-                path.Append(sep).Append("dataset=").Append(Uri.EscapeDataString(dataset));
+                path.Append(sep).Append("states=").Append(Uri.EscapeDataString(string.Join(",", states)));
                 sep = "&";
             }
 
-            if(!string.IsNullOrEmpty(state))
+            if(since.HasValue)
             {
-                path.Append(sep).Append("state=").Append(Uri.EscapeDataString(state));
+                path.Append(sep).Append("since=").Append(Uri.EscapeDataString(since.Value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture)));
             }
 
             return await this.GetJsonArrayAsync<BatchJob>(path.ToString(), ct).ConfigureAwait(false);
         }
 
-        /// <summary>Returns all batch jobs, optionally filtered by dataset and/or state.</summary>
-        /// <param name="dataset">Optional dataset filter.</param>
-        /// <param name="state">Optional state filter (e.g. <c>"received"</c>, <c>"done"</c>).</param>
-        public BatchJob[] ListBatchJobs(string dataset = null, string state = null)
+        /// <summary>
+        /// Returns a summary of each batch job, optionally limited to some states and to jobs received since a time.
+        /// </summary>
+        /// <param name="states">States to include; <see langword="null"/> or empty for every state.</param>
+        /// <param name="since">Only jobs received at or after this time; <see langword="null"/> for no limit.</param>
+        public BatchJob[] ListBatchJobs(IReadOnlyList<string> states = null, DateTimeOffset? since = null)
+            => this.ListBatchJobsAsync(states, since).GetAwaiter().GetResult();
+
+        /// <summary>Returns a summary of each batch job, optionally filtered by state. The API has no dataset filter.</summary>
+        /// <param name="dataset">Ignored: <c>batch.list_jobs</c> has no dataset filter.</param>
+        /// <param name="state">Optional state filter (e.g. <c>"queued"</c>, <c>"done"</c>).</param>
+        /// <param name="ct">Cancellation token.</param>
+        [Obsolete("batch.list_jobs has no dataset filter, so dataset is ignored. Use ListBatchJobsAsync(states, since).")]
+        public Task<BatchJob[]> ListBatchJobsAsync(string dataset, string state = null, CancellationToken ct = default)
+            => this.ListBatchJobsAsync(string.IsNullOrEmpty(state) ? null : new[] { state }, null, ct);
+
+        /// <summary>Returns a summary of each batch job, optionally filtered by state. The API has no dataset filter.</summary>
+        /// <param name="dataset">Ignored: <c>batch.list_jobs</c> has no dataset filter.</param>
+        /// <param name="state">Optional state filter (e.g. <c>"queued"</c>, <c>"done"</c>).</param>
+        [Obsolete("batch.list_jobs has no dataset filter, so dataset is ignored. Use ListBatchJobs(states, since).")]
+        public BatchJob[] ListBatchJobs(string dataset, string state = null)
             => this.ListBatchJobsAsync(dataset, state).GetAwaiter().GetResult();
 
         /// <summary>Returns the current details and status of the batch job identified by <paramref name="jobId"/>.</summary>

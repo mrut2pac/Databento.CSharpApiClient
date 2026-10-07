@@ -28,28 +28,17 @@ namespace Databento.CSharpApiClient.IntegrationTests
         {
             ["*.ts_out"] = "sent only when ts_out is requested, which the client never does",
             ["DatasetCondition.dataset"] = "not sent; the client fills it in from the request",
-            ["DefinitionRecordJson.trading_reference_price"] = DbnV1Only,
-            ["DefinitionRecordJson.trading_reference_date"] = DbnV1Only,
-            ["DefinitionRecordJson.md_security_trading_status"] = DbnV1Only,
-            ["DefinitionRecordJson.settl_price_type"] = DbnV1Only,
-            ["DefinitionRecordJson.leg_count"] = DbnV3Only,
-            ["DefinitionRecordJson.leg_index"] = DbnV3Only,
-            ["DefinitionRecordJson.leg_instrument_id"] = DbnV3Only,
-            ["DefinitionRecordJson.leg_raw_symbol"] = DbnV3Only,
-            ["DefinitionRecordJson.leg_instrument_class"] = DbnV3Only,
-            ["DefinitionRecordJson.leg_side"] = DbnV3Only,
-            ["DefinitionRecordJson.leg_price"] = DbnV3Only,
-            ["DefinitionRecordJson.leg_delta"] = DbnV3Only,
-            ["DefinitionRecordJson.leg_ratio_price_numerator"] = DbnV3Only,
-            ["DefinitionRecordJson.leg_ratio_price_denominator"] = DbnV3Only,
-            ["DefinitionRecordJson.leg_ratio_qty_numerator"] = DbnV3Only,
-            ["DefinitionRecordJson.leg_ratio_qty_denominator"] = DbnV3Only,
-            ["DefinitionRecordJson.leg_underlying_id"] = DbnV3Only,
         };
 
-        private const string DbnV1Only = "only in the DBN v1 definition layout (e.g. OPRA.PILLAR, XNAS.ITCH)";
+        /// <summary>Definition keys only the DBN v1 layout sends (e.g. OPRA.PILLAR, XNAS.ITCH).</summary>
+        private static readonly string[] DefinitionV1Only = { "trading_reference_price", "trading_reference_date", "md_security_trading_status", "settl_price_type" };
 
-        private const string DbnV3Only = "only in the DBN v3 definition layout (e.g. GLBX.MDP3)";
+        /// <summary>Definition keys only the DBN v3 layout sends (e.g. GLBX.MDP3); a v3 record is the one with <c>leg_count</c>.</summary>
+        private static readonly string[] DefinitionV3Only =
+        {
+            "leg_count", "leg_index", "leg_instrument_id", "leg_raw_symbol", "leg_instrument_class", "leg_side", "leg_price", "leg_delta",
+            "leg_ratio_price_numerator", "leg_ratio_price_denominator", "leg_ratio_qty_numerator", "leg_ratio_qty_denominator", "leg_underlying_id",
+        };
 
         private static readonly Dictionary<string, Type> TypeBySchema = new Dictionary<string, Type>
         {
@@ -100,6 +89,12 @@ namespace Databento.CSharpApiClient.IntegrationTests
 
         private static readonly string[] ApiEndpointPrefixes = { "metadata.", "timeseries.", "symbology.", "batch." };
 
+        /// <summary>Endpoints that return a summary of each object: their keys must be mapped, but most mapped keys don't arrive.</summary>
+        private static readonly HashSet<string> SummaryEndpoints = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "batch.list_jobs",
+        };
+
         /// <summary>Returns every mismatch between the captured response and its model; empty when they agree.</summary>
         /// <param name="response">A response captured by <see cref="CapturingHttpTransport"/>.</param>
         public static IReadOnlyList<string> Check(CapturedResponse response)
@@ -145,7 +140,23 @@ namespace Databento.CSharpApiClient.IntegrationTests
 
             List<string> problems = new List<string>();
             bool symbolsMapped = ParameterValue(response, "map_symbols") == "true";
-            CheckObjects(model, objects, symbolsMapped, problems);
+            if(model == typeof(DefinitionRecordJson))
+            {
+                // each layout must carry every key of its own, and only the other layout's keys may be missing
+                List<JsonElement> v3 = objects.Where(obj => obj.TryGetProperty("leg_count", out _)).ToList();
+                List<JsonElement> v1 = objects.Where(obj => !obj.TryGetProperty("leg_count", out _)).ToList();
+                CheckObjects(model, v1, symbolsMapped, problems, DefinitionV3Only);
+                CheckObjects(model, v3, symbolsMapped, problems, DefinitionV1Only);
+            }
+            else
+            {
+                CheckObjects(model, objects, symbolsMapped, problems, Array.Empty<string>());
+            }
+
+            if(SummaryEndpoints.Contains(endpoint))
+            {
+                problems.RemoveAll(problem => problem.StartsWith("never sent:", StringComparison.Ordinal));
+            }
             return problems.Distinct().Select(problem => problem + " (" + endpoint + ")").ToArray();
         }
 
@@ -196,7 +207,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             }
         }
 
-        private static void CheckObjects(Type model, List<JsonElement> objects, bool symbolsMapped, List<string> problems)
+        private static void CheckObjects(Type model, List<JsonElement> objects, bool symbolsMapped, List<string> problems, string[] absentAllowed)
         {
             if(objects.Count == 0)
             {
@@ -244,7 +255,8 @@ namespace Databento.CSharpApiClient.IntegrationTests
                 if(values.Count == 0)
                 {
                     bool obsolete = entry.Value.GetCustomAttribute<ObsoleteAttribute>() != null;
-                    bool optional = OptionalKeys.ContainsKey("*." + entry.Key) || OptionalKeys.ContainsKey(model.Name + "." + entry.Key);
+                    bool optional = OptionalKeys.ContainsKey("*." + entry.Key) || OptionalKeys.ContainsKey(model.Name + "." + entry.Key)
+                        || absentAllowed.Contains(entry.Key, StringComparer.OrdinalIgnoreCase);
                     bool unrequestedSymbol = entry.Key == "symbol" && !symbolsMapped;
                     if(!obsolete && !optional && !unrequestedSymbol)
                     {
@@ -273,7 +285,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
                         }
                     }
 
-                    CheckObjects(nested, nestedObjects, symbolsMapped, problems);
+                    CheckObjects(nested, nestedObjects, symbolsMapped, problems, Array.Empty<string>());
                 }
             }
         }

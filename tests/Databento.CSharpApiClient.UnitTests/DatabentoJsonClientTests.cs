@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Databento.CSharpApiClient.DataModel;
+using Databento.CSharpApiClient.DataModel.Batch;
 using Databento.CSharpApiClient.DataModel.Json;
 using Databento.CSharpApiClient.DataModel.Metadata;
 using Databento.CSharpApiClient.DataModel.Symbology;
@@ -364,6 +365,7 @@ namespace Databento.CSharpApiClient.UnitTests
             DefinitionRecordJson record = (await client.GetDefinitionsAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd))[0];
 
             Assert.AreEqual(5602UL, record.RawInstrumentId);
+            Assert.IsTrue(double.IsNaN(record.ContractMultiplier));
             Assert.AreEqual(0.125, record.MinPriceIncrementAmount, 1e-9);
             Assert.IsTrue(double.IsNaN(record.PriceRatio));
             Assert.AreEqual(270351, record.InstrumentAttributeValue);
@@ -413,6 +415,7 @@ namespace Databento.CSharpApiClient.UnitTests
             DefinitionRecordJson record = (await client.GetDefinitionsAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd))[0];
 
             Assert.AreEqual(1275068601UL, record.RawInstrumentId);
+            Assert.IsTrue(double.IsNaN(record.ContractMultiplier));
             Assert.AreEqual(1308622850u, record.UnderlyingId);
             Assert.IsTrue(double.IsNaN(record.TradingReferencePrice));
             Assert.AreEqual((ushort)65535, record.TradingReferenceDate);
@@ -886,6 +889,100 @@ namespace Databento.CSharpApiClient.UnitTests
 
             Assert.AreEqual(1, records.Length);
             Assert.IsNull(records[0].Symbol);
+        }
+
+        // =====================================================================
+        // Actions
+        // =====================================================================
+
+        [TestMethod]
+        public async Task GetMbp1Async_CancelAndNoneActions_ReadAsSuch()
+        {
+            string level = "{\"bid_px\":\"419.49\",\"ask_px\":\"419.51\",\"bid_sz\":10,\"ask_sz\":5,\"bid_ct\":1,\"ask_ct\":2}";
+            string cancel = "{" + MakeHeader(rtype: 1) + ",\"price\":\"419.50\",\"size\":100,\"action\":\"C\",\"side\":\"A\","
+                + "\"flags\":0,\"depth\":0,\"ts_recv\":\"2022-05-16T13:30:00.000000100Z\",\"ts_in_delta\":50,\"sequence\":1,\"levels\":[" + level + "]}";
+            string none = cancel.Replace("\"action\":\"C\"", "\"action\":\"N\"", StringComparison.Ordinal);
+
+            using DatabentoJsonClient client = BuildClient(cancel + "\n" + none);
+            Mbp1RecordJson[] records = await client.GetMbp1Async(AnyDataset, AnySymbol, AnyStart, AnyEnd);
+
+            Assert.AreEqual(OrderBookAction.Cancel, records[0].Action);
+            Assert.AreEqual(OrderBookAction.None, records[1].Action);
+        }
+
+        // =====================================================================
+        // Batch
+        // =====================================================================
+
+        [TestMethod]
+        public async Task GetBatchJobDetailsAsync_LiveResponse_MapsIdSymbolsAndSizes()
+        {
+            // a live batch.get_job_details response: the ID is "id", and symbols arrive comma-joined in one string
+            string json = "{\"id\":\"XNAS-20261007-QNNA8K8TYH\",\"user_id\":\"USER\",\"bill_id\":null,\"cost_usd\":1.56462193e-6,"
+                + "\"dataset\":\"XNAS.ITCH\",\"symbols\":\"SPY,QQQ\",\"stype_in\":\"raw_symbol\",\"stype_out\":\"instrument_id\","
+                + "\"schema\":\"ohlcv-1d\",\"start\":\"2024-05-01T00:00:00.000000000Z\",\"end\":\"2024-05-02T00:00:00.000000000Z\","
+                + "\"limit\":null,\"encoding\":\"json\",\"compression\":null,\"pretty_px\":false,\"pretty_ts\":false,\"map_symbols\":false,"
+                + "\"split_symbols\":false,\"split_duration\":\"day\",\"split_size\":null,\"packaging\":null,\"delivery\":\"download\","
+                + "\"record_count\":1,\"billed_size\":56,\"actual_size\":56,\"package_size\":3359,\"state\":\"done\","
+                + "\"ts_received\":\"2026-10-07T15:27:59.842454000Z\",\"ts_queued\":\"2026-10-07T15:32:20.205087000Z\","
+                + "\"ts_process_start\":\"2026-10-07T15:32:41.530682000Z\",\"ts_process_done\":\"2026-10-07T15:32:52.567753000Z\","
+                + "\"ts_expiration\":\"2026-11-06T15:40:00.000000000Z\",\"progress\":100}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            BatchJob job = await client.GetBatchJobDetailsAsync("XNAS-20261007-QNNA8K8TYH");
+
+            Assert.AreEqual("XNAS-20261007-QNNA8K8TYH", job.JobId);
+            CollectionAssert.AreEqual(new[] { "SPY", "QQQ" }, job.Symbols);
+            Assert.AreEqual(1.56462193e-6m, job.CostUsd);
+            Assert.AreEqual("download", job.Delivery);
+            Assert.AreEqual(3359L, job.PackageSize);
+            Assert.AreEqual(100, job.Progress);
+        }
+
+        [TestMethod]
+        public async Task ListBatchFilesAsync_LiveResponse_ReadsTheNestedUrls()
+        {
+            string json = "[{\"filename\":\"manifest.json\",\"size\":1925,\"hash\":\"sha256:ada9\","
+                + "\"urls\":{\"https\":\"https://api.databento.com/v0/batch/download/U/J/manifest.json\",\"ftp\":\"ftp://ftp.databento.com/U/J/manifest.json\"}}]";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            BatchFile file = (await client.ListBatchFilesAsync("J"))[0];
+
+            Assert.AreEqual("https://api.databento.com/v0/batch/download/U/J/manifest.json", file.HttpsUrl);
+            Assert.AreEqual("ftp://ftp.databento.com/U/J/manifest.json", file.FtpUrl);
+        }
+
+        [TestMethod]
+        public async Task ListBatchJobsAsync_NoFilter_SendsNoQuery()
+        {
+            using DatabentoJsonClient client = BuildClientCapturingRequest("[]", out List<HttpRequestMessage> captured);
+            await client.ListBatchJobsAsync();
+
+            StringAssert.EndsWith(captured[0].RequestUri.ToString(), "batch.list_jobs");
+        }
+
+        [TestMethod]
+        public async Task ListBatchJobsAsync_ObsoleteOverload_SendsTheStateAsStatesAndNoDataset()
+        {
+            using DatabentoJsonClient client = BuildClientCapturingRequest("[]", out List<HttpRequestMessage> captured);
+#pragma warning disable CS0618 // the obsolete overload's forwarding is what is under test
+            await client.ListBatchJobsAsync("XNAS.ITCH", "done");
+            await client.ListBatchJobsAsync("XNAS.ITCH");
+#pragma warning restore CS0618
+
+            StringAssert.EndsWith(captured[0].RequestUri.ToString(), "batch.list_jobs?states=done");
+            StringAssert.EndsWith(captured[1].RequestUri.ToString(), "batch.list_jobs");
+        }
+
+        [TestMethod]
+        public async Task ListBatchJobsAsync_States_SendsThemAsStates()
+        {
+            // the API ignores "state" and has no dataset filter
+            using DatabentoJsonClient client = BuildClientCapturingRequest("[]", out List<HttpRequestMessage> captured);
+            await client.ListBatchJobsAsync(new[] { "queued", "done" }, new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero));
+
+            string uri = WebUtility.UrlDecode(captured[0].RequestUri.ToString());
+            StringAssert.Contains(uri, "batch.list_jobs?states=queued,done&since=2026-10-01T00:00:00Z");
         }
 
         // =====================================================================

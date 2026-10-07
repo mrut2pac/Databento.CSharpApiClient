@@ -6,6 +6,38 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+- `DefinitionRecordDbn` decodes every field of both DBN layouts, including `Underlying`. Before, it read 19 of them. It now has the same properties as `DefinitionRecordJson`: the leg fields come from the v3 layout, and the trading reference fields from v1.
+- `ImbalanceRecordDbn.AuctionTime`: `null` when the venue doesn't set the auction time.
+- `OrderBookAction.Cancel` (`'C'`) and `OrderBookAction.None` (`'N'`), which the API sends. Before, they read as `Unknown` in JSON and as an undefined enum value in DBN.
+- `ListBatchJobs` / `ListBatchJobsAsync(states, since)`, with the filters `batch.list_jobs` takes.
+- `BatchJob`: `UserId`, `BillId`, `StypeIn`, `StypeOut`, `Limit`, `SplitSize`, `Packaging`, `Delivery`, `PackageSize` and `Progress`.
+- `BatchFile.Urls` (`BatchFileUrls`): the download URLs as the API nests them.
+
+### Fixed
+- The DBN decoders misread four record types:
+  - MBO: every DBN version lays out `flags`, `channel_id`, `action` and `side` as one byte each. The decoder skipped `channel_id`, so it read the channel as `Action` and the action as `Side`.
+  - tcbbo and cmbp-1 book levels: `AskPublisherId` was always 0, because the 2 reserved bytes after `bid_pb` weren't skipped.
+  - cbbo-1s / cbbo-1m: the book level was read 8 bytes early, so every bid, ask, size and publisher was wrong.
+- `BatchJob.JobId` was always `null`: the API sends the ID as `id`, not `job_id`. A job read from the client couldn't be passed to `GetBatchJobDetails` or `ListBatchFiles`.
+- `GetBatchJobDetails` / `SubmitBatchJob` failed on every job: the API sends `symbols` as one comma-joined string, which `BatchJob.Symbols` couldn't read. It now reads a string or an array.
+- `BatchFile.HttpsUrl` and `.FtpUrl` were always `null`: the API nests them under `urls`. A listed file can now be passed straight to `DownloadBatchFile`.
+- `ListBatchJobs(dataset, state)` ignored both filters: the API takes `states`, not `state`, and has no dataset filter. The state filter now works.
+
+### Changed
+- Serializing a batch model with this library now writes what the API sends, so JSON stored by an earlier version reads back differently:
+  - `BatchJob.JobId` is written as `id`, not `job_id`.
+  - `BatchJob.Symbols` is written as one comma-joined string. It still reads either a string or an array.
+  - `BatchFile` writes its URLs under `urls`, not as `https_url` / `ftp_url`. A URL set through `HttpsUrl` / `FtpUrl` isn't written.
+- A call to `ListBatchJobs` / `ListBatchJobsAsync` with no arguments now binds to the new `(states, since)` overload, with the same result: every job. The obsolete overload now requires its `dataset` argument, so a call that names only `state:` has to move to `states:`. A call that passes a bare `null` is now ambiguous and needs a named argument.
+- `DefinitionRecordJson.ContractMultiplier` read the venue's "undefined" value as a real multiplier of 2,147,483,647. It was read like a price, but `contract_multiplier` is an integer whose undefined value is the largest 32-bit integer, which the API sends as a number, not `null`. It now reads as `double.NaN`, like the model's undefined prices, so test for it with `double.IsNaN` (any comparison with NaN is false). A string form is no longer scaled as a fixed-point price, and a value outside 32 bits now fails instead of passing. OPRA.PILLAR and GLBX.MDP3 both leave it undefined, and the doc no longer suggests that options carry 100.
+
+### Deprecated
+These are marked `[Obsolete]` and will be removed in the next major version:
+- `ListBatchJobs(dataset, state)`: the API has no dataset filter. Use `ListBatchJobs(states, since)`.
+- `BatchJob.Files`: the job responses list no files. Use `ListBatchFiles`.
+- `ImbalanceRecordDbn.AuctionTimeUtc`: it reads an undefined auction time as `DateTime.MinValue`. Use `AuctionTime`.
+
 ## [2.1.0] - 2026-10-07
 
 ### Added

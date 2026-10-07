@@ -26,9 +26,10 @@ namespace Databento.CSharpApiClient.IntegrationTests
 
             CbboRecordDbn[] records = await client.GetCbbo1sAsync(Datasets.OpraPillar, "SPXW  250908C06475000", start, end);
 
+            // the day opens with records that have no quote yet (bid and ask undefined), so look past them
             Assert.NotNull(records);
             Assert.NotEmpty(records);
-            Assert.True(records[0].BidPrice > 0 || records[0].AskPrice > 0);
+            Assert.Contains(records, r => r.BidPrice > 0 || r.AskPrice > 0);
         }
 
         [SkippableFact]

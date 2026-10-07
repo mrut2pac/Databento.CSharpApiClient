@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -18,6 +21,8 @@ namespace Databento.CSharpApiClient.IntegrationTests
     public abstract class IntegrationTestBase : IDisposable
     {
         protected readonly string ApiKey;
+
+        private readonly List<CapturingHttpTransport> capturingTransports = new List<CapturingHttpTransport>();
 
         protected IntegrationTestBase()
         {
@@ -50,7 +55,30 @@ namespace Databento.CSharpApiClient.IntegrationTests
                 "Skipped — dataset/schema not available on this subscription: " + ex.Message);
         }
 
+        /// <summary>
+        /// Creates a JSON client whose responses are captured, so <see cref="Dispose"/> can check each one against
+        /// its response model with <see cref="ResponseModelGuard"/>. The capturing transport mirrors the client's
+        /// default one (decompression, headers); <see cref="CreateDefaultJsonClient"/> keeps that one under test.
+        /// </summary>
         protected DatabentoJsonClient CreateJsonClient()
+        {
+            DatabentoOptions options = new DatabentoOptions { ApiKey = this.ApiKey };
+            HttpClient http = new HttpClient(new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All }, disposeHandler: true)
+            {
+                BaseAddress = options.BaseUri,
+                Timeout = options.Timeout,
+            };
+            http.DefaultRequestHeaders.UserAgent.ParseAdd(options.UserAgent ?? "DatabentoJsonClient/1.0");
+            http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes(this.ApiKey + ":")));
+
+            CapturingHttpTransport transport = new CapturingHttpTransport(http);
+            this.capturingTransports.Add(transport);
+            return new DatabentoJsonClient(options, transport);
+        }
+
+        /// <summary>Creates a JSON client on its own default transport, which the response guard doesn't see.</summary>
+        protected DatabentoJsonClient CreateDefaultJsonClient()
             => new DatabentoJsonClient(new DatabentoOptions { ApiKey = this.ApiKey });
 
         protected DatabentoClient CreateBinaryClient()
@@ -79,6 +107,27 @@ namespace Databento.CSharpApiClient.IntegrationTests
             }
         }
 
-        public void Dispose() { }
+        /// <summary>
+        /// Fails the test when a response it received doesn't match its model: a key the API sent that no property maps,
+        /// or a mapped property that never arrived.
+        /// </summary>
+        public void Dispose()
+        {
+            List<string> problems = new List<string>();
+            foreach(CapturingHttpTransport transport in this.capturingTransports)
+            {
+                foreach(CapturedResponse response in transport.Responses)
+                {
+                    problems.AddRange(ResponseModelGuard.Check(response));
+                }
+            }
+
+            GC.SuppressFinalize(this);
+            if(problems.Count > 0)
+            {
+                throw new InvalidOperationException("The API's responses don't match the response models:" + Environment.NewLine
+                    + string.Join(Environment.NewLine, problems.Distinct()));
+            }
+        }
     }
 }

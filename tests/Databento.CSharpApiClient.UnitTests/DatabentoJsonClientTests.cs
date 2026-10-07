@@ -334,6 +334,97 @@ namespace Databento.CSharpApiClient.UnitTests
             Assert.AreEqual(4295.0, records[0].StrikePrice, 1e-9);
         }
 
+        [TestMethod]
+        public async Task GetDefinitionsAsync_LiveGlbxFutureInDbnV3Layout_ReadsEveryField()
+        {
+            // a live GLBX.MDP3 definition, served in the DBN v3 layout: it carries the leg fields, and raw_instrument_id as a string
+            string json = "{\"ts_recv\":\"2024-05-01T00:00:00.000000000Z\",\"hd\":{\"ts_event\":\"2024-04-28T11:03:56.364648873Z\","
+                + "\"rtype\":19,\"publisher_id\":1,\"instrument_id\":5602},\"raw_symbol\":\"ESM4\","
+                + "\"security_update_action\":\"A\",\"instrument_class\":\"F\",\"min_price_increment\":\"0.250000000\","
+                + "\"display_factor\":\"0.010000000\",\"expiration\":\"2024-06-21T13:30:00.000000000Z\","
+                + "\"activation\":\"2022-03-18T13:30:00.000000000Z\",\"high_limit_price\":\"5488.000000000\","
+                + "\"low_limit_price\":\"4774.500000000\",\"max_price_variation\":\"6.000000000\","
+                + "\"unit_of_measure_qty\":\"50.000000000\",\"min_price_increment_amount\":\"0.125000000\",\"price_ratio\":null,"
+                + "\"inst_attrib_value\":270351,\"underlying_id\":0,\"raw_instrument_id\":\"5602\",\"market_depth_implied\":0,"
+                + "\"market_depth\":10,\"market_segment_id\":64,\"max_trade_vol\":3000,\"min_lot_size\":0,"
+                + "\"min_lot_size_block\":0,\"min_lot_size_round_lot\":0,\"min_trade_vol\":1,\"contract_multiplier\":2147483647,"
+                + "\"decay_quantity\":2147483647,\"original_contract_size\":2147483647,\"appl_id\":310,\"maturity_year\":2024,"
+                + "\"decay_start_date\":65535,\"channel_id\":0,\"currency\":\"USD\",\"settl_currency\":\"\",\"secsubtype\":\"\","
+                + "\"group\":\"ES\",\"exchange\":\"XCME\",\"asset\":\"ES\",\"cfi\":\"FFIXSX\",\"security_type\":\"FUT\","
+                + "\"unit_of_measure\":\"IPNT\",\"underlying\":\"\",\"strike_price_currency\":\"\",\"strike_price\":null,"
+                + "\"match_algorithm\":\"F\",\"main_fraction\":255,\"price_display_format\":255,\"sub_fraction\":255,"
+                + "\"underlying_product\":5,\"maturity_month\":6,\"maturity_day\":255,\"maturity_week\":255,"
+                + "\"user_defined_instrument\":\"N\",\"contract_multiplier_unit\":127,\"flow_schedule_type\":127,"
+                + "\"tick_rule\":255,\"leg_count\":0,\"leg_index\":0,\"leg_instrument_id\":0,\"leg_raw_symbol\":\"\","
+                + "\"leg_instrument_class\":null,\"leg_side\":\"N\",\"leg_price\":null,\"leg_delta\":null,"
+                + "\"leg_ratio_price_numerator\":0,\"leg_ratio_price_denominator\":0,\"leg_ratio_qty_numerator\":0,"
+                + "\"leg_ratio_qty_denominator\":0,\"leg_underlying_id\":0}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            DefinitionRecordJson record = (await client.GetDefinitionsAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd))[0];
+
+            Assert.AreEqual(5602UL, record.RawInstrumentId);
+            Assert.AreEqual(0.125, record.MinPriceIncrementAmount, 1e-9);
+            Assert.IsTrue(double.IsNaN(record.PriceRatio));
+            Assert.AreEqual(270351, record.InstrumentAttributeValue);
+            Assert.AreEqual(10, record.MarketDepth);
+            Assert.AreEqual(64u, record.MarketSegmentId);
+            Assert.AreEqual(3000u, record.MaxTradeVolume);
+            Assert.AreEqual((short)310, record.ApplId);
+            Assert.AreEqual((ushort)2024, record.MaturityYear);
+            Assert.AreEqual((byte)6, record.MaturityMonth);
+            Assert.AreEqual("USD", record.Currency);
+            Assert.AreEqual("ES", record.Group);
+            Assert.AreEqual("IPNT", record.UnitOfMeasure);
+            Assert.AreEqual("F", record.MatchAlgorithm);
+            Assert.AreEqual((byte)5, record.UnderlyingProduct);
+            Assert.AreEqual((sbyte)127, record.ContractMultiplierUnit);
+            Assert.AreEqual((ushort)0, record.LegCount);
+            Assert.AreEqual("N", record.LegSide);
+            Assert.IsNull(record.LegInstrumentClass);
+            Assert.IsTrue(double.IsNaN(record.LegPrice));
+        }
+
+        [TestMethod]
+        public async Task GetDefinitionsAsync_LiveOpraOptionInDbnV1Layout_ReadsEveryField()
+        {
+            // a live OPRA.PILLAR definition, served in the DBN v1 layout: no leg fields, raw_instrument_id as a number
+            string json = "{\"ts_recv\":\"2024-05-01T10:30:00.680511059Z\",\"hd\":{\"ts_event\":\"2024-05-01T10:30:00.680302848Z\","
+                + "\"rtype\":19,\"publisher_id\":30,\"instrument_id\":1275068601},\"raw_symbol\":\"SPY   240501P00501000\","
+                + "\"security_update_action\":\"A\",\"instrument_class\":\"P\",\"min_price_increment\":null,"
+                + "\"display_factor\":null,\"expiration\":\"2024-05-01T00:00:00.000000000Z\",\"activation\":null,"
+                + "\"high_limit_price\":null,\"low_limit_price\":null,\"max_price_variation\":null,"
+                + "\"trading_reference_price\":null,\"unit_of_measure_qty\":null,\"min_price_increment_amount\":null,"
+                + "\"price_ratio\":null,\"inst_attrib_value\":2147483647,\"underlying_id\":1308622850,"
+                + "\"raw_instrument_id\":1275068601,\"market_depth_implied\":2147483647,\"market_depth\":2147483647,"
+                + "\"market_segment_id\":4294967295,\"max_trade_vol\":4294967295,\"min_lot_size\":2147483647,"
+                + "\"min_lot_size_block\":2147483647,\"min_lot_size_round_lot\":2147483647,\"min_trade_vol\":4294967295,"
+                + "\"contract_multiplier\":2147483647,\"decay_quantity\":2147483647,\"original_contract_size\":2147483647,"
+                + "\"trading_reference_date\":65535,\"appl_id\":32767,\"maturity_year\":65535,\"decay_start_date\":65535,"
+                + "\"channel_id\":76,\"currency\":\"USD\",\"settl_currency\":\"\",\"secsubtype\":\"\",\"group\":\"popra-77\","
+                + "\"exchange\":\"OPRA\",\"asset\":\"SPY\",\"cfi\":\"\",\"security_type\":\"OPT\",\"unit_of_measure\":\"USD\","
+                + "\"underlying\":\"SPY\",\"strike_price_currency\":\"USD\",\"strike_price\":\"501.000000000\","
+                + "\"match_algorithm\":\" \",\"md_security_trading_status\":255,\"main_fraction\":255,"
+                + "\"price_display_format\":255,\"settl_price_type\":255,\"sub_fraction\":255,\"underlying_product\":255,"
+                + "\"maturity_month\":255,\"maturity_day\":255,\"maturity_week\":255,\"user_defined_instrument\":\"N\","
+                + "\"contract_multiplier_unit\":127,\"flow_schedule_type\":127,\"tick_rule\":255}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            DefinitionRecordJson record = (await client.GetDefinitionsAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd))[0];
+
+            Assert.AreEqual(1275068601UL, record.RawInstrumentId);
+            Assert.AreEqual(1308622850u, record.UnderlyingId);
+            Assert.IsTrue(double.IsNaN(record.TradingReferencePrice));
+            Assert.AreEqual((ushort)65535, record.TradingReferenceDate);
+            Assert.AreEqual((ushort)76, record.ChannelId);
+            Assert.AreEqual("popra-77", record.Group);
+            Assert.AreEqual("USD", record.StrikePriceCurrency);
+            Assert.AreEqual((byte)255, record.MdSecurityTradingStatus);
+            Assert.AreEqual((byte)255, record.SettlementPriceType);
+            Assert.AreEqual("N", record.UserDefinedInstrument);
+            Assert.AreEqual(501.0, record.StrikePrice, 1e-9);
+        }
+
         // =====================================================================
         // Imbalance
         // =====================================================================
@@ -357,6 +448,22 @@ namespace Databento.CSharpApiClient.UnitTests
             Assert.AreEqual("B", records[0].Side);
             Assert.AreEqual(1000u, records[0].PairedQty);
             Assert.AreEqual(5000u, records[0].TotalImbalanceQty);
+        }
+
+        [TestMethod]
+        public async Task GetImbalanceAsync_AuctionTime_ReadsTheScheduledTimeOrNull()
+        {
+            // the auction_time values ARCX.PILLAR (closing auction) and XNAS.ITCH send live
+            string json = "{\"ts_recv\":\"2024-05-01T19:55:00.000000000Z\",\"hd\":{\"ts_event\":\"2024-05-01T19:55:00.000000000Z\",\"rtype\":20,"
+                + "\"publisher_id\":12,\"instrument_id\":1},\"auction_time\":\"2024-05-01T16:00:00.000000000Z\"}\n"
+                + "{\"ts_recv\":\"2024-05-01T19:50:00.039320280Z\",\"hd\":{\"ts_event\":\"2024-05-01T19:50:00.039148508Z\",\"rtype\":20,"
+                + "\"publisher_id\":2,\"instrument_id\":15144},\"auction_time\":null}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            ImbalanceRecordJson[] records = await client.GetImbalanceAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
+
+            Assert.AreEqual(new DateTime(2024, 5, 1, 16, 0, 0, DateTimeKind.Utc), records[0].AuctionTime.Value.ToUniversalTime());
+            Assert.IsNull(records[1].AuctionTime);
         }
 
         // =====================================================================
@@ -577,6 +684,27 @@ namespace Databento.CSharpApiClient.UnitTests
             using DatabentoJsonClient client = BuildClient("[]");
 
             Assert.IsNull(await client.GetDatasetConditionAsync("XNAS.ITCH", "2022-05-15"));
+        }
+
+        // =====================================================================
+        // Metadata: GetDatasetRange
+        // =====================================================================
+
+        [TestMethod]
+        public async Task GetDatasetRangeAsync_LiveResponse_MapsTheRangeOfEachSchema()
+        {
+            // a live metadata.get_dataset_range response, shortened to two schemas
+            string json = "{\"start\":\"2018-05-01T00:00:00.000000000Z\",\"end\":\"2026-10-07T04:00:00.000000000Z\",\"schema\":{"
+                + "\"mbo\":{\"start\":\"2018-05-01T00:00:00.000000000Z\",\"end\":\"2026-10-07T04:00:00.000000000Z\"},"
+                + "\"ohlcv-1d\":{\"start\":\"2018-05-01T00:00:00.000000000Z\",\"end\":\"2026-10-06T00:00:00.000000000Z\"}}}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            DateRange range = await client.GetDatasetRangeAsync("XNAS.ITCH");
+
+            Assert.AreEqual(new DateTimeOffset(2018, 5, 1, 0, 0, 0, TimeSpan.Zero), range.Start);
+            Assert.AreEqual(2, range.Schemas.Count);
+            Assert.AreEqual(new DateTimeOffset(2026, 10, 7, 4, 0, 0, TimeSpan.Zero), range.Schemas[Schema.Mbo].End);
+            Assert.AreEqual(new DateTimeOffset(2026, 10, 6, 0, 0, 0, TimeSpan.Zero), range.Schemas[Schema.Ohlcv1Day].End);
         }
 
         // =====================================================================
@@ -817,6 +945,8 @@ namespace Databento.CSharpApiClient.UnitTests
             Assert.AreEqual("240846", intervals[0].Symbol);
             Assert.AreEqual("2021-10-27", intervals[0].StartDate);
             Assert.AreEqual("2022-05-21", intervals[0].EndDate);
+            Assert.AreEqual("Partially resolved", resolution.Message);
+            Assert.AreEqual(1, resolution.Status);
         }
     }
 }

@@ -44,5 +44,13 @@ namespace Databento.CSharpApiClient.DataModel.Symbology
         /// <summary>Symbols for which no mapping was found in the date range.</summary>
         [JsonPropertyName("not_found")]
         public string[] NotFound { get; set; }
+
+        /// <summary>Summary of the resolution, e.g. <c>"OK"</c> or <c>"Partially resolved"</c>.</summary>
+        [JsonPropertyName("message")]
+        public string Message { get; set; }
+
+        /// <summary>0 when every symbol resolved over the whole range; non-zero otherwise (1 = partially resolved), described by <see cref="Message"/>.</summary>
+        [JsonPropertyName("status")]
+        public int Status { get; set; }
     }
 }

@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-10-07
+
 ### Fixed
 - `ResolveSymbols` / `ResolveSymbolsAsync` returned every interval with `Symbol`, `StartDate` and `EndDate` all `null`. `MappedSymbol` was mapped to `symbol`, `start_date` and `end_date`, but `symbology.resolve` sends each interval as `s`, `d0` and `d1`. Whether a symbol resolved was still visible (its interval list was non-empty), but not what it resolved to or when.
 - `MappedSymbol.EndDate` is documented as the **exclusive** end of the interval, which is what the API sends in `d1` (a contract expiring on 2022-05-20 resolves to an interval ending 2022-05-21).
@@ -108,7 +110,8 @@ Initial release.
 - HTTP retry with exponential back-off and jitter
 - Zero external dependencies — pure `System.Text.Json` on .NET 8+
 
-[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.4.0...v2.0.0
 [1.4.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.2.3...v1.3.0

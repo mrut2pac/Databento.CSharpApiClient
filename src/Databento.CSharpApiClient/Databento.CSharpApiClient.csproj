@@ -21,7 +21,7 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>2.0.1</Version>
+    <Version>2.1.0</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
@@ -31,6 +31,26 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
+v2.1.0 — 2026-10-07
+
+Added
+- DefinitionRecordJson: the 54 fields the API sends that weren't mapped (currencies, lot and trade-size
+  limits, maturity parts, UnderlyingId, RawInstrumentId, the DBN v3 Leg* fields, and more).
+- ImbalanceRecordJson.AuctionTime, DateRange.Schemas (SchemaRange), SymbologyResolution.Message / Status,
+  UnitPriceInfo.UnitPrices and DatasetCondition.Date.
+
+Fixed
+- GetDatasetCondition with a date returned the dataset's first day; it now returns the requested day
+  (null for a day without an entry), and the most recent day when no date is given.
+- ListConditions always failed with 404; it now calls metadata.get_dataset_condition.
+
+Deprecated (to be removed in the next major version)
+- GetSymbolMappings (no symbol_mapping schema; use ResolveSymbols) and GetOhlcvEod (no dataset serves
+  ohlcv-eod; use GetOhlcv1d).
+- Properties the API never sends: UnitPriceInfo.UnitPrice, DatasetCondition.DateGenerated,
+  PublisherInfo.Name, FieldInfo.Description, and TsInDelta / Depth / Sequence on the BBO, tcbbo and
+  cmbp-1 records (JSON and DBN).
+
 v2.0.1 — 2026-10-07
 
 Fixed

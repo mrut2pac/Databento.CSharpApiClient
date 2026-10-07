@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-07
+
 ### Added
 - `UnitPriceInfo.UnitPrices`: the price per GB for each schema, keyed by schema name, as `metadata.list_unit_prices` sends it.
 - `DatasetCondition.Date`: the day the condition describes.
@@ -142,7 +144,8 @@ Initial release.
 - HTTP retry with exponential back-off and jitter
 - Zero external dependencies — pure `System.Text.Json` on .NET 8+
 
-[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.4.0...v2.0.0
 [1.4.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v1.3.0...v1.4.0

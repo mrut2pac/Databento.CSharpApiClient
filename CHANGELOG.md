@@ -6,6 +6,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+- `ResolveSymbols` / `ResolveSymbolsAsync` returned every interval with `Symbol`, `StartDate` and `EndDate` all `null`. `MappedSymbol` was mapped to `symbol`, `start_date` and `end_date`, but `symbology.resolve` sends each interval as `s`, `d0` and `d1`. Whether a symbol resolved was still visible (its interval list was non-empty), but not what it resolved to or when.
+- `MappedSymbol.EndDate` is documented as the **exclusive** end of the interval, which is what the API sends in `d1` (a contract expiring on 2022-05-20 resolves to an interval ending 2022-05-21).
+
 ## [2.0.0] - 2026-10-06
 
 ### Fixed

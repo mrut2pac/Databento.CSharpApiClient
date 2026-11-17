@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-11-17
+
 ### Added
 - Record interfaces that the JSON and DBN record classes both implement, so code can read either encoding the same way: `IRecord` and, per schema, `IBboRecord`, `ICbboRecord`, `ITcbboRecord`, `ITradeRecord`, `IOhlcvRecord` and `IStatisticsRecord`.
   - They follow the DBN layout: the header fields and the single book level sit on the record itself.
@@ -192,7 +194,8 @@ Initial release.
 - HTTP retry with exponential back-off and jitter
 - Zero external dependencies — pure `System.Text.Json` on .NET 8+
 
-[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.0.0...v2.0.1

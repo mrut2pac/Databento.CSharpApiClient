@@ -877,9 +877,10 @@ namespace Databento.CSharpApiClient.UnitTests
         }
 
         [TestMethod]
-        public async Task GetCbbo1mAsync_ResponseWithoutSymbol_LeavesItNull()
+        public async Task GetCbbo1mAsync_SingleSymbol_TakesTheRequestedSymbol()
         {
-            // A single-symbol request never asks for the field, so the record must still parse without it.
+            // A single-symbol request never asks for the field, so every record gets the symbol requested, as the DBN
+            // client's symbol mappings would give it.
             string level = "{\"bid_px\":\"3.70\",\"ask_px\":\"3.90\",\"bid_sz\":185,\"ask_sz\":147,\"bid_pb\":0,\"ask_pb\":0}";
             string json = "{" + MakeHeader(rtype: 193) + ",\"side\":\"N\",\"price\":\"4.00\",\"size\":18,\"flags\":200,"
                 + "\"ts_recv\":\"2023-11-08T14:31:00.000000000Z\",\"levels\":[" + level + "]}";
@@ -888,6 +889,43 @@ namespace Databento.CSharpApiClient.UnitTests
             CbboRecordJson[] records = await client.GetCbbo1mAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
 
             Assert.AreEqual(1, records.Length);
+            Assert.AreEqual(AnySymbol, records[0].Symbol);
+        }
+
+        [TestMethod]
+        public async Task GetOhlcv1mAsync_SingleSymbol_TakesTheRequestedSymbol()
+        {
+            string json = "{" + MakeHeader(rtype: 33) + ",\"open\":\"1.00\",\"high\":\"2.00\",\"low\":\"0.50\",\"close\":\"1.50\",\"volume\":10}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            OhlcvRecordJson[] records = await client.GetOhlcv1mAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
+
+            Assert.AreEqual(AnySymbol, records[0].Symbol);
+        }
+
+        [TestMethod]
+        public async Task GetTradesAsync_SingleSymbol_TakesTheRequestedSymbol()
+        {
+            string json = "{" + MakeHeader(rtype: 0) + ",\"price\":\"4.00\",\"size\":1,\"action\":\"T\",\"side\":\"N\",\"flags\":0,\"depth\":0,"
+                + "\"ts_recv\":\"2023-11-08T14:31:00.000000000Z\",\"ts_in_delta\":0,\"sequence\":1}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            TradeRecordJson[] records = await client.GetTradesAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
+
+            Assert.AreEqual(AnySymbol, records[0].Symbol);
+        }
+
+        [TestMethod]
+        public async Task GetCbbo1mAsync_AllSymbolsResponseWithoutSymbol_LeavesItNull()
+        {
+            // ALL_SYMBOLS names no one symbol, so a record the response leaves unmapped stays without one
+            string level = "{\"bid_px\":\"3.70\",\"ask_px\":\"3.90\",\"bid_sz\":185,\"ask_sz\":147,\"bid_pb\":0,\"ask_pb\":0}";
+            string json = "{" + MakeHeader(rtype: 193) + ",\"side\":\"N\",\"price\":\"4.00\",\"size\":18,\"flags\":200,"
+                + "\"ts_recv\":\"2023-11-08T14:31:00.000000000Z\",\"levels\":[" + level + "]}";
+
+            using DatabentoJsonClient client = BuildClient(json);
+            CbboRecordJson[] records = await client.GetCbbo1mAsync(AnyDataset, "ALL_SYMBOLS", AnyStart, AnyEnd);
+
             Assert.IsNull(records[0].Symbol);
         }
 

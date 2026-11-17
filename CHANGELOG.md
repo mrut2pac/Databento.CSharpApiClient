@@ -6,6 +6,20 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+- Record interfaces that the JSON and DBN record classes both implement, so code can read either encoding the same way: `IRecord` and, per schema, `IBboRecord`, `ICbboRecord`, `ITcbboRecord`, `ITradeRecord`, `IOhlcvRecord` and `IStatisticsRecord`.
+  - They follow the DBN layout: the header fields and the single book level sit on the record itself.
+  - Where the JSON and DBN classes use different types, the interface uses the DBN type, e.g. `uint` sizes and `int` `TsInDelta`.
+  - An undefined price, quantity or timestamp reads as `null`, whether the class holds `NaN`, `null`, `DateTime.MinValue` or the undefined quantity.
+  - The classes implement them explicitly, so their own properties are unchanged.
+- `Symbol` on `BboRecordDbn`, `CbboRecordDbn`, `TcbboRecordDbn`, `TradeRecordDbn`, `OhlcvRecordDbn` and `StatisticsRecordDbn`: the requested symbol the record belongs to.
+  - It comes from the symbol mappings in the stream's metadata, for the record's instrument on the date of its `ts_recv` (`ts_event` for a bar).
+  - It is `null` when the metadata maps the instrument to no symbol on that date.
+  - Serializing one of these DBN records now writes a `Symbol` property too.
+
+### Changed
+- `DatabentoJsonClient`: every record of a single-symbol request now carries that symbol in `Symbol`. Before, it was `null`, since such a request sends no `map_symbols`. This is the value the DBN client's symbol mappings give. Nothing changes on the wire, and a multi-symbol or `ALL_SYMBOLS` request is unchanged.
+
 ## [2.2.0] - 2026-10-07
 
 ### Added

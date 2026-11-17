@@ -8,7 +8,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
     /// Covers schemas <c>bbo-1s</c> (rtype <c>Bbo1S</c> = 0xC3) and <c>bbo-1m</c> (rtype <c>Bbo1M</c> = 0xC4).
     /// Record body is 64 bytes; total record = 80 bytes (length_byte = 20).
     /// </summary>
-    public sealed class BboRecordDbn
+    public sealed class BboRecordDbn : IBboRecord
     {
         /// <summary>DBN record-type discriminator (<see cref="RType.Bbo1S"/> or <see cref="RType.Bbo1M"/>).</summary>
         public RType RecordType { get; set; }
@@ -46,6 +46,12 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
 
         /// <summary>Best bid and ask price level at the time of the snapshot.</summary>
         public Mbp1LevelDbn Level { get; set; }
+
+        /// <summary>
+        /// Requested symbol this record belongs to, in the request's input symbology, from the symbol mappings in the stream's
+        /// metadata; <see langword="null"/> when they do not map the record's instrument on its date.
+        /// </summary>
+        public string Symbol { get; set; }
 
         /// <summary>
         /// Deserialises a BBO record body from <paramref name="reader"/> using the
@@ -91,5 +97,22 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             }
         }
 
+        DateTime? IRecord.TsEventUtc => UndefinedValues.Timestamp(this.TsEventUtc);
+
+        double? IBboRecord.Price => UndefinedValues.Price(this.Price);
+
+        double? IBboRecord.BidPrice => UndefinedValues.Price(this.Level?.BidPrice);
+
+        double? IBboRecord.AskPrice => UndefinedValues.Price(this.Level?.AskPrice);
+
+        uint IBboRecord.BidSize => this.Level?.BidSize ?? 0;
+
+        uint IBboRecord.AskSize => this.Level?.AskSize ?? 0;
+
+        uint IBboRecord.BidCount => this.Level?.BidCount ?? 0;
+
+        uint IBboRecord.AskCount => this.Level?.AskCount ?? 0;
+
+        DateTime? IBboRecord.TsReceivedUtc => UndefinedValues.Timestamp(this.TsReceivedUtc);
     }
 }

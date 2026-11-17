@@ -1052,6 +1052,8 @@ namespace Databento.CSharpApiClient
                     throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
                 }
 
+                DbnSymbolMap symbolMap = new DbnSymbolMap(metadata);
+
                 while(true)
                 {
                     DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
@@ -1067,7 +1069,9 @@ namespace Databento.CSharpApiClient
                                 "Unexpected rtype 0x{0:X2} in CBBO stream.", (byte)header.RecordType));
                     }
 
-                    list.Add(CbboRecordDbn.ReadFromBytes(header, reader));
+                    CbboRecordDbn record = CbboRecordDbn.ReadFromBytes(header, reader);
+                    record.Symbol = symbolMap.Find(record.InstrumentId, DbnSymbolMap.IndexTime(record.TsReceivedUtc, record.TsEventUtc));
+                    list.Add(record);
                 }
             }
 
@@ -1085,6 +1089,8 @@ namespace Databento.CSharpApiClient
                     throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
                 }
 
+                DbnSymbolMap symbolMap = new DbnSymbolMap(metadata);
+
                 while(true)
                 {
                     DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
@@ -1100,7 +1106,9 @@ namespace Databento.CSharpApiClient
                                 "Unexpected rtype 0x{0:X2} in Trades stream.", (byte)header.RecordType));
                     }
 
-                    list.Add(TradeRecordDbn.ReadFromBytes(header, reader));
+                    TradeRecordDbn record = TradeRecordDbn.ReadFromBytes(header, reader);
+                    record.Symbol = symbolMap.Find(record.InstrumentId, DbnSymbolMap.IndexTime(record.TsReceivedUtc, record.TsEventUtc));
+                    list.Add(record);
                 }
             }
 
@@ -1252,6 +1260,8 @@ namespace Databento.CSharpApiClient
                     throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
                 }
 
+                DbnSymbolMap symbolMap = new DbnSymbolMap(metadata);
+
                 while(true)
                 {
                     DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
@@ -1267,7 +1277,9 @@ namespace Databento.CSharpApiClient
                                 "Unexpected rtype 0x{0:X2} in BBO stream.", (byte)header.RecordType));
                     }
 
-                    list.Add(BboRecordDbn.ReadFromBytes(header, reader));
+                    BboRecordDbn record = BboRecordDbn.ReadFromBytes(header, reader);
+                    record.Symbol = symbolMap.Find(record.InstrumentId, DbnSymbolMap.IndexTime(record.TsReceivedUtc, record.TsEventUtc));
+                    list.Add(record);
                 }
             }
 
@@ -1285,6 +1297,8 @@ namespace Databento.CSharpApiClient
                     throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
                 }
 
+                DbnSymbolMap symbolMap = new DbnSymbolMap(metadata);
+
                 while(true)
                 {
                     DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
@@ -1300,7 +1314,9 @@ namespace Databento.CSharpApiClient
                                 "Unexpected rtype 0x{0:X2} in TCBBO stream.", (byte)header.RecordType));
                     }
 
-                    list.Add(TcbboRecordDbn.ReadFromBytes(header, reader));
+                    TcbboRecordDbn record = TcbboRecordDbn.ReadFromBytes(header, reader);
+                    record.Symbol = symbolMap.Find(record.InstrumentId, DbnSymbolMap.IndexTime(record.TsReceivedUtc, record.TsEventUtc));
+                    list.Add(record);
                 }
             }
 
@@ -1351,6 +1367,8 @@ namespace Databento.CSharpApiClient
                     throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
                 }
 
+                DbnSymbolMap symbolMap = new DbnSymbolMap(metadata);
+
                 while(true)
                 {
                     DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
@@ -1370,7 +1388,9 @@ namespace Databento.CSharpApiClient
                                 "Unexpected rtype 0x{0:X2} in OHLCV stream.", (byte)header.RecordType));
                     }
 
-                    list.Add(OhlcvRecordDbn.ReadFromBytes(header, reader));
+                    OhlcvRecordDbn record = OhlcvRecordDbn.ReadFromBytes(header, reader);
+                    record.Symbol = symbolMap.Find(record.InstrumentId, record.TsEventUtc);
+                    list.Add(record);
                 }
             }
 
@@ -1388,6 +1408,8 @@ namespace Databento.CSharpApiClient
                     throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
                 }
 
+                DbnSymbolMap symbolMap = new DbnSymbolMap(metadata);
+
                 while(true)
                 {
                     DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
@@ -1403,7 +1425,9 @@ namespace Databento.CSharpApiClient
                                 "Unexpected rtype 0x{0:X2} in Statistics stream.", (byte)header.RecordType));
                     }
 
-                    list.Add(StatisticsRecordDbn.ReadFromBytes(header, reader));
+                    StatisticsRecordDbn record = StatisticsRecordDbn.ReadFromBytes(header, reader);
+                    record.Symbol = symbolMap.Find(record.InstrumentId, DbnSymbolMap.IndexTime(record.TsReceivedUtc, record.TsEventUtc));
+                    list.Add(record);
                 }
             }
 

@@ -18,6 +18,7 @@ using Databento.CSharpApiClient.DataModel.Json;
 using Databento.CSharpApiClient.DataModel.Metadata;
 using Databento.CSharpApiClient.DataModel.Symbology;
 using Databento.CSharpApiClient.Exceptions;
+using Databento.CSharpApiClient.JsonSupport;
 using Databento.CSharpApiClient.Transport;
 
 namespace Databento.CSharpApiClient
@@ -1299,7 +1300,7 @@ namespace Databento.CSharpApiClient
 
                 using(Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false))
                 {
-                    return DeserializeCbboJson(stream, ct);
+                    return AssignRequestedSymbol(DeserializeCbboJson(stream, ct), symbols);
                 }
             }
         }
@@ -1328,7 +1329,7 @@ namespace Databento.CSharpApiClient
 
                 using(Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false))
                 {
-                    return DeserializeOhlcvJson(stream, ct);
+                    return AssignRequestedSymbol(DeserializeOhlcvJson(stream, ct), symbols);
                 }
             }
         }
@@ -1358,7 +1359,7 @@ namespace Databento.CSharpApiClient
 
                 using(Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false))
                 {
-                    return deserialize(stream, ct);
+                    return AssignRequestedSymbol(deserialize(stream, ct), symbols);
                 }
             }
         }
@@ -1406,6 +1407,28 @@ namespace Databento.CSharpApiClient
             }
 
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Gives each record of a single-symbol request the symbol requested: such a request sends no map_symbols, so the
+        /// response names none, and every record belongs to that symbol.
+        /// </summary>
+        private static T[] AssignRequestedSymbol<T>(T[] records, IReadOnlyList<string> symbols)
+        {
+            if(CoversMoreThanOneSymbol(symbols))
+            {
+                return records;
+            }
+
+            foreach(T record in records)
+            {
+                if(record is ISymbolRecord named && named.Symbol == null)
+                {
+                    named.Symbol = symbols[0];
+                }
+            }
+
+            return records;
         }
 
         /// <summary>

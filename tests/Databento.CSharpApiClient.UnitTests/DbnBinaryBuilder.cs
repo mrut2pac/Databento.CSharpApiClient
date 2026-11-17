@@ -258,6 +258,82 @@ namespace Databento.CSharpApiClient.UnitTests
             }
         }
 
+        /// <summary>
+        /// Returns a copy of a stream built above with symbol mappings in its metadata, laid out as a historical request sends
+        /// them: stype_in raw_symbol and stype_out instrument_id, each interval's symbol the instrument ID as text.
+        /// </summary>
+        public static byte[] WithSymbolMappings(byte[] stream, params SymbolMappingSeed[] mappings)
+        {
+            return WithSymbolMappings(stream, stypeOut: 0x00 /*InstrumentId*/, mappings);
+        }
+
+        /// <summary>Returns a copy of a stream built above with symbol mappings in its metadata and the given stype_out.</summary>
+        public static byte[] WithSymbolMappings(byte[] stream, byte stypeOut, params SymbolMappingSeed[] mappings)
+        {
+            return WithSymbolMappings(stream, stypeOut, symbolCStrLen: 22, mappings);
+        }
+
+        /// <summary>
+        /// Returns a copy of a stream built above with symbol mappings in its metadata, its symbols 71 bytes wide as the live API
+        /// sends them in DBN v2 and v3.
+        /// </summary>
+        public static byte[] WithWideSymbolMappings(byte[] stream, params SymbolMappingSeed[] mappings)
+        {
+            return WithSymbolMappings(stream, stypeOut: 0x00 /*InstrumentId*/, symbolCStrLen: 71, mappings);
+        }
+
+        private static byte[] WithSymbolMappings(byte[] stream, byte stypeOut, ushort symbolCStrLen, SymbolMappingSeed[] mappings)
+        {
+            // the builders write a 120-byte metadata body that ends with mappings_length = 0
+            const int preludeBytes = 8;
+            const int metadataBytes = 120;
+            const int stypeInOffset = 42;
+            const int symbolCStrLenOffset = 45;
+
+            using(MemoryStream ms = new MemoryStream())
+            using(BinaryWriter w = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
+            {
+                using(MemoryStream mappingStream = new MemoryStream())
+                using(BinaryWriter mappingWriter = new BinaryWriter(mappingStream, Encoding.ASCII, leaveOpen: true))
+                {
+                    mappingWriter.Write((uint)mappings.Length);
+                    foreach(SymbolMappingSeed mapping in mappings)
+                    {
+                        WriteFixedString(mappingWriter, mapping.RawSymbol, symbolCStrLen);
+                        mappingWriter.Write((uint)mapping.Intervals.Length);
+                        foreach(SymbolMappingIntervalSeed interval in mapping.Intervals)
+                        {
+                            mappingWriter.Write(ToYyyyMmDd(interval.StartDate));
+                            mappingWriter.Write(ToYyyyMmDd(interval.EndDate));
+                            WriteFixedString(mappingWriter, interval.Symbol, symbolCStrLen);
+                        }
+                    }
+
+                    mappingWriter.Flush();
+                    byte[] mappingBytes = mappingStream.ToArray();
+
+                    w.Write(stream, 0, 4);
+                    w.Write((uint)(metadataBytes - 4 + mappingBytes.Length));
+                    byte[] body = new byte[metadataBytes - 4];
+                    Array.Copy(stream, preludeBytes, body, 0, body.Length);
+                    body[stypeInOffset] = 0x01; // RawSymbol
+                    body[stypeInOffset + 1] = stypeOut;
+                    BitConverter.GetBytes(symbolCStrLen).CopyTo(body, symbolCStrLenOffset);
+                    w.Write(body);
+                    w.Write(mappingBytes);
+                }
+
+                w.Write(stream, preludeBytes + metadataBytes, stream.Length - preludeBytes - metadataBytes);
+                w.Flush();
+                return ms.ToArray();
+            }
+        }
+
+        private static uint ToYyyyMmDd(DateOnly date)
+        {
+            return (uint)(date.Year * 10000 + date.Month * 100 + date.Day);
+        }
+
         // =====================================================================================
         // Metadata block
         // =====================================================================================
@@ -826,6 +902,19 @@ namespace Databento.CSharpApiClient.UnitTests
         public uint AskSize { get; set; }
         public ushort BidPublisherId { get; set; }
         public ushort AskPublisherId { get; set; }
+    }
+
+    internal sealed class SymbolMappingSeed
+    {
+        public string RawSymbol { get; set; }
+        public SymbolMappingIntervalSeed[] Intervals { get; set; }
+    }
+
+    internal sealed class SymbolMappingIntervalSeed
+    {
+        public DateOnly StartDate { get; set; }
+        public DateOnly EndDate { get; set; }
+        public string Symbol { get; set; }
     }
 
     internal sealed class OhlcvSeed

@@ -9,7 +9,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
     /// Carries settlement price, open interest, and other per-instrument statistics.
     /// Decodes both layouts by record length: DBN v3 (80 bytes, 64-bit quantity) and the earlier 32-bit-quantity layout.
     /// </summary>
-    public sealed class StatisticsRecordDbn
+    public sealed class StatisticsRecordDbn : IStatisticsRecord
     {
         // Body size of a DBN v3 Statistics record: 80 bytes less the 16-byte header.
         private const int StatisticsV3BodyBytes = 64;
@@ -65,6 +65,12 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         public MessageInfoBits StatFlags { get; set; }
 
         /// <summary>
+        /// Requested symbol this record belongs to, in the request's input symbology, from the symbol mappings in the stream's
+        /// metadata; <see langword="null"/> when they do not map the record's instrument on its date.
+        /// </summary>
+        public string Symbol { get; set; }
+
+        /// <summary>
         /// Deserialises a statistics record body from <paramref name="reader"/> using the
         /// already-parsed <paramref name="header"/>.
         /// </summary>
@@ -108,5 +114,13 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                 throw new InvalidDataException("Truncated DBN Statistics record.");
             }
         }
+
+        DateTime? IRecord.TsEventUtc => UndefinedValues.Timestamp(this.TsEventUtc);
+
+        double? IStatisticsRecord.Price => UndefinedValues.Price(this.Price);
+
+        long? IStatisticsRecord.Quantity => UndefinedValues.Quantity(this.Quantity);
+
+        DateTime? IStatisticsRecord.TsReceivedUtc => UndefinedValues.Timestamp(this.TsReceivedUtc);
     }
 }

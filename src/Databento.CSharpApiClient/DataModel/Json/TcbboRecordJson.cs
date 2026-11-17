@@ -8,10 +8,10 @@ namespace Databento.CSharpApiClient.DataModel.Json
 {
     /// <summary>
     /// A Trade + Consolidated BBO record from the <c>tcbbo</c> schema (JSON encoding).
-    /// Each message records a trade event alongside the resulting consolidated (national) BBO.
+    /// Each message records a trade event alongside the consolidated (national) BBO just before it.
     /// Corresponds to DBN rtype <c>Tcbbo</c>.
     /// </summary>
-    public sealed class TcbboRecordJson
+    public sealed class TcbboRecordJson : ITcbboRecord, ISymbolRecord
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]
@@ -63,7 +63,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public uint Sequence { get; set; }
 
-        /// <summary>Consolidated BBO after the trade. Always length 1; use <see cref="Level1"/> for convenient access.</summary>
+        /// <summary>Consolidated BBO immediately before the trade. Always length 1; use <see cref="Level1"/> for convenient access.</summary>
         [JsonPropertyName("levels")]
         public CbboLevel1RecordJson[] Levels { get; set; }
 
@@ -75,8 +75,37 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonIgnore]
         public CbboLevel1RecordJson Level1 => this.Levels?.Length > 0 ? this.Levels[0] : null;
 
-        /// <summary>The raw symbol this record belongs to. Populated only when the request covered more than one symbol; <see langword="null"/> otherwise.</summary>
+        /// <summary>
+        /// The requested symbol this record belongs to: from the response's symbol mapping when the request covered more than
+        /// one symbol, otherwise the symbol requested. <see langword="null"/> for an <c>ALL_SYMBOLS</c> record the response leaves unmapped.
+        /// </summary>
         [JsonPropertyName("symbol")]
         public string Symbol { get; set; }
+
+        RType IRecord.RecordType => this.Header?.RecordType ?? default;
+
+        ushort IRecord.PublisherId => this.Header?.PublisherId ?? 0;
+
+        uint IRecord.InstrumentId => this.Header?.InstrumentId ?? 0;
+
+        DateTime? IRecord.TsEventUtc => UndefinedValues.Timestamp(this.Header?.TsEventUtc);
+
+        double? ITcbboRecord.Price => UndefinedValues.Price(this.Price);
+
+        int ITcbboRecord.TsInDelta => checked((int)this.TsInDelta);
+
+        double? ITcbboRecord.BidPrice => UndefinedValues.Price(this.Level1?.BidPrice);
+
+        double? ITcbboRecord.AskPrice => UndefinedValues.Price(this.Level1?.AskPrice);
+
+        uint ITcbboRecord.BidSize => checked((uint)(this.Level1?.BidSize ?? 0));
+
+        uint ITcbboRecord.AskSize => checked((uint)(this.Level1?.AskSize ?? 0));
+
+        ushort ITcbboRecord.BidPublisherId => checked((ushort)(this.Level1?.BidPublisherId ?? 0));
+
+        ushort ITcbboRecord.AskPublisherId => checked((ushort)(this.Level1?.AskPublisherId ?? 0));
+
+        DateTime? ITcbboRecord.TsReceivedUtc => UndefinedValues.Timestamp(this.TsReceivedUtc);
     }
 }

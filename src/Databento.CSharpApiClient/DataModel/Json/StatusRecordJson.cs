@@ -11,7 +11,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// Indicates changes to the trading or quoting state of an instrument.
     /// Corresponds to DBN rtype <c>Status</c>.
     /// </summary>
-    public sealed class StatusRecordJson : IRequestedSymbol
+    public sealed class StatusRecordJson : ISymbolRecord
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]

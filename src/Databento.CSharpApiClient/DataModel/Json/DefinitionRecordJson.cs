@@ -16,7 +16,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// 2147483647 for an <see cref="int"/>, 4294967295 for a <see cref="uint"/>, 65535 for a <see cref="ushort"/>,
     /// 255 for a <see cref="byte"/> and 127 for an <see cref="sbyte"/>. An undefined price reads as <see cref="double.NaN"/>.
     /// </remarks>
-    public sealed class DefinitionRecordJson : IRequestedSymbol
+    public sealed class DefinitionRecordJson : ISymbolRecord
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]

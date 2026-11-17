@@ -12,7 +12,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// <c>cbbo-1s</c> or <c>cbbo-1m</c> schema (JSON encoding).
     /// </summary>
     [DebuggerDisplay("{Header.RecordType} | {Header.TsEventUtc} | ({Level1.BidSize}) {Level1.BidPrice} - {Level1.AskPrice} ({Level1.AskSize})")]
-    public sealed class CbboRecordJson : ICbboRecord, IRequestedSymbol
+    public sealed class CbboRecordJson : ICbboRecord, ISymbolRecord
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]

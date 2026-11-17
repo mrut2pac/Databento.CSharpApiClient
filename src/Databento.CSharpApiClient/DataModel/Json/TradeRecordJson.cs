@@ -10,7 +10,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// A single trade tick record from the <c>trades</c> schema (JSON encoding).
     /// Corresponds to DBN rtype <c>Mbp0</c>.
     /// </summary>
-    public sealed class TradeRecordJson : ITradeRecord, IRequestedSymbol
+    public sealed class TradeRecordJson : ITradeRecord, ISymbolRecord
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]

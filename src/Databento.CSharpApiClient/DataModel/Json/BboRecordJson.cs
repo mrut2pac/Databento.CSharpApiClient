@@ -13,7 +13,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// venue level.
     /// </summary>
     [DebuggerDisplay("{Header.RecordType} | {Header.TsEventUtc} | ({Level1.BidSize}) {Level1.BidPrice} - {Level1.AskPrice} ({Level1.AskSize})")]
-    public sealed class BboRecordJson : IBboRecord, IRequestedSymbol
+    public sealed class BboRecordJson : IBboRecord, ISymbolRecord
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]

@@ -12,7 +12,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// <c>ohlcv-1h</c>, <c>ohlcv-1d</c>, <c>ohlcv-eod</c>) in JSON encoding.
     /// </summary>
     [DebuggerDisplay("{Header.RecordType} | {Header.TsEventUtc} | O:{Open} H:{High} L:{Low} C:{Close} V:{Volume}")]
-    public sealed class OhlcvRecordJson : IOhlcvRecord, IRequestedSymbol
+    public sealed class OhlcvRecordJson : IOhlcvRecord, ISymbolRecord
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]

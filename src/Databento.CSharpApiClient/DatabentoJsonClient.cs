@@ -1422,7 +1422,7 @@ namespace Databento.CSharpApiClient
 
             foreach(T record in records)
             {
-                if(record is IRequestedSymbol named && named.Symbol == null)
+                if(record is ISymbolRecord named && named.Symbol == null)
                 {
                     named.Symbol = symbols[0];
                 }

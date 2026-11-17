@@ -11,7 +11,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// Each message reflects a single order-book event plus the resulting top-10 bid/ask levels.
     /// Corresponds to DBN rtype <c>Mbp10</c>.
     /// </summary>
-    public sealed class Mbp10RecordJson : IRequestedSymbol
+    public sealed class Mbp10RecordJson : ISymbolRecord
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]

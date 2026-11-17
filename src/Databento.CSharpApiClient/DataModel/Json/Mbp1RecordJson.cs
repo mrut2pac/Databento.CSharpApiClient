@@ -11,7 +11,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// Each message reflects a single order-book event (add/modify/delete/trade) plus the resulting
     /// best bid and offer.  Corresponds to DBN rtype <c>Mbp1</c>.
     /// </summary>
-    public sealed class Mbp1RecordJson : IRequestedSymbol
+    public sealed class Mbp1RecordJson : ISymbolRecord
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]

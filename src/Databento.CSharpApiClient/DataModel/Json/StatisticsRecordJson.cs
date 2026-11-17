@@ -11,7 +11,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// Carries settlement price, open interest, and other per-instrument statistics.
     /// Corresponds to DBN rtype <c>Statistics</c>.
     /// </summary>
-    public sealed class StatisticsRecordJson : IStatisticsRecord, IRequestedSymbol
+    public sealed class StatisticsRecordJson : IStatisticsRecord, ISymbolRecord
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]

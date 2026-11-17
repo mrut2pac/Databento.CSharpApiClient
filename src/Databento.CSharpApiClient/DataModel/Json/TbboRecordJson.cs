@@ -11,7 +11,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// Each message records a trade event alongside the resulting top-of-book venue BBO.
     /// Corresponds to DBN rtype <c>Mbp0</c> with BBO context.
     /// </summary>
-    public sealed class TbboRecordJson : IRequestedSymbol
+    public sealed class TbboRecordJson : ISymbolRecord
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]

@@ -12,7 +12,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// the current auction state and directional imbalance.
     /// Corresponds to DBN rtype <c>Imbalance</c>.
     /// </summary>
-    public sealed class ImbalanceRecordJson : IRequestedSymbol
+    public sealed class ImbalanceRecordJson : ISymbolRecord
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]

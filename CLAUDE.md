@@ -73,7 +73,7 @@ Integration tests use `[SkippableFact]` from `Xunit.SkippableFact`. Without the 
 
 ## Adding a new endpoint
 
-1. Add the sync+async methods to the appropriate client (`DatabentoJsonClient` or `DatabentoClient`).
+1. Add the sync+async methods to the appropriate client (`DatabentoJsonClient` or `DatabentoClient`). Each client is split into partial files by kind: a timeseries `Get*Async` and its sync wrapper go in `*.Timeseries.cs`, its `Stream*Async`/`Stream*` pair in `*.Streaming.cs`, metadata and symbology endpoints in `DatabentoJsonClient.Metadata.cs`, batch endpoints in `DatabentoJsonClient.Batch.cs`, and private helpers in `*.Core.cs`. The main file holds only the fields, constructor and `Dispose`.
 2. Add/update the data model class under `DataModel/` with `[JsonPropertyName]` attributes and XML docs.
 3. Add a unit test in `UnitTests/` (mock transport via `IHttpTransport`).
 4. Add an integration test in `IntegrationTests/` inheriting `IntegrationTestBase`, using `[SkippableFact]` + `SkipIfNoApiKey()`.

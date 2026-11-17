@@ -38,6 +38,31 @@ foreach (var q in quotes)
     Console.WriteLine($"{q.TsEventUtc:O}  bid={q.BidPrice:F2}  ask={q.AskPrice:F2}");
 ```
 
+## Streaming large requests
+
+Every timeseries `Get*Async` method returns its records as one array. For a large request, stream the records instead with the matching `Stream*Async` method (or the synchronous `Stream*`). It yields each record as soon as it is decoded from the response, so only the records you keep stay in memory:
+
+```csharp
+await foreach (TcbboRecordDbn trade in client.StreamTcbboAsync(Datasets.OpraPillar, "SPXW  240119C04800000", start, end, cancellationToken))
+{
+    // aggregate, write to a file, ...
+}
+```
+
+A stream retries only the HTTP status (429 and 5xx), before any of the body is read. A failure while reading the body is thrown rather than retried, so no record is seen twice. The response is released when the enumeration ends, including when you stop early or cancel. Each enumeration sends a new request, which is billed again, so enumerate a stream once, for example not `Any()` and then `foreach`.
+
+`DbnReader` streams DBN data you already have, such as a downloaded batch file. The record types that carry a `Symbol` take it from the file's own metadata:
+
+```csharp
+using FileStream file = File.OpenRead("opra-pillar-20240118.tcbbo.dbn");
+await foreach (TcbboRecordDbn trade in DbnReader.ReadTcbboAsync(file))
+{
+    // ...
+}
+```
+
+Batch files are Zstandard-compressed (`.dbn.zst`) by default, and the client has no zstd decoder of its own: pass `DbnReader` a decompressing stream from the zstd library of your choice.
+
 ## Configuration
 
 ```csharp

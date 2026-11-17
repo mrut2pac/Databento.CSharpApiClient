@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -166,14 +167,7 @@ namespace Databento.CSharpApiClient
             DateTimeOffset endUtc,
             CancellationToken cancellationToken = default)
         {
-            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
-            if(symbols == null || symbols.Count == 0) { throw new ArgumentException("at least one symbol required", nameof(symbols)); }
-
-            string path = BuildTimeseriesQuery(dataset, Schema.Trades, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
-            using(Stream stream = await this.SendGetAsync(path, cancellationToken).ConfigureAwait(false))
-            {
-                return DecodeTradesDbn(stream).ToArray();
-            }
+            return await this.GetRecordsAsync(dataset, symbols, Schema.Trades, startUtc, endUtc, DbnRecordLayouts.Trades, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Synchronous convenience wrapper for <see cref="GetTradesAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
@@ -211,14 +205,7 @@ namespace Databento.CSharpApiClient
             DateTimeOffset endUtc,
             CancellationToken cancellationToken = default)
         {
-            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
-            if(symbols == null || symbols.Count == 0) { throw new ArgumentException("at least one symbol required", nameof(symbols)); }
-
-            string path = BuildTimeseriesQuery(dataset, Schema.Mbp1, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
-            using(Stream stream = await this.SendGetAsync(path, cancellationToken).ConfigureAwait(false))
-            {
-                return DecodeMbp1Dbn(stream).ToArray();
-            }
+            return await this.GetRecordsAsync(dataset, symbols, Schema.Mbp1, startUtc, endUtc, DbnRecordLayouts.Mbp1, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Synchronous convenience wrapper for <see cref="GetMbp1Async(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
@@ -256,14 +243,7 @@ namespace Databento.CSharpApiClient
             DateTimeOffset endUtc,
             CancellationToken cancellationToken = default)
         {
-            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
-            if(symbols == null || symbols.Count == 0) { throw new ArgumentException("at least one symbol required", nameof(symbols)); }
-
-            string path = BuildTimeseriesQuery(dataset, Schema.Mbo, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
-            using(Stream stream = await this.SendGetAsync(path, cancellationToken).ConfigureAwait(false))
-            {
-                return DecodeMboDbn(stream).ToArray();
-            }
+            return await this.GetRecordsAsync(dataset, symbols, Schema.Mbo, startUtc, endUtc, DbnRecordLayouts.Mbo, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Synchronous convenience wrapper for <see cref="GetMboAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
@@ -301,14 +281,7 @@ namespace Databento.CSharpApiClient
             DateTimeOffset endUtc,
             CancellationToken cancellationToken = default)
         {
-            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
-            if(symbols == null || symbols.Count == 0) { throw new ArgumentException("at least one symbol required", nameof(symbols)); }
-
-            string path = BuildTimeseriesQuery(dataset, Schema.Mbp10, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
-            using(Stream stream = await this.SendGetAsync(path, cancellationToken).ConfigureAwait(false))
-            {
-                return DecodeMbp10Dbn(stream).ToArray();
-            }
+            return await this.GetRecordsAsync(dataset, symbols, Schema.Mbp10, startUtc, endUtc, DbnRecordLayouts.Mbp10, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Synchronous convenience wrapper for <see cref="GetMbp10Async(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
@@ -346,14 +319,7 @@ namespace Databento.CSharpApiClient
             DateTimeOffset endUtc,
             CancellationToken cancellationToken = default)
         {
-            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
-            if(symbols == null || symbols.Count == 0) { throw new ArgumentException("at least one symbol required", nameof(symbols)); }
-
-            string path = BuildTimeseriesQuery(dataset, Schema.Tbbo, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
-            using(Stream stream = await this.SendGetAsync(path, cancellationToken).ConfigureAwait(false))
-            {
-                return DecodeTbboDbn(stream).ToArray();
-            }
+            return await this.GetRecordsAsync(dataset, symbols, Schema.Tbbo, startUtc, endUtc, DbnRecordLayouts.Tbbo, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Synchronous convenience wrapper for <see cref="GetTbboAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
@@ -463,14 +429,7 @@ namespace Databento.CSharpApiClient
             DateTimeOffset endUtc,
             CancellationToken cancellationToken = default)
         {
-            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
-            if(symbols == null || symbols.Count == 0) { throw new ArgumentException("at least one symbol required", nameof(symbols)); }
-
-            string path = BuildTimeseriesQuery(dataset, Schema.Tcbbo, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
-            using(Stream stream = await this.SendGetAsync(path, cancellationToken).ConfigureAwait(false))
-            {
-                return DecodeTcbboDbn(stream).ToArray();
-            }
+            return await this.GetRecordsAsync(dataset, symbols, Schema.Tcbbo, startUtc, endUtc, DbnRecordLayouts.Tcbbo, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Synchronous convenience wrapper for <see cref="GetTcbboAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
@@ -508,14 +467,7 @@ namespace Databento.CSharpApiClient
             DateTimeOffset endUtc,
             CancellationToken cancellationToken = default)
         {
-            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
-            if(symbols == null || symbols.Count == 0) { throw new ArgumentException("at least one symbol required", nameof(symbols)); }
-
-            string path = BuildTimeseriesQuery(dataset, Schema.Cmbp1, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
-            using(Stream stream = await this.SendGetAsync(path, cancellationToken).ConfigureAwait(false))
-            {
-                return DecodeCmbp1Dbn(stream).ToArray();
-            }
+            return await this.GetRecordsAsync(dataset, symbols, Schema.Cmbp1, startUtc, endUtc, DbnRecordLayouts.Cmbp1, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Synchronous convenience wrapper for <see cref="GetCmbp1Async(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
@@ -731,14 +683,7 @@ namespace Databento.CSharpApiClient
             DateTimeOffset endUtc,
             CancellationToken cancellationToken = default)
         {
-            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
-            if(symbols == null || symbols.Count == 0) { throw new ArgumentException("at least one symbol required", nameof(symbols)); }
-
-            string path = BuildTimeseriesQuery(dataset, Schema.Statistics, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
-            using(Stream stream = await this.SendGetAsync(path, cancellationToken).ConfigureAwait(false))
-            {
-                return DecodeStatisticsDbn(stream).ToArray();
-            }
+            return await this.GetRecordsAsync(dataset, symbols, Schema.Statistics, startUtc, endUtc, DbnRecordLayouts.Statistics, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Synchronous convenience wrapper for <see cref="GetStatisticsAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
@@ -776,14 +721,7 @@ namespace Databento.CSharpApiClient
             DateTimeOffset endUtc,
             CancellationToken cancellationToken = default)
         {
-            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
-            if(symbols == null || symbols.Count == 0) { throw new ArgumentException("at least one symbol required", nameof(symbols)); }
-
-            string path = BuildTimeseriesQuery(dataset, Schema.Definition, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
-            using(Stream stream = await this.SendGetAsync(path, cancellationToken).ConfigureAwait(false))
-            {
-                return DecodeDefinitionsDbn(stream).ToArray();
-            }
+            return await this.GetRecordsAsync(dataset, symbols, Schema.Definition, startUtc, endUtc, DbnRecordLayouts.Definitions, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Synchronous convenience wrapper for <see cref="GetDefinitionsAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
@@ -821,14 +759,7 @@ namespace Databento.CSharpApiClient
             DateTimeOffset endUtc,
             CancellationToken cancellationToken = default)
         {
-            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
-            if(symbols == null || symbols.Count == 0) { throw new ArgumentException("at least one symbol required", nameof(symbols)); }
-
-            string path = BuildTimeseriesQuery(dataset, Schema.Status, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
-            using(Stream stream = await this.SendGetAsync(path, cancellationToken).ConfigureAwait(false))
-            {
-                return DecodeStatusDbn(stream).ToArray();
-            }
+            return await this.GetRecordsAsync(dataset, symbols, Schema.Status, startUtc, endUtc, DbnRecordLayouts.Status, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Synchronous convenience wrapper for <see cref="GetStatusAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
@@ -866,14 +797,7 @@ namespace Databento.CSharpApiClient
             DateTimeOffset endUtc,
             CancellationToken cancellationToken = default)
         {
-            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
-            if(symbols == null || symbols.Count == 0) { throw new ArgumentException("at least one symbol required", nameof(symbols)); }
-
-            string path = BuildTimeseriesQuery(dataset, Schema.Imbalance, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
-            using(Stream stream = await this.SendGetAsync(path, cancellationToken).ConfigureAwait(false))
-            {
-                return DecodeImbalanceDbn(stream).ToArray();
-            }
+            return await this.GetRecordsAsync(dataset, symbols, Schema.Imbalance, startUtc, endUtc, DbnRecordLayouts.Imbalance, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>Synchronous convenience wrapper for <see cref="GetImbalanceAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
@@ -889,6 +813,770 @@ namespace Databento.CSharpApiClient
         }
 
         // =====================================================================================
+        // Streaming: every schema, one record at a time
+        // =====================================================================================
+
+        /// <summary>
+        /// Streams the records <see cref="GetCbbo1sAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<CbboRecordDbn> StreamCbbo1sAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.ConsolidatedBBO1Sec, startUtc, endUtc, DbnRecordLayouts.Cbbo, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamCbbo1sAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<CbboRecordDbn> StreamCbbo1s(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamCbbo1sAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetCbbo1sAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<CbboRecordDbn> StreamCbbo1sAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.ConsolidatedBBO1Sec, startUtc, endUtc, DbnRecordLayouts.Cbbo, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamCbbo1sAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<CbboRecordDbn> StreamCbbo1s(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamCbbo1sAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetCbbo1mAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<CbboRecordDbn> StreamCbbo1mAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.ConsolidatedBBO1Min, startUtc, endUtc, DbnRecordLayouts.Cbbo, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamCbbo1mAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<CbboRecordDbn> StreamCbbo1m(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamCbbo1mAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetCbbo1mAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<CbboRecordDbn> StreamCbbo1mAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.ConsolidatedBBO1Min, startUtc, endUtc, DbnRecordLayouts.Cbbo, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamCbbo1mAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<CbboRecordDbn> StreamCbbo1m(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamCbbo1mAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetTradesAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<TradeRecordDbn> StreamTradesAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Trades, startUtc, endUtc, DbnRecordLayouts.Trades, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamTradesAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<TradeRecordDbn> StreamTrades(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamTradesAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetTradesAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<TradeRecordDbn> StreamTradesAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Trades, startUtc, endUtc, DbnRecordLayouts.Trades, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamTradesAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<TradeRecordDbn> StreamTrades(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamTradesAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetMbp1Async(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<Mbp1RecordDbn> StreamMbp1Async(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Mbp1, startUtc, endUtc, DbnRecordLayouts.Mbp1, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamMbp1Async(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<Mbp1RecordDbn> StreamMbp1(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamMbp1Async(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetMbp1Async(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<Mbp1RecordDbn> StreamMbp1Async(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Mbp1, startUtc, endUtc, DbnRecordLayouts.Mbp1, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamMbp1Async(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<Mbp1RecordDbn> StreamMbp1(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamMbp1Async(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetMboAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<MboRecordDbn> StreamMboAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Mbo, startUtc, endUtc, DbnRecordLayouts.Mbo, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamMboAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<MboRecordDbn> StreamMbo(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamMboAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetMboAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<MboRecordDbn> StreamMboAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Mbo, startUtc, endUtc, DbnRecordLayouts.Mbo, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamMboAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<MboRecordDbn> StreamMbo(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamMboAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetMbp10Async(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<Mbp10RecordDbn> StreamMbp10Async(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Mbp10, startUtc, endUtc, DbnRecordLayouts.Mbp10, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamMbp10Async(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<Mbp10RecordDbn> StreamMbp10(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamMbp10Async(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetMbp10Async(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<Mbp10RecordDbn> StreamMbp10Async(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Mbp10, startUtc, endUtc, DbnRecordLayouts.Mbp10, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamMbp10Async(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<Mbp10RecordDbn> StreamMbp10(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamMbp10Async(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetTbboAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<TbboRecordDbn> StreamTbboAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Tbbo, startUtc, endUtc, DbnRecordLayouts.Tbbo, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamTbboAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<TbboRecordDbn> StreamTbbo(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamTbboAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetTbboAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<TbboRecordDbn> StreamTbboAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Tbbo, startUtc, endUtc, DbnRecordLayouts.Tbbo, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamTbboAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<TbboRecordDbn> StreamTbbo(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamTbboAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetBbo1sAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<BboRecordDbn> StreamBbo1sAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Bbo1Sec, startUtc, endUtc, DbnRecordLayouts.Bbo, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamBbo1sAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<BboRecordDbn> StreamBbo1s(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamBbo1sAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetBbo1sAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<BboRecordDbn> StreamBbo1sAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Bbo1Sec, startUtc, endUtc, DbnRecordLayouts.Bbo, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamBbo1sAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<BboRecordDbn> StreamBbo1s(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamBbo1sAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetBbo1mAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<BboRecordDbn> StreamBbo1mAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Bbo1Min, startUtc, endUtc, DbnRecordLayouts.Bbo, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamBbo1mAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<BboRecordDbn> StreamBbo1m(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamBbo1mAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetBbo1mAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<BboRecordDbn> StreamBbo1mAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Bbo1Min, startUtc, endUtc, DbnRecordLayouts.Bbo, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamBbo1mAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<BboRecordDbn> StreamBbo1m(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamBbo1mAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetTcbboAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<TcbboRecordDbn> StreamTcbboAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Tcbbo, startUtc, endUtc, DbnRecordLayouts.Tcbbo, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamTcbboAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<TcbboRecordDbn> StreamTcbbo(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamTcbboAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetTcbboAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<TcbboRecordDbn> StreamTcbboAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Tcbbo, startUtc, endUtc, DbnRecordLayouts.Tcbbo, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamTcbboAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<TcbboRecordDbn> StreamTcbbo(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamTcbboAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetCmbp1Async(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<Cmbp1RecordDbn> StreamCmbp1Async(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Cmbp1, startUtc, endUtc, DbnRecordLayouts.Cmbp1, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamCmbp1Async(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<Cmbp1RecordDbn> StreamCmbp1(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamCmbp1Async(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetCmbp1Async(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<Cmbp1RecordDbn> StreamCmbp1Async(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Cmbp1, startUtc, endUtc, DbnRecordLayouts.Cmbp1, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamCmbp1Async(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<Cmbp1RecordDbn> StreamCmbp1(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamCmbp1Async(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1sAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<OhlcvRecordDbn> StreamOhlcv1sAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Ohlcv1Sec, startUtc, endUtc, DbnRecordLayouts.Ohlcv, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1sAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<OhlcvRecordDbn> StreamOhlcv1s(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamOhlcv1sAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1sAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<OhlcvRecordDbn> StreamOhlcv1sAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Ohlcv1Sec, startUtc, endUtc, DbnRecordLayouts.Ohlcv, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1sAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<OhlcvRecordDbn> StreamOhlcv1s(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamOhlcv1sAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1mAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<OhlcvRecordDbn> StreamOhlcv1mAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Ohlcv1Min, startUtc, endUtc, DbnRecordLayouts.Ohlcv, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1mAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<OhlcvRecordDbn> StreamOhlcv1m(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamOhlcv1mAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1mAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<OhlcvRecordDbn> StreamOhlcv1mAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Ohlcv1Min, startUtc, endUtc, DbnRecordLayouts.Ohlcv, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1mAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<OhlcvRecordDbn> StreamOhlcv1m(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamOhlcv1mAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1hAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<OhlcvRecordDbn> StreamOhlcv1hAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Ohlcv1Hour, startUtc, endUtc, DbnRecordLayouts.Ohlcv, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1hAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<OhlcvRecordDbn> StreamOhlcv1h(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamOhlcv1hAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1hAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<OhlcvRecordDbn> StreamOhlcv1hAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Ohlcv1Hour, startUtc, endUtc, DbnRecordLayouts.Ohlcv, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1hAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<OhlcvRecordDbn> StreamOhlcv1h(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamOhlcv1hAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1dAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<OhlcvRecordDbn> StreamOhlcv1dAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Ohlcv1Day, startUtc, endUtc, DbnRecordLayouts.Ohlcv, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1dAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<OhlcvRecordDbn> StreamOhlcv1d(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamOhlcv1dAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1dAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<OhlcvRecordDbn> StreamOhlcv1dAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Ohlcv1Day, startUtc, endUtc, DbnRecordLayouts.Ohlcv, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1dAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<OhlcvRecordDbn> StreamOhlcv1d(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamOhlcv1dAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetStatisticsAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<StatisticsRecordDbn> StreamStatisticsAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Statistics, startUtc, endUtc, DbnRecordLayouts.Statistics, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamStatisticsAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<StatisticsRecordDbn> StreamStatistics(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamStatisticsAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetStatisticsAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<StatisticsRecordDbn> StreamStatisticsAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Statistics, startUtc, endUtc, DbnRecordLayouts.Statistics, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamStatisticsAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<StatisticsRecordDbn> StreamStatistics(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamStatisticsAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetDefinitionsAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<DefinitionRecordDbn> StreamDefinitionsAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Definition, startUtc, endUtc, DbnRecordLayouts.Definitions, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamDefinitionsAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<DefinitionRecordDbn> StreamDefinitions(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamDefinitionsAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetDefinitionsAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<DefinitionRecordDbn> StreamDefinitionsAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Definition, startUtc, endUtc, DbnRecordLayouts.Definitions, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamDefinitionsAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<DefinitionRecordDbn> StreamDefinitions(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamDefinitionsAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetStatusAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<StatusRecordDbn> StreamStatusAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Status, startUtc, endUtc, DbnRecordLayouts.Status, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamStatusAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<StatusRecordDbn> StreamStatus(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamStatusAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetStatusAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<StatusRecordDbn> StreamStatusAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Status, startUtc, endUtc, DbnRecordLayouts.Status, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamStatusAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<StatusRecordDbn> StreamStatus(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamStatusAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetImbalanceAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<ImbalanceRecordDbn> StreamImbalanceAsync(
+            string dataset,
+            string symbol,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, new[] { symbol }, Schema.Imbalance, startUtc, endUtc, DbnRecordLayouts.Imbalance, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamImbalanceAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<ImbalanceRecordDbn> StreamImbalance(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamImbalanceAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        /// <summary>
+        /// Streams the records <see cref="GetImbalanceAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a time as they are decoded from the response. Only the
+        /// HTTP status is retried; a failure while reading the body is thrown. Each enumeration sends a new request.
+        /// </summary>
+        public IAsyncEnumerable<ImbalanceRecordDbn> StreamImbalanceAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            CancellationToken cancellationToken = default)
+        {
+            return this.StreamRecordsAsync(dataset, symbols, Schema.Imbalance, startUtc, endUtc, DbnRecordLayouts.Imbalance, cancellationToken);
+        }
+
+        /// <summary>Synchronous counterpart of <see cref="StreamImbalanceAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        public IEnumerable<ImbalanceRecordDbn> StreamImbalance(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+        {
+            return this.StreamImbalanceAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+        }
+
+        // =====================================================================================
         // Core fetch: CBBO (shared by cbbo-1s and cbbo-1m)
         // =====================================================================================
 
@@ -900,15 +1588,7 @@ namespace Databento.CSharpApiClient
             string schema,
             CancellationToken cancellationToken)
         {
-            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
-            if(symbols == null || symbols.Count == 0) { throw new ArgumentException("at least one symbol required", nameof(symbols)); }
-            if(string.IsNullOrWhiteSpace(schema)) { throw new ArgumentException("schema required", nameof(schema)); }
-
-            string path = BuildTimeseriesQuery(dataset, schema, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
-            using(Stream stream = await this.SendGetAsync(path, cancellationToken).ConfigureAwait(false))
-            {
-                return DecodeCbboDbn(stream).ToArray();
-            }
+            return await this.GetRecordsAsync(dataset, symbols, schema, startUtc, endUtc, DbnRecordLayouts.Cbbo, cancellationToken).ConfigureAwait(false);
         }
 
         // =====================================================================================
@@ -923,14 +1603,7 @@ namespace Databento.CSharpApiClient
             string schema,
             CancellationToken cancellationToken)
         {
-            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
-            if(symbols == null || symbols.Count == 0) { throw new ArgumentException("at least one symbol required", nameof(symbols)); }
-
-            string path = BuildTimeseriesQuery(dataset, schema, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
-            using(Stream stream = await this.SendGetAsync(path, cancellationToken).ConfigureAwait(false))
-            {
-                return DecodeOhlcvDbn(stream).ToArray();
-            }
+            return await this.GetRecordsAsync(dataset, symbols, schema, startUtc, endUtc, DbnRecordLayouts.Ohlcv, cancellationToken).ConfigureAwait(false);
         }
 
         // =====================================================================================
@@ -945,22 +1618,80 @@ namespace Databento.CSharpApiClient
             string schema,
             CancellationToken cancellationToken)
         {
+            return await this.GetRecordsAsync(dataset, symbols, schema, startUtc, endUtc, DbnRecordLayouts.Bbo, cancellationToken).ConfigureAwait(false);
+        }
+
+        // =====================================================================================
+        // Core fetch: every schema
+        // =====================================================================================
+
+        private async Task<TRecord[]> GetRecordsAsync<TRecord>(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            string schema,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            DbnRecordLayout<TRecord> layout,
+            CancellationToken cancellationToken)
+        {
+            ValidateTimeseriesArguments(dataset, symbols, schema);
+
+            List<TRecord> records = new List<TRecord>();
+            await foreach(TRecord record in this.StreamRecordsCoreAsync(dataset, symbols, schema, startUtc, endUtc, layout, cancellationToken).ConfigureAwait(false))
+            {
+                records.Add(record);
+            }
+
+            return records.ToArray();
+        }
+
+        private IAsyncEnumerable<TRecord> StreamRecordsAsync<TRecord>(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            string schema,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            DbnRecordLayout<TRecord> layout,
+            CancellationToken cancellationToken)
+        {
+            // checked here, when the method is called, rather than on the first MoveNextAsync of the iterator
+            ValidateTimeseriesArguments(dataset, symbols, schema);
+            return this.StreamRecordsCoreAsync(dataset, symbols, schema, startUtc, endUtc, layout, cancellationToken);
+        }
+
+        private async IAsyncEnumerable<TRecord> StreamRecordsCoreAsync<TRecord>(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            string schema,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            DbnRecordLayout<TRecord> layout,
+            [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            string path = BuildTimeseriesQuery(dataset, schema, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
+            using(Stream stream = await this.OpenGetAsync(path, cancellationToken).ConfigureAwait(false))
+            {
+                await foreach(TRecord record in DbnDecoder.DecodeAsync(stream, layout, cancellationToken).ConfigureAwait(false))
+                {
+                    yield return record;
+                }
+            }
+        }
+
+        private static void ValidateTimeseriesArguments(string dataset, IReadOnlyList<string> symbols, string schema)
+        {
             if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
             if(symbols == null || symbols.Count == 0) { throw new ArgumentException("at least one symbol required", nameof(symbols)); }
-
-            string path = BuildTimeseriesQuery(dataset, schema, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
-            using(Stream stream = await this.SendGetAsync(path, cancellationToken).ConfigureAwait(false))
-            {
-                return DecodeBboDbn(stream).ToArray();
-            }
+            if(string.IsNullOrWhiteSpace(schema)) { throw new ArgumentException("schema required", nameof(schema)); }
         }
 
         // =====================================================================================
         // HTTP transport with retry
         // =====================================================================================
 
-        private async Task<Stream> SendGetAsync(string path, CancellationToken cancellationToken)
+        private async Task<Stream> OpenGetAsync(string path, CancellationToken cancellationToken)
         {
+            // only the status is retried, before any of the body is read: once records have been handed out, a retry would repeat them
             HttpResponseMessage response = await HttpRetryExecutor.SendWithRetryAsync(
                 this.transport,
                 () => new HttpRequestMessage(HttpMethod.Get, path),
@@ -975,12 +1706,13 @@ namespace Databento.CSharpApiClient
                     await ThrowHttpException(response, cancellationToken).ConfigureAwait(false);
                 }
 
-                byte[] bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
-                return new MemoryStream(bytes, writable: false);
+                Stream content = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                return new HttpResponseOwningStream(content, response);
             }
-            finally
+            catch
             {
                 response.Dispose();
+                throw;
             }
         }
 
@@ -1035,502 +1767,6 @@ namespace Databento.CSharpApiClient
             sb.Append("&stype_in=").Append(Uri.EscapeDataString(stypeIn ?? "raw_symbol"));
             sb.Append("&encoding=dbn&compression=none");
             return sb.ToString();
-        }
-
-        // =====================================================================================
-        // DBN decode helpers
-        // =====================================================================================
-
-        private static List<CbboRecordDbn> DecodeCbboDbn(Stream stream)
-        {
-            List<CbboRecordDbn> list = new List<CbboRecordDbn>();
-            using(BinaryReader reader = new BinaryReader(stream))
-            {
-                DbnMetadata metadata = DbnMetadata.FromBinaryReader(reader);
-                if(metadata == null)
-                {
-                    throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
-                }
-
-                DbnSymbolMap symbolMap = new DbnSymbolMap(metadata);
-
-                while(true)
-                {
-                    DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
-                    if(header == null)
-                    {
-                        break;
-                    }
-
-                    if(header.RecordType != RType.Cbbo1S && header.RecordType != RType.Cbbo1M)
-                    {
-                        throw new InvalidDataException(
-                            string.Format(CultureInfo.InvariantCulture,
-                                "Unexpected rtype 0x{0:X2} in CBBO stream.", (byte)header.RecordType));
-                    }
-
-                    CbboRecordDbn record = CbboRecordDbn.ReadFromBytes(header, reader);
-                    record.Symbol = symbolMap.Find(record.InstrumentId, DbnSymbolMap.IndexTime(record.TsReceivedUtc, record.TsEventUtc));
-                    list.Add(record);
-                }
-            }
-
-            return list;
-        }
-
-        private static List<TradeRecordDbn> DecodeTradesDbn(Stream stream)
-        {
-            List<TradeRecordDbn> list = new List<TradeRecordDbn>();
-            using(BinaryReader reader = new BinaryReader(stream))
-            {
-                DbnMetadata metadata = DbnMetadata.FromBinaryReader(reader);
-                if(metadata == null)
-                {
-                    throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
-                }
-
-                DbnSymbolMap symbolMap = new DbnSymbolMap(metadata);
-
-                while(true)
-                {
-                    DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
-                    if(header == null)
-                    {
-                        break;
-                    }
-
-                    if(header.RecordType != RType.Mbp0)
-                    {
-                        throw new InvalidDataException(
-                            string.Format(CultureInfo.InvariantCulture,
-                                "Unexpected rtype 0x{0:X2} in Trades stream.", (byte)header.RecordType));
-                    }
-
-                    TradeRecordDbn record = TradeRecordDbn.ReadFromBytes(header, reader);
-                    record.Symbol = symbolMap.Find(record.InstrumentId, DbnSymbolMap.IndexTime(record.TsReceivedUtc, record.TsEventUtc));
-                    list.Add(record);
-                }
-            }
-
-            return list;
-        }
-
-        private static List<Mbp1RecordDbn> DecodeMbp1Dbn(Stream stream)
-        {
-            List<Mbp1RecordDbn> list = new List<Mbp1RecordDbn>();
-            using(BinaryReader reader = new BinaryReader(stream))
-            {
-                DbnMetadata metadata = DbnMetadata.FromBinaryReader(reader);
-                if(metadata == null)
-                {
-                    throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
-                }
-
-                while(true)
-                {
-                    DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
-                    if(header == null)
-                    {
-                        break;
-                    }
-
-                    if(header.RecordType != RType.Mbp1)
-                    {
-                        throw new InvalidDataException(
-                            string.Format(CultureInfo.InvariantCulture,
-                                "Unexpected rtype 0x{0:X2} in MBP-1 stream.", (byte)header.RecordType));
-                    }
-
-                    list.Add(Mbp1RecordDbn.ReadFromBytes(header, reader));
-                }
-            }
-
-            return list;
-        }
-
-        private static List<MboRecordDbn> DecodeMboDbn(Stream stream)
-        {
-            List<MboRecordDbn> list = new List<MboRecordDbn>();
-            using(BinaryReader reader = new BinaryReader(stream))
-            {
-                DbnMetadata metadata = DbnMetadata.FromBinaryReader(reader);
-                if(metadata == null)
-                {
-                    throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
-                }
-
-                while(true)
-                {
-                    DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
-                    if(header == null)
-                    {
-                        break;
-                    }
-
-                    if(header.RecordType != RType.Mbo)
-                    {
-                        throw new InvalidDataException(
-                            string.Format(CultureInfo.InvariantCulture,
-                                "Unexpected rtype 0x{0:X2} in MBO stream.", (byte)header.RecordType));
-                    }
-
-                    list.Add(MboRecordDbn.ReadFromBytes(header, reader));
-                }
-            }
-
-            return list;
-        }
-
-        private static List<Mbp10RecordDbn> DecodeMbp10Dbn(Stream stream)
-        {
-            List<Mbp10RecordDbn> list = new List<Mbp10RecordDbn>();
-            using(BinaryReader reader = new BinaryReader(stream))
-            {
-                DbnMetadata metadata = DbnMetadata.FromBinaryReader(reader);
-                if(metadata == null)
-                {
-                    throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
-                }
-
-                while(true)
-                {
-                    DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
-                    if(header == null)
-                    {
-                        break;
-                    }
-
-                    if(header.RecordType != RType.Mbp10)
-                    {
-                        throw new InvalidDataException(
-                            string.Format(CultureInfo.InvariantCulture,
-                                "Unexpected rtype 0x{0:X2} in MBP-10 stream.", (byte)header.RecordType));
-                    }
-
-                    list.Add(Mbp10RecordDbn.ReadFromBytes(header, reader));
-                }
-            }
-
-            return list;
-        }
-
-        private static List<TbboRecordDbn> DecodeTbboDbn(Stream stream)
-        {
-            List<TbboRecordDbn> list = new List<TbboRecordDbn>();
-            using(BinaryReader reader = new BinaryReader(stream))
-            {
-                DbnMetadata metadata = DbnMetadata.FromBinaryReader(reader);
-                if(metadata == null)
-                {
-                    throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
-                }
-
-                while(true)
-                {
-                    DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
-                    if(header == null)
-                    {
-                        break;
-                    }
-
-                    // TBBO schema sends records with rtype = Mbp1 (0x01), sharing the
-                    // MBP-1 binary layout (trade event + top-of-book level).
-                    if(header.RecordType != RType.Mbp1)
-                    {
-                        throw new InvalidDataException(
-                            string.Format(CultureInfo.InvariantCulture,
-                                "Unexpected rtype 0x{0:X2} in TBBO stream.", (byte)header.RecordType));
-                    }
-
-                    list.Add(TbboRecordDbn.ReadFromBytes(header, reader));
-                }
-            }
-
-            return list;
-        }
-
-        private static List<BboRecordDbn> DecodeBboDbn(Stream stream)
-        {
-            List<BboRecordDbn> list = new List<BboRecordDbn>();
-            using(BinaryReader reader = new BinaryReader(stream))
-            {
-                DbnMetadata metadata = DbnMetadata.FromBinaryReader(reader);
-                if(metadata == null)
-                {
-                    throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
-                }
-
-                DbnSymbolMap symbolMap = new DbnSymbolMap(metadata);
-
-                while(true)
-                {
-                    DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
-                    if(header == null)
-                    {
-                        break;
-                    }
-
-                    if(header.RecordType != RType.Bbo1S && header.RecordType != RType.Bbo1M)
-                    {
-                        throw new InvalidDataException(
-                            string.Format(CultureInfo.InvariantCulture,
-                                "Unexpected rtype 0x{0:X2} in BBO stream.", (byte)header.RecordType));
-                    }
-
-                    BboRecordDbn record = BboRecordDbn.ReadFromBytes(header, reader);
-                    record.Symbol = symbolMap.Find(record.InstrumentId, DbnSymbolMap.IndexTime(record.TsReceivedUtc, record.TsEventUtc));
-                    list.Add(record);
-                }
-            }
-
-            return list;
-        }
-
-        private static List<TcbboRecordDbn> DecodeTcbboDbn(Stream stream)
-        {
-            List<TcbboRecordDbn> list = new List<TcbboRecordDbn>();
-            using(BinaryReader reader = new BinaryReader(stream))
-            {
-                DbnMetadata metadata = DbnMetadata.FromBinaryReader(reader);
-                if(metadata == null)
-                {
-                    throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
-                }
-
-                DbnSymbolMap symbolMap = new DbnSymbolMap(metadata);
-
-                while(true)
-                {
-                    DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
-                    if(header == null)
-                    {
-                        break;
-                    }
-
-                    if(header.RecordType != RType.Tcbbo)
-                    {
-                        throw new InvalidDataException(
-                            string.Format(CultureInfo.InvariantCulture,
-                                "Unexpected rtype 0x{0:X2} in TCBBO stream.", (byte)header.RecordType));
-                    }
-
-                    TcbboRecordDbn record = TcbboRecordDbn.ReadFromBytes(header, reader);
-                    record.Symbol = symbolMap.Find(record.InstrumentId, DbnSymbolMap.IndexTime(record.TsReceivedUtc, record.TsEventUtc));
-                    list.Add(record);
-                }
-            }
-
-            return list;
-        }
-
-        private static List<Cmbp1RecordDbn> DecodeCmbp1Dbn(Stream stream)
-        {
-            List<Cmbp1RecordDbn> list = new List<Cmbp1RecordDbn>();
-            using(BinaryReader reader = new BinaryReader(stream))
-            {
-                DbnMetadata metadata = DbnMetadata.FromBinaryReader(reader);
-                if(metadata == null)
-                {
-                    throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
-                }
-
-                while(true)
-                {
-                    DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
-                    if(header == null)
-                    {
-                        break;
-                    }
-
-                    if(header.RecordType != RType.Cmbp1)
-                    {
-                        throw new InvalidDataException(
-                            string.Format(CultureInfo.InvariantCulture,
-                                "Unexpected rtype 0x{0:X2} in CMBP-1 stream.", (byte)header.RecordType));
-                    }
-
-                    list.Add(Cmbp1RecordDbn.ReadFromBytes(header, reader));
-                }
-            }
-
-            return list;
-        }
-
-        private static List<OhlcvRecordDbn> DecodeOhlcvDbn(Stream stream)
-        {
-            List<OhlcvRecordDbn> list = new List<OhlcvRecordDbn>();
-            using(BinaryReader reader = new BinaryReader(stream))
-            {
-                DbnMetadata metadata = DbnMetadata.FromBinaryReader(reader);
-                if(metadata == null)
-                {
-                    throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
-                }
-
-                DbnSymbolMap symbolMap = new DbnSymbolMap(metadata);
-
-                while(true)
-                {
-                    DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
-                    if(header == null)
-                    {
-                        break;
-                    }
-
-                    if(header.RecordType != RType.Ohlcv1S
-                        && header.RecordType != RType.Ohlcv1M
-                        && header.RecordType != RType.Ohlcv1H
-                        && header.RecordType != RType.Ohlcv1D
-                        && header.RecordType != RType.OhlcvEod)
-                    {
-                        throw new InvalidDataException(
-                            string.Format(CultureInfo.InvariantCulture,
-                                "Unexpected rtype 0x{0:X2} in OHLCV stream.", (byte)header.RecordType));
-                    }
-
-                    OhlcvRecordDbn record = OhlcvRecordDbn.ReadFromBytes(header, reader);
-                    record.Symbol = symbolMap.Find(record.InstrumentId, record.TsEventUtc);
-                    list.Add(record);
-                }
-            }
-
-            return list;
-        }
-
-        private static List<StatisticsRecordDbn> DecodeStatisticsDbn(Stream stream)
-        {
-            List<StatisticsRecordDbn> list = new List<StatisticsRecordDbn>();
-            using(BinaryReader reader = new BinaryReader(stream))
-            {
-                DbnMetadata metadata = DbnMetadata.FromBinaryReader(reader);
-                if(metadata == null)
-                {
-                    throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
-                }
-
-                DbnSymbolMap symbolMap = new DbnSymbolMap(metadata);
-
-                while(true)
-                {
-                    DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
-                    if(header == null)
-                    {
-                        break;
-                    }
-
-                    if(header.RecordType != RType.Statistics)
-                    {
-                        throw new InvalidDataException(
-                            string.Format(CultureInfo.InvariantCulture,
-                                "Unexpected rtype 0x{0:X2} in Statistics stream.", (byte)header.RecordType));
-                    }
-
-                    StatisticsRecordDbn record = StatisticsRecordDbn.ReadFromBytes(header, reader);
-                    record.Symbol = symbolMap.Find(record.InstrumentId, DbnSymbolMap.IndexTime(record.TsReceivedUtc, record.TsEventUtc));
-                    list.Add(record);
-                }
-            }
-
-            return list;
-        }
-
-        private static List<DefinitionRecordDbn> DecodeDefinitionsDbn(Stream stream)
-        {
-            List<DefinitionRecordDbn> list = new List<DefinitionRecordDbn>();
-            using(BinaryReader reader = new BinaryReader(stream))
-            {
-                DbnMetadata metadata = DbnMetadata.FromBinaryReader(reader);
-                if(metadata == null)
-                {
-                    throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
-                }
-
-                while(true)
-                {
-                    DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
-                    if(header == null)
-                    {
-                        break;
-                    }
-
-                    if(header.RecordType != RType.InstrumentDef)
-                    {
-                        throw new InvalidDataException(
-                            string.Format(CultureInfo.InvariantCulture,
-                                "Unexpected rtype 0x{0:X2} in Definition stream.", (byte)header.RecordType));
-                    }
-
-                    list.Add(DefinitionRecordDbn.ReadFromBytes(header, reader));
-                }
-            }
-
-            return list;
-        }
-
-        private static List<StatusRecordDbn> DecodeStatusDbn(Stream stream)
-        {
-            List<StatusRecordDbn> list = new List<StatusRecordDbn>();
-            using(BinaryReader reader = new BinaryReader(stream))
-            {
-                DbnMetadata metadata = DbnMetadata.FromBinaryReader(reader);
-                if(metadata == null)
-                {
-                    throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
-                }
-
-                while(true)
-                {
-                    DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
-                    if(header == null)
-                    {
-                        break;
-                    }
-
-                    if(header.RecordType != RType.Status)
-                    {
-                        throw new InvalidDataException(
-                            string.Format(CultureInfo.InvariantCulture,
-                                "Unexpected rtype 0x{0:X2} in Status stream.", (byte)header.RecordType));
-                    }
-
-                    list.Add(StatusRecordDbn.ReadFromBytes(header, reader));
-                }
-            }
-
-            return list;
-        }
-
-        private static List<ImbalanceRecordDbn> DecodeImbalanceDbn(Stream stream)
-        {
-            List<ImbalanceRecordDbn> list = new List<ImbalanceRecordDbn>();
-            using(BinaryReader reader = new BinaryReader(stream))
-            {
-                DbnMetadata metadata = DbnMetadata.FromBinaryReader(reader);
-                if(metadata == null)
-                {
-                    throw new InvalidDataException("Invalid DBN stream: missing metadata header.");
-                }
-
-                while(true)
-                {
-                    DbnRecordHeader header = DbnRecordHeader.ReadFromBytes(reader);
-                    if(header == null)
-                    {
-                        break;
-                    }
-
-                    if(header.RecordType != RType.Imbalance)
-                    {
-                        throw new InvalidDataException(
-                            string.Format(CultureInfo.InvariantCulture,
-                                "Unexpected rtype 0x{0:X2} in Imbalance stream.", (byte)header.RecordType));
-                    }
-
-                    list.Add(ImbalanceRecordDbn.ReadFromBytes(header, reader));
-                }
-            }
-
-            return list;
         }
     }
 }

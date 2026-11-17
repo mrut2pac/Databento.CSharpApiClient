@@ -9,7 +9,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
     /// Carries the last trade event (32 bytes) plus the NBBO level immediately preceding
     /// the trade (32 bytes). Total record body is 64 bytes (length_byte = 20).
     /// </summary>
-    public sealed class TcbboRecordDbn
+    public sealed class TcbboRecordDbn : ITcbboRecord
     {
         /// <summary>DBN record-type discriminator (<see cref="RType.Tcbbo"/>).</summary>
         public RType RecordType { get; set; }
@@ -54,6 +54,12 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
 
         /// <summary>Consolidated NBBO level immediately preceding the trade.</summary>
         public CbboLevelDbn Level { get; set; }
+
+        /// <summary>
+        /// Requested symbol this record belongs to, in the request's input symbology, from the symbol mappings in the stream's
+        /// metadata; <see langword="null"/> when they do not map the record's instrument on its date.
+        /// </summary>
+        public string Symbol { get; set; }
 
         /// <summary>
         /// Deserialises a TCBBO record body from <paramref name="reader"/> using the
@@ -101,5 +107,22 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             }
         }
 
+        DateTime? IRecord.TsEventUtc => UndefinedValues.Timestamp(this.TsEventUtc);
+
+        double? ITcbboRecord.Price => UndefinedValues.Price(this.Price);
+
+        double? ITcbboRecord.BidPrice => UndefinedValues.Price(this.Level?.BidPrice);
+
+        double? ITcbboRecord.AskPrice => UndefinedValues.Price(this.Level?.AskPrice);
+
+        uint ITcbboRecord.BidSize => this.Level?.BidSize ?? 0;
+
+        uint ITcbboRecord.AskSize => this.Level?.AskSize ?? 0;
+
+        ushort ITcbboRecord.BidPublisherId => this.Level?.BidPublisherId ?? 0;
+
+        ushort ITcbboRecord.AskPublisherId => this.Level?.AskPublisherId ?? 0;
+
+        DateTime? ITcbboRecord.TsReceivedUtc => UndefinedValues.Timestamp(this.TsReceivedUtc);
     }
 }

@@ -13,7 +13,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// venue level.
     /// </summary>
     [DebuggerDisplay("{Header.RecordType} | {Header.TsEventUtc} | ({Level1.BidSize}) {Level1.BidPrice} - {Level1.AskPrice} ({Level1.AskSize})")]
-    public sealed class BboRecordJson
+    public sealed class BboRecordJson : IBboRecord, IRequestedSymbol
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]
@@ -68,8 +68,35 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonIgnore]
         public Mbp1LevelJson Level1 => this.Levels?.Length > 0 ? this.Levels[0] : null;
 
-        /// <summary>The raw symbol this record belongs to. Populated only when the request covered more than one symbol; <see langword="null"/> otherwise.</summary>
+        /// <summary>
+        /// The requested symbol this record belongs to: from the response's symbol mapping when the request covered more than
+        /// one symbol, otherwise the symbol requested. <see langword="null"/> for an <c>ALL_SYMBOLS</c> record the response leaves unmapped.
+        /// </summary>
         [JsonPropertyName("symbol")]
         public string Symbol { get; set; }
+
+        RType IRecord.RecordType => this.Header?.RecordType ?? default;
+
+        ushort IRecord.PublisherId => this.Header?.PublisherId ?? 0;
+
+        uint IRecord.InstrumentId => this.Header?.InstrumentId ?? 0;
+
+        DateTime? IRecord.TsEventUtc => UndefinedValues.Timestamp(this.Header?.TsEventUtc);
+
+        double? IBboRecord.Price => UndefinedValues.Price(this.Price);
+
+        double? IBboRecord.BidPrice => UndefinedValues.Price(this.Level1?.BidPrice);
+
+        double? IBboRecord.AskPrice => UndefinedValues.Price(this.Level1?.AskPrice);
+
+        uint IBboRecord.BidSize => this.Level1?.BidSize ?? 0;
+
+        uint IBboRecord.AskSize => this.Level1?.AskSize ?? 0;
+
+        uint IBboRecord.BidCount => this.Level1?.BidCount ?? 0;
+
+        uint IBboRecord.AskCount => this.Level1?.AskCount ?? 0;
+
+        DateTime? IBboRecord.TsReceivedUtc => UndefinedValues.Timestamp(this.TsReceivedUtc);
     }
 }

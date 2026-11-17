@@ -7,7 +7,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
     /// A single trade tick deserialized from a DBN binary stream.
     /// Schema: <c>trades</c> — rtype <c>Mbp0</c> (0x00).
     /// </summary>
-    public sealed class TradeRecordDbn
+    public sealed class TradeRecordDbn : ITradeRecord
     {
         /// <summary>DBN record-type discriminator (<see cref="RType.Mbp0"/>).</summary>
         public RType RecordType { get; set; }
@@ -49,6 +49,12 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         public uint Sequence { get; set; }
 
         /// <summary>
+        /// Requested symbol this record belongs to, in the request's input symbology, from the symbol mappings in the stream's
+        /// metadata; <see langword="null"/> when they do not map the record's instrument on its date.
+        /// </summary>
+        public string Symbol { get; set; }
+
+        /// <summary>
         /// Deserialises a trade record body from <paramref name="reader"/> using the
         /// already-parsed <paramref name="header"/>.
         /// </summary>
@@ -88,5 +94,10 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             }
         }
 
+        DateTime? IRecord.TsEventUtc => UndefinedValues.Timestamp(this.TsEventUtc);
+
+        double? ITradeRecord.Price => UndefinedValues.Price(this.Price);
+
+        DateTime? ITradeRecord.TsReceivedUtc => UndefinedValues.Timestamp(this.TsReceivedUtc);
     }
 }

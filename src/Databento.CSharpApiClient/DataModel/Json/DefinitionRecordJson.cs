@@ -16,7 +16,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// 2147483647 for an <see cref="int"/>, 4294967295 for a <see cref="uint"/>, 65535 for a <see cref="ushort"/>,
     /// 255 for a <see cref="byte"/> and 127 for an <see cref="sbyte"/>. An undefined price reads as <see cref="double.NaN"/>.
     /// </remarks>
-    public sealed class DefinitionRecordJson
+    public sealed class DefinitionRecordJson : IRequestedSymbol
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]
@@ -376,7 +376,10 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonPropertyName("ts_out")]
         public DateTime? TsOutUtc { get; set; }
 
-        /// <summary>The raw symbol this record belongs to. Populated only when the request covered more than one symbol; <see langword="null"/> otherwise.</summary>
+        /// <summary>
+        /// The requested symbol this record belongs to: from the response's symbol mapping when the request covered more than
+        /// one symbol, otherwise the symbol requested. <see langword="null"/> for an <c>ALL_SYMBOLS</c> record the response leaves unmapped.
+        /// </summary>
         [JsonPropertyName("symbol")]
         public string Symbol { get; set; }
     }

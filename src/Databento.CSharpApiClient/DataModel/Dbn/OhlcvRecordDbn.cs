@@ -9,7 +9,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
     /// <c>ohlcv-1d</c>, and <c>ohlcv-eod</c>.
     /// Record body is 40 bytes; total record = 56 bytes (length_byte = 14).
     /// </summary>
-    public sealed class OhlcvRecordDbn
+    public sealed class OhlcvRecordDbn : IOhlcvRecord
     {
         /// <summary>DBN record-type discriminator (one of the <c>Ohlcv*</c> RType values).</summary>
         public RType RecordType { get; set; }
@@ -37,6 +37,12 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
 
         /// <summary>Total traded volume within the bar interval (in lots).</summary>
         public ulong Volume { get; set; }
+
+        /// <summary>
+        /// Requested symbol this record belongs to, in the request's input symbology, from the symbol mappings in the stream's
+        /// metadata; <see langword="null"/> when they do not map the record's instrument on its date.
+        /// </summary>
+        public string Symbol { get; set; }
 
         /// <summary>
         /// Deserialises an OHLCV record body from <paramref name="reader"/> using the
@@ -73,5 +79,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                 throw new InvalidDataException("Truncated DBN OHLCV record.");
             }
         }
+
+        DateTime? IRecord.TsEventUtc => UndefinedValues.Timestamp(this.TsEventUtc);
     }
 }

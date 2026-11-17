@@ -12,7 +12,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// <c>cbbo-1s</c> or <c>cbbo-1m</c> schema (JSON encoding).
     /// </summary>
     [DebuggerDisplay("{Header.RecordType} | {Header.TsEventUtc} | ({Level1.BidSize}) {Level1.BidPrice} - {Level1.AskPrice} ({Level1.AskSize})")]
-    public sealed class CbboRecordJson
+    public sealed class CbboRecordJson : ICbboRecord, IRequestedSymbol
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]
@@ -55,8 +55,37 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonPropertyName("ts_out")]
         public DateTime TsOutUtc { get; set; }
 
-        /// <summary>The raw symbol this record belongs to. Populated only when the request covered more than one symbol; <see langword="null"/> otherwise.</summary>
+        /// <summary>
+        /// The requested symbol this record belongs to: from the response's symbol mapping when the request covered more than
+        /// one symbol, otherwise the symbol requested. <see langword="null"/> for an <c>ALL_SYMBOLS</c> record the response leaves unmapped.
+        /// </summary>
         [JsonPropertyName("symbol")]
         public string Symbol { get; set; }
+
+        RType IRecord.RecordType => this.Header?.RecordType ?? default;
+
+        ushort IRecord.PublisherId => this.Header?.PublisherId ?? 0;
+
+        uint IRecord.InstrumentId => this.Header?.InstrumentId ?? 0;
+
+        DateTime? IRecord.TsEventUtc => UndefinedValues.Timestamp(this.Header?.TsEventUtc);
+
+        double? ICbboRecord.Price => UndefinedValues.Price(this.Price);
+
+        uint ICbboRecord.Size => checked((uint)this.Size);
+
+        double? ICbboRecord.BidPrice => UndefinedValues.Price(this.Level1?.BidPrice);
+
+        double? ICbboRecord.AskPrice => UndefinedValues.Price(this.Level1?.AskPrice);
+
+        uint ICbboRecord.BidSize => checked((uint)(this.Level1?.BidSize ?? 0));
+
+        uint ICbboRecord.AskSize => checked((uint)(this.Level1?.AskSize ?? 0));
+
+        ushort ICbboRecord.BidPublisherId => checked((ushort)(this.Level1?.BidPublisherId ?? 0));
+
+        ushort ICbboRecord.AskPublisherId => checked((ushort)(this.Level1?.AskPublisherId ?? 0));
+
+        DateTime? ICbboRecord.TsReceivedUtc => UndefinedValues.Timestamp(this.TsReceivedUtc);
     }
 }

@@ -7,7 +7,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
     /// Consolidated/National Best Bid and Offer (CBBO) snapshot record, deserialized from
     /// a DBN binary stream. Corresponds to schemas <c>cbbo-1s</c> and <c>cbbo-1m</c>.
     /// </summary>
-    public sealed class CbboRecordDbn
+    public sealed class CbboRecordDbn : ICbboRecord
     {
         /// <summary>DBN record-type discriminator (<see cref="RType.Cbbo1S"/> or <see cref="RType.Cbbo1M"/>).</summary>
         public RType RecordType { get; set; }
@@ -53,6 +53,12 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
 
         /// <summary>Publisher ID of the venue contributing the best ask.</summary>
         public ushort AskPublisherId { get; set; }
+
+        /// <summary>
+        /// Requested symbol this record belongs to, in the request's input symbology, from the symbol mappings in the stream's
+        /// metadata; <see langword="null"/> when they do not map the record's instrument on its date.
+        /// </summary>
+        public string Symbol { get; set; }
 
         /// <summary>
         /// Deserialises a CBBO record body from <paramref name="binaryReader"/> using the
@@ -111,5 +117,15 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                 default: throw new InvalidDataException("Unexpected side value: " + side);
             }
         }
+
+        DateTime? IRecord.TsEventUtc => UndefinedValues.Timestamp(this.TsEventUtc);
+
+        double? ICbboRecord.Price => UndefinedValues.Price(this.Price);
+
+        double? ICbboRecord.BidPrice => UndefinedValues.Price(this.BidPrice);
+
+        double? ICbboRecord.AskPrice => UndefinedValues.Price(this.AskPrice);
+
+        DateTime? ICbboRecord.TsReceivedUtc => UndefinedValues.Timestamp(this.TsReceivedUtc);
     }
 }

@@ -11,7 +11,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// Each message reflects a single order-book event plus the resulting consolidated
     /// (national) best bid and offer. Corresponds to DBN rtype <c>Cmbp1</c>.
     /// </summary>
-    public sealed class Cmbp1RecordJson
+    public sealed class Cmbp1RecordJson : IRequestedSymbol
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]
@@ -75,7 +75,10 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonIgnore]
         public CbboLevel1RecordJson Level1 => this.Levels?.Length > 0 ? this.Levels[0] : null;
 
-        /// <summary>The raw symbol this record belongs to. Populated only when the request covered more than one symbol; <see langword="null"/> otherwise.</summary>
+        /// <summary>
+        /// The requested symbol this record belongs to: from the response's symbol mapping when the request covered more than
+        /// one symbol, otherwise the symbol requested. <see langword="null"/> for an <c>ALL_SYMBOLS</c> record the response leaves unmapped.
+        /// </summary>
         [JsonPropertyName("symbol")]
         public string Symbol { get; set; }
     }

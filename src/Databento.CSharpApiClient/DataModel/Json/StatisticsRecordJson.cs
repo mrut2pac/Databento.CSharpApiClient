@@ -11,7 +11,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
     /// Carries settlement price, open interest, and other per-instrument statistics.
     /// Corresponds to DBN rtype <c>Statistics</c>.
     /// </summary>
-    public sealed class StatisticsRecordJson
+    public sealed class StatisticsRecordJson : IStatisticsRecord, IRequestedSymbol
     {
         /// <summary>Common record header (record type, publisher, instrument, event timestamp).</summary>
         [JsonPropertyName("hd")]
@@ -74,8 +74,27 @@ namespace Databento.CSharpApiClient.DataModel.Json
         [JsonPropertyName("ts_out")]
         public DateTime? TsOutUtc { get; set; }
 
-        /// <summary>The raw symbol this record belongs to. Populated only when the request covered more than one symbol; <see langword="null"/> otherwise.</summary>
+        /// <summary>
+        /// The requested symbol this record belongs to: from the response's symbol mapping when the request covered more than
+        /// one symbol, otherwise the symbol requested. <see langword="null"/> for an <c>ALL_SYMBOLS</c> record the response leaves unmapped.
+        /// </summary>
         [JsonPropertyName("symbol")]
         public string Symbol { get; set; }
+
+        RType IRecord.RecordType => this.Header?.RecordType ?? default;
+
+        ushort IRecord.PublisherId => this.Header?.PublisherId ?? 0;
+
+        uint IRecord.InstrumentId => this.Header?.InstrumentId ?? 0;
+
+        DateTime? IRecord.TsEventUtc => UndefinedValues.Timestamp(this.Header?.TsEventUtc);
+
+        double? IStatisticsRecord.Price => UndefinedValues.Price(this.Price);
+
+        long? IStatisticsRecord.Quantity => UndefinedValues.Quantity(this.Quantity);
+
+        int IStatisticsRecord.TsInDelta => checked((int)this.TsInDelta);
+
+        DateTime? IStatisticsRecord.TsReceivedUtc => UndefinedValues.Timestamp(this.TsReceivedUtc);
     }
 }

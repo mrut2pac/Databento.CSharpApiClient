@@ -61,7 +61,20 @@ await foreach (TcbboRecordDbn trade in DbnReader.ReadTcbboAsync(file))
 }
 ```
 
-Batch files are Zstandard-compressed (`.dbn.zst`) by default, and the client has no zstd decoder of its own: pass `DbnReader` a decompressing stream from the zstd library of your choice.
+Batch files are Zstandard-compressed (`.dbn.zst`) by default, and the client has no zstd decoder of its own: pass `DbnReader` a decompressing stream from the zstd library of your choice. For example, with the [ZstdSharp.Port](https://www.nuget.org/packages/ZstdSharp.Port) package:
+
+```csharp
+using ZstdSharp;
+
+using FileStream file = File.OpenRead("opra-pillar-20240118.tcbbo.dbn.zst");
+using DecompressionStream dbn = new DecompressionStream(file);
+await foreach (TcbboRecordDbn trade in DbnReader.ReadTcbboAsync(dbn))
+{
+    // ...
+}
+```
+
+Data that is still compressed fails with an `InvalidDataException` saying it does not start with `DBN`.
 
 ## Configuration
 

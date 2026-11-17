@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-11-17
+
 ### Added
 - Record interfaces that the JSON and DBN record classes both implement, so code can read either encoding the same way: `IRecord` and, per schema, `IBboRecord`, `ICbboRecord`, `ITcbboRecord`, `ITradeRecord`, `IOhlcvRecord` and `IStatisticsRecord`.
   - They follow the DBN layout: the header fields and the single book level sit on the record itself.
@@ -16,6 +18,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - It comes from the symbol mappings in the stream's metadata, for the record's instrument on the date of its `ts_recv` (`ts_event` for a bar).
   - It is `null` when the metadata maps the instrument to no symbol on that date.
   - Serializing one of these DBN records now writes a `Symbol` property too.
+  - Memory, for DBN client users: each decoded record holds one more reference, 8 bytes on a 64-bit process, about 7-10% of a record's size. The symbol string itself is not copied: every record of a symbol points to the one string read from the metadata.
 
 ### Changed
 - `DatabentoJsonClient`: every record of a single-symbol request now carries that symbol in `Symbol`. Before, it was `null`, since such a request sends no `map_symbols`. This is the value the DBN client's symbol mappings give. Nothing changes on the wire, and a multi-symbol or `ALL_SYMBOLS` request is unchanged.
@@ -192,7 +195,8 @@ Initial release.
 - HTTP retry with exponential back-off and jitter
 - Zero external dependencies — pure `System.Text.Json` on .NET 8+
 
-[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.0.0...v2.0.1

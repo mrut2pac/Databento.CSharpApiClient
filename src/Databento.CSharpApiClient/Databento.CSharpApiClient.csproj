@@ -21,7 +21,7 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>2.2.0</Version>
+    <Version>2.3.0</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
@@ -31,6 +31,19 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
+v2.3.0 — 2026-11-17
+
+Added
+- Record interfaces that the JSON and DBN record classes both implement: IRecord, IBboRecord, ICbboRecord,
+  ITcbboRecord, ITradeRecord, IOhlcvRecord and IStatisticsRecord. Flat like DBN, DBN types where the two
+  differ, and an undefined price, quantity or timestamp reads as null.
+- Symbol on the bbo, cbbo, tcbbo, trades, ohlcv and statistics DBN records, from the stream's symbol mappings.
+  For DBN client users, each decoded record holds one more reference (8 bytes on 64-bit, about 7-10% of a record); the symbol
+  string itself is shared by every record of that symbol.
+
+Changed
+- DatabentoJsonClient: records of a single-symbol request carry that symbol in Symbol (it was null).
+
 v2.2.0 — 2026-10-07
 
 Added

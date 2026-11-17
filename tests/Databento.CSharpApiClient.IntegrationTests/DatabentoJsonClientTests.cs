@@ -1220,5 +1220,38 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Assert.Equal(new[] { "2022-05-13", "2022-05-16", "2022-05-17" }, Array.ConvertAll(conditions, c => c.Date));
             Assert.All(conditions, c => Assert.Equal(Datasets.XnasItch, c.Dataset));
         }
+
+        // =====================================================================
+        // Streaming (JSON)
+        // =====================================================================
+
+        [SkippableFact]
+        public async Task StreamTrades_Spy_YieldsRecordsWithPriceAndSymbol()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 14, 30, 0, TimeSpan.Zero);
+
+            int count = 0;
+            try
+            {
+                await foreach(TradeRecordJson record in client.StreamTradesAsync(Datasets.XnasItch, "SPY", start, end))
+                {
+                    Assert.True(record.Price > 0);
+                    Assert.Equal("SPY", record.Symbol);
+                    ++count;
+                }
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.True(count > 0);
+        }
+
     }
 }

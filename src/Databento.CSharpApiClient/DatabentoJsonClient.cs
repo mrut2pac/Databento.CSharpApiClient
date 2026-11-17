@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -1169,6 +1170,656 @@ namespace Databento.CSharpApiClient
             => this.GetSymbolMappingsAsync(dataset, symbols, startUtc, endUtc).GetAwaiter().GetResult();
 
         // ================================================================
+        // Timeseries — streaming, one record at a time
+        // ================================================================
+
+        /// <summary>
+        /// Streams the records <see cref="GetCbbo1sAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<CbboRecordJson> StreamCbbo1sAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.ConsolidatedBBO1Sec, startUtc, endUtc, DeserializeCbboJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamCbbo1sAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<CbboRecordJson> StreamCbbo1s(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamCbbo1sAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetCbbo1mAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<CbboRecordJson> StreamCbbo1mAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.ConsolidatedBBO1Min, startUtc, endUtc, DeserializeCbboJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamCbbo1mAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<CbboRecordJson> StreamCbbo1m(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamCbbo1mAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetCbbo1sAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<CbboRecordJson> StreamCbbo1sAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.ConsolidatedBBO1Sec, startUtc, endUtc, DeserializeCbboJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamCbbo1sAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<CbboRecordJson> StreamCbbo1s(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamCbbo1sAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetCbbo1mAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<CbboRecordJson> StreamCbbo1mAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.ConsolidatedBBO1Min, startUtc, endUtc, DeserializeCbboJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamCbbo1mAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<CbboRecordJson> StreamCbbo1m(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamCbbo1mAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1sAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<OhlcvRecordJson> StreamOhlcv1sAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Ohlcv1Sec, startUtc, endUtc, DeserializeOhlcvJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1sAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<OhlcvRecordJson> StreamOhlcv1s(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamOhlcv1sAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1mAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<OhlcvRecordJson> StreamOhlcv1mAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Ohlcv1Min, startUtc, endUtc, DeserializeOhlcvJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1mAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<OhlcvRecordJson> StreamOhlcv1m(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamOhlcv1mAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1hAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<OhlcvRecordJson> StreamOhlcv1hAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Ohlcv1Hour, startUtc, endUtc, DeserializeOhlcvJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1hAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<OhlcvRecordJson> StreamOhlcv1h(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamOhlcv1hAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1dAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<OhlcvRecordJson> StreamOhlcv1dAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Ohlcv1Day, startUtc, endUtc, DeserializeOhlcvJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1dAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<OhlcvRecordJson> StreamOhlcv1d(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamOhlcv1dAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1sAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<OhlcvRecordJson> StreamOhlcv1sAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Ohlcv1Sec, startUtc, endUtc, DeserializeOhlcvJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1sAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<OhlcvRecordJson> StreamOhlcv1s(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamOhlcv1sAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1mAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<OhlcvRecordJson> StreamOhlcv1mAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Ohlcv1Min, startUtc, endUtc, DeserializeOhlcvJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1mAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<OhlcvRecordJson> StreamOhlcv1m(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamOhlcv1mAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1hAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<OhlcvRecordJson> StreamOhlcv1hAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Ohlcv1Hour, startUtc, endUtc, DeserializeOhlcvJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1hAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<OhlcvRecordJson> StreamOhlcv1h(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamOhlcv1hAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetOhlcv1dAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<OhlcvRecordJson> StreamOhlcv1dAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Ohlcv1Day, startUtc, endUtc, DeserializeOhlcvJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamOhlcv1dAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<OhlcvRecordJson> StreamOhlcv1d(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamOhlcv1dAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetTradesAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<TradeRecordJson> StreamTradesAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Trades, startUtc, endUtc, DeserializeTradesJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamTradesAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<TradeRecordJson> StreamTrades(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamTradesAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetTradesAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<TradeRecordJson> StreamTradesAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Trades, startUtc, endUtc, DeserializeTradesJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamTradesAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<TradeRecordJson> StreamTrades(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamTradesAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetMbp1Async(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<Mbp1RecordJson> StreamMbp1Async(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Mbp1, startUtc, endUtc, DeserializeMbp1Json, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamMbp1Async(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<Mbp1RecordJson> StreamMbp1(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamMbp1Async(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetMbp1Async(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<Mbp1RecordJson> StreamMbp1Async(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Mbp1, startUtc, endUtc, DeserializeMbp1Json, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamMbp1Async(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<Mbp1RecordJson> StreamMbp1(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamMbp1Async(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetStatisticsAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<StatisticsRecordJson> StreamStatisticsAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Statistics, startUtc, endUtc, DeserializeStatisticsJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamStatisticsAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<StatisticsRecordJson> StreamStatistics(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamStatisticsAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetStatisticsAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<StatisticsRecordJson> StreamStatisticsAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Statistics, startUtc, endUtc, DeserializeStatisticsJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamStatisticsAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<StatisticsRecordJson> StreamStatistics(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamStatisticsAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetDefinitionsAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<DefinitionRecordJson> StreamDefinitionsAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Definition, startUtc, endUtc, DeserializeDefinitionsJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamDefinitionsAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<DefinitionRecordJson> StreamDefinitions(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamDefinitionsAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetDefinitionsAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<DefinitionRecordJson> StreamDefinitionsAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Definition, startUtc, endUtc, DeserializeDefinitionsJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamDefinitionsAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<DefinitionRecordJson> StreamDefinitions(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamDefinitionsAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetMboAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<MboRecordJson> StreamMboAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Mbo, startUtc, endUtc, DeserializeMboJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamMboAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<MboRecordJson> StreamMbo(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamMboAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetMboAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<MboRecordJson> StreamMboAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Mbo, startUtc, endUtc, DeserializeMboJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamMboAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<MboRecordJson> StreamMbo(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamMboAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetMbp10Async(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<Mbp10RecordJson> StreamMbp10Async(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Mbp10, startUtc, endUtc, DeserializeMbp10Json, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamMbp10Async(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<Mbp10RecordJson> StreamMbp10(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamMbp10Async(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetMbp10Async(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<Mbp10RecordJson> StreamMbp10Async(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Mbp10, startUtc, endUtc, DeserializeMbp10Json, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamMbp10Async(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<Mbp10RecordJson> StreamMbp10(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamMbp10Async(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetBbo1sAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<BboRecordJson> StreamBbo1sAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Bbo1Sec, startUtc, endUtc, DeserializeBboJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamBbo1sAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<BboRecordJson> StreamBbo1s(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamBbo1sAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetBbo1mAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<BboRecordJson> StreamBbo1mAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Bbo1Min, startUtc, endUtc, DeserializeBboJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamBbo1mAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<BboRecordJson> StreamBbo1m(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamBbo1mAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetBbo1sAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<BboRecordJson> StreamBbo1sAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Bbo1Sec, startUtc, endUtc, DeserializeBboJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamBbo1sAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<BboRecordJson> StreamBbo1s(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamBbo1sAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetBbo1mAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<BboRecordJson> StreamBbo1mAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Bbo1Min, startUtc, endUtc, DeserializeBboJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamBbo1mAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<BboRecordJson> StreamBbo1m(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamBbo1mAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetTbboAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<TbboRecordJson> StreamTbboAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Tbbo, startUtc, endUtc, DeserializeTbboJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamTbboAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<TbboRecordJson> StreamTbbo(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamTbboAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetTbboAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<TbboRecordJson> StreamTbboAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Tbbo, startUtc, endUtc, DeserializeTbboJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamTbboAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<TbboRecordJson> StreamTbbo(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamTbboAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetTcbboAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<TcbboRecordJson> StreamTcbboAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Tcbbo, startUtc, endUtc, DeserializeTcbboJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamTcbboAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<TcbboRecordJson> StreamTcbbo(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamTcbboAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetTcbboAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<TcbboRecordJson> StreamTcbboAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Tcbbo, startUtc, endUtc, DeserializeTcbboJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamTcbboAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<TcbboRecordJson> StreamTcbbo(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamTcbboAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetCmbp1Async(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<Cmbp1RecordJson> StreamCmbp1Async(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Cmbp1, startUtc, endUtc, DeserializeCmbp1Json, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamCmbp1Async(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<Cmbp1RecordJson> StreamCmbp1(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamCmbp1Async(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetCmbp1Async(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<Cmbp1RecordJson> StreamCmbp1Async(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Cmbp1, startUtc, endUtc, DeserializeCmbp1Json, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamCmbp1Async(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<Cmbp1RecordJson> StreamCmbp1(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamCmbp1Async(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetStatusAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<StatusRecordJson> StreamStatusAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Status, startUtc, endUtc, DeserializeStatusJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamStatusAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<StatusRecordJson> StreamStatus(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamStatusAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetStatusAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<StatusRecordJson> StreamStatusAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Status, startUtc, endUtc, DeserializeStatusJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamStatusAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<StatusRecordJson> StreamStatus(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamStatusAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetImbalanceAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<ImbalanceRecordJson> StreamImbalanceAsync(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, new[] { symbol }, Schema.Imbalance, startUtc, endUtc, DeserializeImbalanceJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamImbalanceAsync(string,string,DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbol">Instrument symbol.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<ImbalanceRecordJson> StreamImbalance(string dataset, string symbol, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamImbalanceAsync(dataset, symbol, startUtc, endUtc).ToBlockingEnumerable();
+
+        /// <summary>
+        /// Streams the records <see cref="GetImbalanceAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/> returns, one at a
+        /// time as they are read from the response. Only the HTTP status is retried; a failure while reading the body is thrown. Each
+        /// enumeration sends a new request.
+        /// </summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public IAsyncEnumerable<ImbalanceRecordJson> StreamImbalanceAsync(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
+            => this.StreamGenericRecordsAsync(dataset, symbols, Schema.Imbalance, startUtc, endUtc, DeserializeImbalanceJson, ct);
+
+        /// <summary>Synchronous counterpart of <see cref="StreamImbalanceAsync(string,IReadOnlyList{string},DateTimeOffset,DateTimeOffset,CancellationToken)"/>.</summary>
+        /// <param name="dataset">Dataset identifier.</param><param name="symbols">Instrument symbols.</param>
+        /// <param name="startUtc">Inclusive range start (UTC).</param><param name="endUtc">Exclusive range end (UTC).</param>
+        public IEnumerable<ImbalanceRecordJson> StreamImbalance(string dataset, IReadOnlyList<string> symbols, DateTimeOffset startUtc, DateTimeOffset endUtc)
+            => this.StreamImbalanceAsync(dataset, symbols, startUtc, endUtc).ToBlockingEnumerable();
+
+        // ================================================================
         // Core HTTP helpers (with retry)
         // ================================================================
 
@@ -1276,7 +1927,7 @@ namespace Databento.CSharpApiClient
         // Timeseries helpers
         // ================================================================
 
-        private async Task<CbboRecordJson[]> GetCbboAsync(
+        private Task<CbboRecordJson[]> GetCbboAsync(
             string dataset,
             IReadOnlyList<string> symbols,
             string schema,
@@ -1284,28 +1935,10 @@ namespace Databento.CSharpApiClient
             DateTimeOffset endUtc,
             CancellationToken ct)
         {
-            string path = BuildTimeseriesQuery(dataset, schema, symbols, startUtc, endUtc);
-            using(HttpResponseMessage response = await this.GetWithRetryAsync(path, ct).ConfigureAwait(false))
-            {
-                if(!response.IsSuccessStatusCode)
-                {
-                    string errBody = await ReadBodyAsync(response, ct).ConfigureAwait(false);
-                    if(IsNoDataResponse((int)response.StatusCode, errBody))
-                    {
-                        return Array.Empty<CbboRecordJson>();
-                    }
-
-                    throw BuildHttpException((int)response.StatusCode, errBody);
-                }
-
-                using(Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false))
-                {
-                    return AssignRequestedSymbol(DeserializeCbboJson(stream, ct), symbols);
-                }
-            }
+            return this.GetGenericRecordsAsync(dataset, symbols, schema, startUtc, endUtc, DeserializeCbboJson, ct);
         }
 
-        private async Task<OhlcvRecordJson[]> GetOhlcvAsync(
+        private Task<OhlcvRecordJson[]> GetOhlcvAsync(
             string dataset,
             IReadOnlyList<string> symbols,
             string schema,
@@ -1313,25 +1946,7 @@ namespace Databento.CSharpApiClient
             DateTimeOffset endUtc,
             CancellationToken ct)
         {
-            string path = BuildTimeseriesQuery(dataset, schema, symbols, startUtc, endUtc);
-            using(HttpResponseMessage response = await this.GetWithRetryAsync(path, ct).ConfigureAwait(false))
-            {
-                if(!response.IsSuccessStatusCode)
-                {
-                    string errBody = await ReadBodyAsync(response, ct).ConfigureAwait(false);
-                    if(IsNoDataResponse((int)response.StatusCode, errBody))
-                    {
-                        return Array.Empty<OhlcvRecordJson>();
-                    }
-
-                    throw BuildHttpException((int)response.StatusCode, errBody);
-                }
-
-                using(Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false))
-                {
-                    return AssignRequestedSymbol(DeserializeOhlcvJson(stream, ct), symbols);
-                }
-            }
+            return this.GetGenericRecordsAsync(dataset, symbols, schema, startUtc, endUtc, DeserializeOhlcvJson, ct);
         }
 
         private async Task<T[]> GetGenericRecordsAsync<T>(
@@ -1340,10 +1955,41 @@ namespace Databento.CSharpApiClient
             string schema,
             DateTimeOffset startUtc,
             DateTimeOffset endUtc,
-            Func<Stream, CancellationToken, T[]> deserialize,
+            Func<Stream, CancellationToken, IAsyncEnumerable<T>> deserialize,
             CancellationToken ct)
         {
+            List<T> records = new List<T>();
+            await foreach(T record in this.StreamGenericRecordsAsync(dataset, symbols, schema, startUtc, endUtc, deserialize, ct).ConfigureAwait(false))
+            {
+                records.Add(record);
+            }
+
+            return records.ToArray();
+        }
+
+        private IAsyncEnumerable<T> StreamGenericRecordsAsync<T>(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            string schema,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            Func<Stream, CancellationToken, IAsyncEnumerable<T>> deserialize,
+            CancellationToken ct)
+        {
+            // built here, when the method is called, so bad arguments are refused then rather than on the first MoveNextAsync
             string path = BuildTimeseriesQuery(dataset, schema, symbols, startUtc, endUtc);
+            string requestedSymbol = CoversMoreThanOneSymbol(symbols) ? null : symbols[0];
+            return this.StreamGenericRecordsCoreAsync(path, requestedSymbol, deserialize, ct);
+        }
+
+        private async IAsyncEnumerable<T> StreamGenericRecordsCoreAsync<T>(
+            string path,
+            string requestedSymbol,
+            Func<Stream, CancellationToken, IAsyncEnumerable<T>> deserialize,
+            [EnumeratorCancellation] CancellationToken ct)
+        {
+
+            // only the status is retried, before any of the body is read: once records have been handed out, a retry would repeat them
             using(HttpResponseMessage response = await this.GetWithRetryAsync(path, ct).ConfigureAwait(false))
             {
                 if(!response.IsSuccessStatusCode)
@@ -1351,7 +1997,7 @@ namespace Databento.CSharpApiClient
                     string errBody = await ReadBodyAsync(response, ct).ConfigureAwait(false);
                     if(IsNoDataResponse((int)response.StatusCode, errBody))
                     {
-                        return Array.Empty<T>();
+                        yield break;
                     }
 
                     throw BuildHttpException((int)response.StatusCode, errBody);
@@ -1359,7 +2005,11 @@ namespace Databento.CSharpApiClient
 
                 using(Stream stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false))
                 {
-                    return AssignRequestedSymbol(deserialize(stream, ct), symbols);
+                    await foreach(T record in deserialize(stream, ct).ConfigureAwait(false))
+                    {
+                        AssignRequestedSymbol(record, requestedSymbol);
+                        yield return record;
+                    }
                 }
             }
         }
@@ -1410,25 +2060,15 @@ namespace Databento.CSharpApiClient
         }
 
         /// <summary>
-        /// Gives each record of a single-symbol request the symbol requested: such a request sends no map_symbols, so the
+        /// Gives a record of a single-symbol request the symbol requested: such a request sends no map_symbols, so the
         /// response names none, and every record belongs to that symbol.
         /// </summary>
-        private static T[] AssignRequestedSymbol<T>(T[] records, IReadOnlyList<string> symbols)
+        private static void AssignRequestedSymbol<T>(T record, string requestedSymbol)
         {
-            if(CoversMoreThanOneSymbol(symbols))
+            if(requestedSymbol != null && record is ISymbolRecord named && named.Symbol == null)
             {
-                return records;
+                named.Symbol = requestedSymbol;
             }
-
-            foreach(T record in records)
-            {
-                if(record is ISymbolRecord named && named.Symbol == null)
-                {
-                    named.Symbol = symbols[0];
-                }
-            }
-
-            return records;
         }
 
         /// <summary>
@@ -1474,122 +2114,118 @@ namespace Databento.CSharpApiClient
         // JSON-Lines / array deserializers
         // ================================================================
 
-        private static CbboRecordJson[] DeserializeCbboJson(Stream stream, CancellationToken ct)
-            => DeserializeJsonLines<CbboRecordJson>(stream, rec => rec?.Header != null, ct);
+        private static IAsyncEnumerable<CbboRecordJson> DeserializeCbboJson(Stream stream, CancellationToken ct)
+            => ReadJsonLinesAsync<CbboRecordJson>(stream, rec => rec?.Header != null, ct);
 
-        private static OhlcvRecordJson[] DeserializeOhlcvJson(Stream stream, CancellationToken ct)
-            => DeserializeJsonLines<OhlcvRecordJson>(stream, rec => rec?.Header != null, ct);
+        private static IAsyncEnumerable<OhlcvRecordJson> DeserializeOhlcvJson(Stream stream, CancellationToken ct)
+            => ReadJsonLinesAsync<OhlcvRecordJson>(stream, rec => rec?.Header != null, ct);
 
-        private static TradeRecordJson[] DeserializeTradesJson(Stream stream, CancellationToken ct)
-            => DeserializeJsonLines<TradeRecordJson>(stream, rec => rec?.Header != null, ct);
+        private static IAsyncEnumerable<TradeRecordJson> DeserializeTradesJson(Stream stream, CancellationToken ct)
+            => ReadJsonLinesAsync<TradeRecordJson>(stream, rec => rec?.Header != null, ct);
 
-        private static Mbp1RecordJson[] DeserializeMbp1Json(Stream stream, CancellationToken ct)
-            => DeserializeJsonLines<Mbp1RecordJson>(stream, rec => rec?.Header != null, ct);
+        private static IAsyncEnumerable<Mbp1RecordJson> DeserializeMbp1Json(Stream stream, CancellationToken ct)
+            => ReadJsonLinesAsync<Mbp1RecordJson>(stream, rec => rec?.Header != null, ct);
 
-        private static StatisticsRecordJson[] DeserializeStatisticsJson(Stream stream, CancellationToken ct)
-            => DeserializeJsonLines<StatisticsRecordJson>(stream, rec => rec?.Header != null, ct);
+        private static IAsyncEnumerable<StatisticsRecordJson> DeserializeStatisticsJson(Stream stream, CancellationToken ct)
+            => ReadJsonLinesAsync<StatisticsRecordJson>(stream, rec => rec?.Header != null, ct);
 
-        private static DefinitionRecordJson[] DeserializeDefinitionsJson(Stream stream, CancellationToken ct)
-            => DeserializeJsonLines<DefinitionRecordJson>(stream, rec => rec?.Header != null, ct);
+        private static IAsyncEnumerable<DefinitionRecordJson> DeserializeDefinitionsJson(Stream stream, CancellationToken ct)
+            => ReadJsonLinesAsync<DefinitionRecordJson>(stream, rec => rec?.Header != null, ct);
 
-        private static MboRecordJson[] DeserializeMboJson(Stream stream, CancellationToken ct)
-            => DeserializeJsonLines<MboRecordJson>(stream, rec => rec?.Header != null, ct);
+        private static IAsyncEnumerable<MboRecordJson> DeserializeMboJson(Stream stream, CancellationToken ct)
+            => ReadJsonLinesAsync<MboRecordJson>(stream, rec => rec?.Header != null, ct);
 
-        private static Mbp10RecordJson[] DeserializeMbp10Json(Stream stream, CancellationToken ct)
-            => DeserializeJsonLines<Mbp10RecordJson>(stream, rec => rec?.Header != null, ct);
+        private static IAsyncEnumerable<Mbp10RecordJson> DeserializeMbp10Json(Stream stream, CancellationToken ct)
+            => ReadJsonLinesAsync<Mbp10RecordJson>(stream, rec => rec?.Header != null, ct);
 
-        private static BboRecordJson[] DeserializeBboJson(Stream stream, CancellationToken ct)
-            => DeserializeJsonLines<BboRecordJson>(stream, rec => rec?.Header != null, ct);
+        private static IAsyncEnumerable<BboRecordJson> DeserializeBboJson(Stream stream, CancellationToken ct)
+            => ReadJsonLinesAsync<BboRecordJson>(stream, rec => rec?.Header != null, ct);
 
-        private static TbboRecordJson[] DeserializeTbboJson(Stream stream, CancellationToken ct)
-            => DeserializeJsonLines<TbboRecordJson>(stream, rec => rec?.Header != null, ct);
+        private static IAsyncEnumerable<TbboRecordJson> DeserializeTbboJson(Stream stream, CancellationToken ct)
+            => ReadJsonLinesAsync<TbboRecordJson>(stream, rec => rec?.Header != null, ct);
 
-        private static TcbboRecordJson[] DeserializeTcbboJson(Stream stream, CancellationToken ct)
-            => DeserializeJsonLines<TcbboRecordJson>(stream, rec => rec?.Header != null, ct);
+        private static IAsyncEnumerable<TcbboRecordJson> DeserializeTcbboJson(Stream stream, CancellationToken ct)
+            => ReadJsonLinesAsync<TcbboRecordJson>(stream, rec => rec?.Header != null, ct);
 
-        private static Cmbp1RecordJson[] DeserializeCmbp1Json(Stream stream, CancellationToken ct)
-            => DeserializeJsonLines<Cmbp1RecordJson>(stream, rec => rec?.Header != null, ct);
+        private static IAsyncEnumerable<Cmbp1RecordJson> DeserializeCmbp1Json(Stream stream, CancellationToken ct)
+            => ReadJsonLinesAsync<Cmbp1RecordJson>(stream, rec => rec?.Header != null, ct);
 
-        private static StatusRecordJson[] DeserializeStatusJson(Stream stream, CancellationToken ct)
-            => DeserializeJsonLines<StatusRecordJson>(stream, rec => rec?.Header != null, ct);
+        private static IAsyncEnumerable<StatusRecordJson> DeserializeStatusJson(Stream stream, CancellationToken ct)
+            => ReadJsonLinesAsync<StatusRecordJson>(stream, rec => rec?.Header != null, ct);
 
-        private static ImbalanceRecordJson[] DeserializeImbalanceJson(Stream stream, CancellationToken ct)
-            => DeserializeJsonLines<ImbalanceRecordJson>(stream, rec => rec?.Header != null, ct);
+        private static IAsyncEnumerable<ImbalanceRecordJson> DeserializeImbalanceJson(Stream stream, CancellationToken ct)
+            => ReadJsonLinesAsync<ImbalanceRecordJson>(stream, rec => rec?.Header != null, ct);
 
-        private static SymbolMappingRecordJson[] DeserializeSymbolMappingJson(Stream stream, CancellationToken ct)
-            => DeserializeJsonLines<SymbolMappingRecordJson>(stream, rec => rec?.Header != null, ct);
+        private static IAsyncEnumerable<SymbolMappingRecordJson> DeserializeSymbolMappingJson(Stream stream, CancellationToken ct)
+            => ReadJsonLinesAsync<SymbolMappingRecordJson>(stream, rec => rec?.Header != null, ct);
 
-        private static T[] DeserializeJsonLines<T>(Stream stream, Func<T, bool> isValid, CancellationToken ct)
+        private static async IAsyncEnumerable<T> ReadJsonLinesAsync<T>(Stream stream, Func<T, bool> isValid, [EnumeratorCancellation] CancellationToken ct)
         {
-            List<T> results = new List<T>();
-
             using(StreamReader sr = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 64 * 1024, leaveOpen: false))
             {
-                // A JSON array document starts with '['; anything else is treated as newline-delimited
-                // JSON (the timeseries encoding). Peek does not consume, so either branch still reads
-                // from the start of the stream.
-                if(sr.Peek() == '[')
+                string line = await sr.ReadLineAsync(ct).ConfigureAwait(false);
+
+                // A JSON array document starts with '['; it is read whole, so it does not stream. Anything else is
+                // newline-delimited JSON (the timeseries encoding), read one line, and so one record, at a time.
+                if(line != null && line.StartsWith('['))
                 {
-                    string json = sr.ReadToEnd();
+                    string json = line + "\n" + await sr.ReadToEndAsync(ct).ConfigureAwait(false);
                     List<T> arr = JsonSerializer.Deserialize<List<T>>(json, RecordDeserializeOptions);
-                    if(arr != null)
-                    {
-                        foreach(T item in arr)
-                        {
-                            ct.ThrowIfCancellationRequested();
-                            if(isValid(item))
-                            {
-                                results.Add(item);
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    string line;
-                    long lineNumber = 0;
-                    while((line = sr.ReadLine()) != null)
+                    foreach(T item in arr ?? new List<T>())
                     {
                         ct.ThrowIfCancellationRequested();
-                        lineNumber++;
-
-                        // A blank separator line (e.g. a trailing newline) is legal in JSONL and carries
-                        // no record. Any non-blank line is expected to be a complete record object.
-                        if(string.IsNullOrWhiteSpace(line))
-                        {
-                            continue;
-                        }
-
-                        T item;
-                        try
-                        {
-                            item = JsonSerializer.Deserialize<T>(line, RecordDeserializeOptions);
-                        }
-                        catch(Exception ex) when(ex is JsonException or FormatException or OverflowException or NotSupportedException)
-                        {
-                            // A record that fails to parse is a real error, not "no data". Swallowing it
-                            // here previously returned zero rows for responses that actually contained
-                            // data (e.g. string-encoded numeric fields), so surface it to the caller.
-                            // A custom converter may throw Format/Overflow rather than JsonException.
-                            throw new DatabentoException(
-                                string.Format(
-                                    CultureInfo.InvariantCulture,
-                                    "Failed to deserialize a {0} record from the JSONL response at line {1}: {2}",
-                                    typeof(T).Name,
-                                    lineNumber,
-                                    ex.Message),
-                                ex);
-                        }
-
                         if(isValid(item))
                         {
-                            results.Add(item);
+                            yield return item;
                         }
+                    }
+
+                    yield break;
+                }
+
+                long lineNumber = 0;
+                for(; line != null; line = await sr.ReadLineAsync(ct).ConfigureAwait(false))
+                {
+                    ct.ThrowIfCancellationRequested();
+                    lineNumber++;
+
+                    // A blank separator line (e.g. a trailing newline) is legal in JSONL and carries
+                    // no record. Any non-blank line is expected to be a complete record object.
+                    if(string.IsNullOrWhiteSpace(line))
+                    {
+                        continue;
+                    }
+
+                    T item = DeserializeJsonLine<T>(line, lineNumber);
+                    if(isValid(item))
+                    {
+                        yield return item;
                     }
                 }
             }
+        }
 
-            return results.ToArray();
+        private static T DeserializeJsonLine<T>(string line, long lineNumber)
+        {
+            try
+            {
+                return JsonSerializer.Deserialize<T>(line, RecordDeserializeOptions);
+            }
+            catch(Exception ex) when(ex is JsonException or FormatException or OverflowException or NotSupportedException)
+            {
+                // A record that fails to parse is a real error, not "no data". Swallowing it
+                // here previously returned zero rows for responses that actually contained
+                // data (e.g. string-encoded numeric fields), so surface it to the caller.
+                // A custom converter may throw Format/Overflow rather than JsonException.
+                throw new DatabentoException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "Failed to deserialize a {0} record from the JSONL response at line {1}: {2}",
+                        typeof(T).Name,
+                        lineNumber,
+                        ex.Message),
+                    ex);
+            }
         }
 
         // ================================================================

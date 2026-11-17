@@ -6,6 +6,25 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+- Streaming versions of every timeseries method that is not obsolete. `DatabentoClient` and `DatabentoJsonClient` gain `Stream*Async` methods, returning `IAsyncEnumerable<T>`, and synchronous `Stream*` methods, returning `IEnumerable<T>`, beside each `Get*Async`.
+  - They yield each record as soon as it is decoded from the response, so a large request no longer has to fit in memory.
+  - Only the HTTP status (429 and 5xx) is retried, before the body is read; a failure while reading the body is thrown, so no record is handed out twice.
+  - The response is released when the enumeration ends, including on early exit and cancellation. Each enumeration sends a new request.
+  - Records carry their `Symbol` as the array methods give it, and a JSON "no data" answer yields an empty stream.
+- `DbnReader`: streams the records of DBN data the caller already has, such as a downloaded batch file, from any `Stream`.
+  - It covers every record type `DatabentoClient` returns, async and sync.
+  - Records whose type carries a `Symbol` take it from the data's metadata.
+  - Zstandard-compressed data (`.dbn.zst`) has to be decompressed by the caller.
+
+### Changed
+- Every `Get*Async` now collects the matching stream instead of reading the whole response body into memory first. Its records are unchanged.
+- `DatabentoClient`: a connection that drops while the body is read now throws the `IOException` the response stream raises. Before, it threw `HttpRequestException`. `DatabentoJsonClient` already threw the `IOException`.
+- DBN data that is cut short or malformed now fails with `InvalidDataException`. Before:
+  - empty data failed with `EndOfStreamException`;
+  - a record cut inside its header ended the data quietly;
+  - metadata whose contents overran its length failed with `EndOfStreamException`.
+
 ## [2.3.0] - 2026-11-17
 
 ### Added

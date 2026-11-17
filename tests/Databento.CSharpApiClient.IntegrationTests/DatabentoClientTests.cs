@@ -854,5 +854,31 @@ namespace Databento.CSharpApiClient.IntegrationTests
             }
             catch(DatabentoHttpException ex) { SkipIfNoLicense(ex); throw; }
         }
+
+        // =====================================================================
+        // Streaming (DBN binary)
+        // =====================================================================
+
+        [SkippableFact]
+        public async Task StreamTrades_Spy_YieldsRecordsWithPriceAndSize()
+        {
+            this.SkipIfNoApiKey();
+            using DatabentoClient client = this.CreateBinaryClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end   = new DateTimeOffset(2022, 5, 16, 14, 30, 0, TimeSpan.Zero);
+
+            int count = 0;
+            await foreach(TradeRecordDbn record in client.StreamTradesAsync(Datasets.XnasItch, "SPY", start, end))
+            {
+                Assert.True(record.Price > 0);
+                Assert.True(record.Size > 0);
+                Assert.Equal("SPY", record.Symbol);
+                ++count;
+            }
+
+            Assert.True(count > 0);
+        }
+
     }
 }

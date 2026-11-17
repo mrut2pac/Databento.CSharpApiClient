@@ -18,6 +18,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - It comes from the symbol mappings in the stream's metadata, for the record's instrument on the date of its `ts_recv` (`ts_event` for a bar).
   - It is `null` when the metadata maps the instrument to no symbol on that date.
   - Serializing one of these DBN records now writes a `Symbol` property too.
+  - Memory, for DBN client users: each decoded record holds one more reference, 8 bytes on a 64-bit process, about 7-10% of a record's size. The symbol string itself is not copied: every record of a symbol points to the one string read from the metadata.
 
 ### Changed
 - `DatabentoJsonClient`: every record of a single-symbol request now carries that symbol in `Symbol`. Before, it was `null`, since such a request sends no `map_symbols`. This is the value the DBN client's symbol mappings give. Nothing changes on the wire, and a multi-symbol or `ALL_SYMBOLS` request is unchanged.

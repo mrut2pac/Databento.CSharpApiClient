@@ -78,31 +78,9 @@ namespace Databento.CSharpApiClient
             throw new InvalidDataException("Unexpected JSON structure for array endpoint: " + path);
         }
 
-        // Used only for symbology.resolve, which is idempotent — safe to retry on transient errors.
-        private async Task<string> PostJsonAsync(string path, string jsonBody, CancellationToken ct)
-        {
-            using(HttpResponseMessage response = await HttpRetryExecutor.SendWithRetryAsync(
-                this.transport,
-                () => new HttpRequestMessage(HttpMethod.Post, path)
-                {
-                    Content = new StringContent(jsonBody, Encoding.UTF8, "application/json"),
-                },
-                this.options,
-                retryEnabled: true,
-                ct).ConfigureAwait(false))
-            {
-                string body = await ReadBodyAsync(response, ct).ConfigureAwait(false);
-                if(!response.IsSuccessStatusCode)
-                {
-                    throw BuildHttpException((int)response.StatusCode, body);
-                }
-
-                return body;
-            }
-        }
-
-        // batch.submit_job is NOT idempotent — retrying could create duplicate jobs, so retries are disabled
-        // here on purpose. Do not route this through the retrying GET/POST helpers.
+        // Serves batch.submit_job and symbology.resolve, and retries neither: batch.submit_job is NOT idempotent, and
+        // retrying it could create duplicate jobs, so retries are disabled here on purpose. symbology.resolve could be
+        // retried safely, but goes through here too. Do not route batch.submit_job through the retrying GET helpers.
         private async Task<string> PostFormAsync(string path, IEnumerable<KeyValuePair<string, string>> form, CancellationToken ct)
         {
             using(HttpResponseMessage response = await HttpRetryExecutor.SendWithRetryAsync(
@@ -190,7 +168,6 @@ namespace Databento.CSharpApiClient
             Func<Stream, CancellationToken, IAsyncEnumerable<T>> deserialize,
             [EnumeratorCancellation] CancellationToken ct)
         {
-
             // only the status is retried, before any of the body is read: once records have been handed out, a retry would repeat them
             using(HttpResponseMessage response = await this.GetWithRetryAsync(path, ct).ConfigureAwait(false))
             {
@@ -213,6 +190,18 @@ namespace Databento.CSharpApiClient
                         yield return record;
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Gives a record of a single-symbol request the symbol requested: such a request sends no map_symbols, so the
+        /// response names none, and every record belongs to that symbol.
+        /// </summary>
+        private static void AssignRequestedSymbol<T>(T record, string requestedSymbol)
+        {
+            if(requestedSymbol != null && record is ISymbolRecord named && named.Symbol == null)
+            {
+                named.Symbol = requestedSymbol;
             }
         }
 
@@ -259,18 +248,6 @@ namespace Databento.CSharpApiClient
             }
 
             return sb.ToString();
-        }
-
-        /// <summary>
-        /// Gives a record of a single-symbol request the symbol requested: such a request sends no map_symbols, so the
-        /// response names none, and every record belongs to that symbol.
-        /// </summary>
-        private static void AssignRequestedSymbol<T>(T record, string requestedSymbol)
-        {
-            if(requestedSymbol != null && record is ISymbolRecord named && named.Symbol == null)
-            {
-                named.Symbol = requestedSymbol;
-            }
         }
 
         /// <summary>

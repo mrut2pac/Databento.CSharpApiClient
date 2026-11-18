@@ -21,7 +21,7 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>2.3.0</Version>
+    <Version>2.4.0</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
@@ -31,6 +31,29 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
+v2.4.0 — 2026-11-18
+
+Added
+- Stream*Async (async enumerable) and Stream* (sync enumerable) beside every timeseries Get*Async that is
+  not obsolete, on both clients. Records are yielded as they are decoded, so a large request no longer has to
+  fit in memory. Only the HTTP status (429 and 5xx) is retried, before the body is read; a failure mid-body
+  is thrown, never retried. Each enumeration sends a new request.
+- DbnReader: streams the records of DBN data the caller already has (such as a downloaded batch file) from any
+  Stream, async and sync. Zstandard-compressed data has to be decompressed by the caller.
+
+Changed
+- Every Get*Async collects the matching stream instead of reading the whole body into memory first; its
+  records are unchanged.
+- DatabentoClient: a connection that drops while the body is read throws the IOException the response stream
+  raises (it threw HttpRequestException; DatabentoJsonClient already threw the IOException).
+- Cut-short or malformed DBN data fails with InvalidDataException (it threw EndOfStreamException, or a record
+  cut inside its header ended the data quietly). Check code that catches the old exception types.
+
+Fixed
+- DBN v1 data (served for e.g. XNAS.ITCH and OPRA.PILLAR): records had Symbol always null and DbnMetadata was
+  misread after Limit. The v1 layout is now read. DbnMetadata.FromBinaryReader also refuses leftover non-zero
+  metadata bytes and DBN versions other than 1 to 3, with InvalidDataException.
+
 v2.3.0 — 2026-11-17
 
 Added

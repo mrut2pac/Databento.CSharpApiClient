@@ -83,15 +83,19 @@ Integration tests use `[SkippableFact]` from `Xunit.SkippableFact`. Without the 
 
 ## Releasing to NuGet.org
 
-1. Bump `<Version>` in `src/Databento.CSharpApiClient/Databento.CSharpApiClient.csproj`.
-2. Commit the version bump on a branch and merge via PR.
-3. After merge, on `main`:
+1. Decide whether the live integration suite must run before this release. Diff from the last `v*` tag to the tip of the preparation branch, which is the commit that will be tagged. A run is needed when anything touches the wire: request building, response parsing or decoding, models, retries or transport. A run is also needed when the last full live run predates such a change. Unit tests alone are not enough for such changes, because the fixtures share the decoder's assumptions about the format. When a run is needed:
+   - Price it with `metadata.get_cost`, which is free; a full run cost about $1 as of 2.4.0.
+   - Run the suite on the preparation branch's tip, and don't tag until it is green.
+   - Record the outcome in the preparation PR's Testing section: the passed and skipped counts, or "not needed" and why. That record is how the next release knows when the last full run happened.
+2. Bump `<Version>` in `src/Databento.CSharpApiClient/Databento.CSharpApiClient.csproj`, add the version's `<PackageReleaseNotes>` entry, and cut CHANGELOG `[Unreleased]` into a dated section with its compare link.
+3. Commit the version bump on a branch and merge via PR.
+4. After merge, on `main`:
    ```bash
    git tag v1.2.3
    git push origin v1.2.3
    ```
-4. The `publish` job in CI fires automatically (triggered by the `v*` tag), builds Release, packs, and pushes to NuGet.org using the `NUGET_API_KEY` repository secret.
-5. The package appears on nuget.org within a few minutes.
+5. The `publish` job in CI fires automatically (triggered by the `v*` tag), builds Release, packs, and pushes to NuGet.org using the `NUGET_API_KEY` repository secret.
+6. The package appears on nuget.org within a few minutes.
 
 > **`--skip-duplicate` is set** — pushing a tag for a version that already exists on NuGet.org is a no-op, not an error.
 

@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-11-18
+
 ### Added
 - Streaming versions of every timeseries method that is not obsolete. `DatabentoClient` and `DatabentoJsonClient` gain `Stream*Async` methods, returning `IAsyncEnumerable<T>`, and synchronous `Stream*` methods, returning `IEnumerable<T>`, beside each `Get*Async`.
   - They yield each record as soon as it is decoded from the response, so a large request no longer has to fit in memory.
@@ -221,7 +223,8 @@ Initial release.
 - HTTP retry with exponential back-off and jitter
 - Zero external dependencies — pure `System.Text.Json` on .NET 8+
 
-[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.0.1...v2.1.0

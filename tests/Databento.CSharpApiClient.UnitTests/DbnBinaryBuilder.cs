@@ -76,6 +76,23 @@ namespace Databento.CSharpApiClient.UnitTests
             }
         }
 
+        /// <summary>
+        /// Returns a DBN v1 byte stream containing the supplied Trades records, as the live API serves XNAS.ITCH and
+        /// OPRA.PILLAR: its metadata carries the v1-only record_count.
+        /// </summary>
+        public static byte[] BuildTradesStreamV1(params TradesSeed[] records)
+        {
+            using(MemoryStream ms = new MemoryStream())
+            using(BinaryWriter w = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
+            {
+                WriteMetadata(w, schema: 0x00 /*Trades*/, version: 1);
+                foreach(TradesSeed rec in records)
+                    WriteTradesRecord(w, rec);
+                w.Flush();
+                return ms.ToArray();
+            }
+        }
+
         /// <summary>Returns a DBN v2 byte stream containing the supplied Trades records.</summary>
         public static byte[] BuildTradesStream(params TradesSeed[] records)
         {
@@ -284,10 +301,17 @@ namespace Databento.CSharpApiClient.UnitTests
 
         private static byte[] WithSymbolMappings(byte[] stream, byte stypeOut, ushort symbolCStrLen, SymbolMappingSeed[] mappings)
         {
-            // the builders write a 120-byte metadata body that ends with mappings_length = 0
+            // the builders write a 120-byte metadata body that ends with mappings_length = 0; v1 has an 8-byte record_count
+            // before stype_in and no symbol_cstr_len, its symbols always 22 bytes wide
             const int preludeBytes = 8;
             const int metadataBytes = 120;
-            const int stypeInOffset = 42;
+            bool version1 = stream[3] == 1;
+            if(version1 && symbolCStrLen != 22)
+            {
+                throw new ArgumentException("DBN v1 symbols are always 22 bytes wide.", nameof(symbolCStrLen));
+            }
+
+            int stypeInOffset = version1 ? 50 : 42;
             const int symbolCStrLenOffset = 45;
 
             using(MemoryStream ms = new MemoryStream())
@@ -318,7 +342,10 @@ namespace Databento.CSharpApiClient.UnitTests
                     Array.Copy(stream, preludeBytes, body, 0, body.Length);
                     body[stypeInOffset] = 0x01; // RawSymbol
                     body[stypeInOffset + 1] = stypeOut;
-                    BitConverter.GetBytes(symbolCStrLen).CopyTo(body, symbolCStrLenOffset);
+                    if(!version1)
+                    {
+                        BitConverter.GetBytes(symbolCStrLen).CopyTo(body, symbolCStrLenOffset);
+                    }
                     w.Write(body);
                     w.Write(mappingBytes);
                 }
@@ -340,7 +367,7 @@ namespace Databento.CSharpApiClient.UnitTests
 
         private static void WriteMetadata(BinaryWriter w, ushort schema, byte version = 2)
         {
-            // DBN prelude: 'D','B','N', version (v2 metadata layout, which v3 shares)
+            // DBN prelude: 'D','B','N', version (v2 metadata layout, which v3 shares; v1 below where it differs)
             w.Write((byte)'D');
             w.Write((byte)'B');
             w.Write((byte)'N');
@@ -367,6 +394,12 @@ namespace Databento.CSharpApiClient.UnitTests
             // limit: u64 (0 = none)
             w.Write(0UL);
 
+            // record_count: u64 (v1 only; u64::MAX = unknown, as the live API sends it)
+            if(version == 1)
+            {
+                w.Write(ulong.MaxValue);
+            }
+
             // stype_in: u8
             w.Write((byte)0x00);
 
@@ -376,11 +409,19 @@ namespace Databento.CSharpApiClient.UnitTests
             // ts_out: u8
             w.Write((byte)0x00);
 
-            // symbol_cstr_len: u16 (v2 field)
-            w.Write((ushort)22);
+            if(version == 1)
+            {
+                // reserved: 47 bytes (v1, whose symbols are always 22 bytes wide)
+                w.Write(new byte[47]);
+            }
+            else
+            {
+                // symbol_cstr_len: u16 (v2 field)
+                w.Write((ushort)22);
 
-            // reserved: 53 bytes (v2)
-            w.Write(new byte[53]);
+                // reserved: 53 bytes (v2)
+                w.Write(new byte[53]);
+            }
 
             // schema_definition_length: u32 = 0
             w.Write(0u);

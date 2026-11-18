@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -7,11 +8,11 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
 {
     /// <summary>
     /// Parsed DBN stream metadata header. Every DBN stream begins with the magic bytes
-    /// <c>DBN</c> followed by a version byte and this fixed-length metadata block.
+    /// <c>DBN</c> followed by a version byte, the metadata length and this metadata block.
     /// </summary>
     public sealed class DbnMetadata
     {
-        /// <summary>DBN format version (1, 2 or 3; the API currently serves 3).</summary>
+        /// <summary>DBN format version: 1, 2 or 3. The API still serves v1 for some data (e.g. OPRA.PILLAR, XNAS.ITCH) and v3 for other data (e.g. GLBX.MDP3).</summary>
         public byte Version { get; set; }
 
         /// <summary>Dataset identifier embedded in the stream (e.g. <c>"XNAS.ITCH"</c>).</summary>
@@ -38,7 +39,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         /// <summary>Whether a <c>ts_out</c> field is appended to each record.</summary>
         public bool TsOut { get; set; }
 
-        /// <summary>Fixed width of symbol C-strings in the mappings section (22 for v1, read from stream for v2).</summary>
+        /// <summary>Fixed width of symbol C-strings in the mappings section (22 for v1, read from the stream for v2 and v3).</summary>
         public ushort SymbolCStrLen { get; set; }
 
         /// <summary>Raw schema definition bytes (may be empty).</summary>
@@ -77,6 +78,11 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             }
 
             byte version = binaryReader.ReadByte();
+            if(version < 1 || version > 3)
+            {
+                throw new InvalidDataException(string.Format(CultureInfo.InvariantCulture, "Unsupported DBN version {0}; versions 1 to 3 are read.", version));
+            }
+
             uint metaLen = binaryReader.ReadUInt32();
             if(metaLen == 0)
             {
@@ -115,6 +121,12 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                 ulong limitRaw = r.ReadUInt64();
                 md.Limit = (limitRaw == 0) ? (ulong?)null : limitRaw;
 
+                // record_count: u64, in v1 only (later versions dropped it). Skipping it misplaces every field below.
+                if(version == 1)
+                {
+                    r.ReadUInt64();
+                }
+
                 // stype_in: u8 (0xFF => Null)
                 md.STypeIn = (DbnSType)r.ReadByte();
 
@@ -125,7 +137,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                 md.TsOut = r.ReadByte() != 0;
 
                 // ---- Bottom section (version-dependent) ----
-                // symbol_cstr_len: u16 (only in v2). In v1 it's always 22.
+                // symbol_cstr_len: u16 (v2 and later). In v1 it's always 22.
                 ushort symbolCStrLen;
                 if(version == 1)
                 {
@@ -173,13 +185,13 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                     md.Mappings.Add(ReadSymbolMapping(r, symbolCStrLen));
                 }
 
-                // Safety: we should be exactly at the end of metadata buffer
-                if(ms.Position != ms.Length)
+                // Only zero padding may follow the last field. Anything else means the layout was misread, which would
+                // otherwise go unnoticed and leave the symbols and mappings wrong.
+                byte[] remaining = r.ReadBytes((int)(ms.Length - ms.Position));
+                if(Array.Exists(remaining, value => value != 0))
                 {
-                    // If there are bytes left, consume them to avoid misalignment, but flag it:
-                    long remain = ms.Length - ms.Position;
-                    r.ReadBytes((int)remain);
-                    // Optionally log or throw depending on how strict you want to be.
+                    throw new InvalidDataException(string.Format(CultureInfo.InvariantCulture,
+                        "Malformed DBN v{0} metadata: {1} bytes left over after its last field.", version, remaining.Length));
                 }
             }
 

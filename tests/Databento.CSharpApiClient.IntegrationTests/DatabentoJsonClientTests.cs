@@ -433,10 +433,10 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
-        public async Task GetCbbo1m_SingleSymbol_DoesNotCarrySymbol()
+        public async Task GetCbbo1m_SingleSymbol_CarriesTheRequestedSymbol()
         {
-            // The caller already knows the symbol, so the field is not requested and the extra bytes are
-            // not paid on every record.
+            // The field is not requested for a single symbol, so the extra bytes are not paid on every record; the client
+            // fills in the symbol requested, which is the one every record belongs to.
             this.SkipIfNoApiKey();
             using DatabentoJsonClient client = this.CreateJsonClient();
 
@@ -455,7 +455,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             }
 
             Assert.NotEmpty(records);
-            Assert.All(records, r => Assert.Null(r.Symbol));
+            Assert.All(records, r => Assert.Equal("SPXW  250908C06475000", r.Symbol));
         }
 
         [SkippableFact]

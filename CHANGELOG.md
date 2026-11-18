@@ -25,6 +25,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - a record cut inside its header ended the data quietly;
   - metadata whose contents overran its length failed with `EndOfStreamException`.
 
+### Fixed
+- DBN records from DBN v1 data (which the API still serves for some data, e.g. XNAS.ITCH and OPRA.PILLAR) had `Symbol` always `null`, and their `DbnMetadata` was misread after `Limit`.
+  - The cause: v1 metadata carries an 8-byte `record_count` after the limit, which later versions dropped, and the decoder read the v2 layout.
+  - So `STypeIn` and `STypeOut` read as `Null`, `TsOut` as `true`, and the symbol mappings were lost. `Symbols` came back empty and the requested symbols landed in `NotFound`.
+  - The v1 layout is now read, and v1 records get their symbol as v2 and v3 records do.
+- `DbnMetadata.FromBinaryReader` now refuses metadata it misreads, instead of quietly skipping the leftover bytes: anything but zero padding after the last field fails with `InvalidDataException`. It also refuses a DBN version other than 1 to 3, which it would otherwise read with the v2 layout.
+
 ## [2.3.0] - 2026-11-17
 
 ### Added

@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading.Tasks;
 
 using Databento.CSharpApiClient.Exceptions;
 
@@ -101,6 +102,29 @@ namespace Databento.CSharpApiClient.IntegrationTests
                     + "&stype_in=raw_symbol&pretty_px=true&pretty_ts=true&encoding=json&compression=none";
 
                 return http.GetStringAsync(url).GetAwaiter().GetResult();
+            }
+        }
+
+        /// <summary>
+        /// Fetches a <c>timeseries.get_range</c> request as JSON without pretty prices and timestamps, as a batch job writes it by
+        /// default, with each record naming its symbol.
+        /// </summary>
+        protected async Task<byte[]> FetchPlainJsonTimeseriesAsync(string dataset, string schema, string symbol, string start, string end)
+        {
+            using(HttpClient http = new HttpClient())
+            {
+                string auth = Convert.ToBase64String(Encoding.ASCII.GetBytes(this.ApiKey + ":"));
+                http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", auth);
+
+                string url = "https://hist.databento.com/v0/timeseries.get_range"
+                    + "?dataset=" + Uri.EscapeDataString(dataset)
+                    + "&schema=" + Uri.EscapeDataString(schema)
+                    + "&symbols=" + Uri.EscapeDataString(symbol)
+                    + "&start=" + Uri.EscapeDataString(start)
+                    + "&end=" + Uri.EscapeDataString(end)
+                    + "&stype_in=raw_symbol&pretty_px=false&pretty_ts=false&map_symbols=true&encoding=json&compression=none";
+
+                return await http.GetByteArrayAsync(url).ConfigureAwait(false);
             }
         }
 

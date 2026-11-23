@@ -266,6 +266,77 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Assert.Equal(smallest.Size, copy.Length);
         }
 
+        [SkippableFact]
+        public async Task SubmitBatchJob_JsonSplitBySymbol_FilesReadBackAsTheTimeseriesRecords()
+        {
+            // submitting a job is billed every run, so this runs only when asked for
+            this.SkipIfNoApiKey();
+            Skip.IfNot(Environment.GetEnvironmentVariable(SubmitBatchJobVariable) == "1", "Set " + SubmitBatchJobVariable + "=1 to submit a billed batch job.");
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end = start.AddMinutes(1);
+            BatchJob submitted = await client.SubmitBatchJobAsync(new BatchJobRequest
+            {
+                Dataset = Datasets.XnasItch,
+                Symbols = new[] { "SPY", "QQQ" },
+                Schema = Schema.Trades,
+                StartUtc = start,
+                EndUtc = end,
+                Encoding = "json",
+                Compression = "none",
+                MapSymbols = true,
+                SplitDuration = "day",
+                SplitSymbols = true,
+                SplitSize = 1_000_000_000,
+            });
+
+            Assert.Equal("day", submitted.SplitDuration);
+            Assert.True(submitted.SplitSymbols);
+            Assert.Equal(1_000_000_000L, submitted.SplitSize);
+
+            // the job is written without pretty prices and timestamps, the API's default, and split into one file per symbol
+            await WaitUntilDoneAsync(client, submitted.JobId, TimeSpan.FromMinutes(20));
+            BatchFile[] files = await client.ListBatchFilesAsync(submitted.JobId);
+            BatchFile[] dataFiles = files.Where(file => file.Filename.EndsWith(".json", StringComparison.Ordinal) && !BatchMetadataFiles.Contains(file.Filename)).ToArray();
+            Assert.True(dataFiles.Length == 2, string.Join(", ", files.Select(file => file.Filename)));
+
+            foreach(BatchFile file in dataFiles)
+            {
+                using Stream content = await client.DownloadBatchFileAsync(file.HttpsUrl);
+                TradeRecordJson[] fromFile = JsonRecordReader.ReadTrades(content).ToArray();
+                string symbol = Assert.Single(fromFile.Select(record => record.Symbol).Distinct());
+
+                TradeRecordJson[] fromTimeseries = await client.GetTradesAsync(Datasets.XnasItch, symbol, start, end);
+                Assert.NotEmpty(fromTimeseries);
+                Assert.Equal(
+                    fromTimeseries.Select(record => System.Text.Json.JsonSerializer.Serialize(record)),
+                    fromFile.Select(record => System.Text.Json.JsonSerializer.Serialize(record)));
+            }
+        }
+
+        private const string SubmitBatchJobVariable = "DATABENTO_SUBMIT_BATCH_JOB";
+
+        // the files a batch job writes beside its data
+        private static readonly string[] BatchMetadataFiles = { "metadata.json", "symbology.json", "condition.json", "manifest.json" };
+
+        private static async Task WaitUntilDoneAsync(DatabentoJsonClient client, string jobId, TimeSpan timeout)
+        {
+            DateTime giveUp = DateTime.UtcNow + timeout;
+            while(true)
+            {
+                BatchJob job = await client.GetBatchJobDetailsAsync(jobId);
+                if(job.State == "done")
+                {
+                    return;
+                }
+
+                Assert.True(job.State != "expired", "Batch job " + jobId + " expired before it was done.");
+                Assert.True(DateTime.UtcNow < giveUp, "Batch job " + jobId + " is still " + job.State + " after " + timeout + ".");
+                await Task.Delay(TimeSpan.FromSeconds(15));
+            }
+        }
+
         // =====================================================================
         // Timeseries: CBBO
         // =====================================================================

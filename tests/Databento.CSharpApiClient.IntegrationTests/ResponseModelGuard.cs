@@ -89,6 +89,13 @@ namespace Databento.CSharpApiClient.IntegrationTests
 
         private static readonly string[] ApiEndpointPrefixes = { "metadata.", "timeseries.", "symbology.", "batch." };
 
+        /// <summary>Mapped keys one endpoint doesn't send, though another endpoint answering with the same model does.</summary>
+        private static readonly Dictionary<string, string[]> AbsentByEndpoint = new Dictionary<string, string[]>
+        {
+            // a job just submitted has no progress yet; batch.get_job_details sends it
+            ["batch.submit_job"] = new[] { "progress" },
+        };
+
         /// <summary>Endpoints that return a summary of each object: their keys must be mapped, but most mapped keys don't arrive.</summary>
         private static readonly HashSet<string> SummaryEndpoints = new HashSet<string>(StringComparer.Ordinal)
         {
@@ -150,7 +157,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             }
             else
             {
-                CheckObjects(model, objects, symbolsMapped, problems, Array.Empty<string>());
+                CheckObjects(model, objects, symbolsMapped, problems, AbsentByEndpoint.TryGetValue(endpoint, out string[] absent) ? absent : Array.Empty<string>());
             }
 
             if(SummaryEndpoints.Contains(endpoint))

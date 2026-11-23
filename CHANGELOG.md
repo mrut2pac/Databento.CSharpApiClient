@@ -12,6 +12,19 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - An undefined `Price` on a CBBO or BBO record, or an undefined event time in the header, becomes `null`, as the JSON models hold them. Other undefined prices stay `NaN`, and an undefined receive time stays `DateTime.MinValue`.
   - `Symbol` is copied as the DBN record has it. It is `null` where the stream's metadata maps the instrument to no symbol, even for a single-symbol request, whose JSON records get the requested symbol.
   - They throw `OverflowException` when a value doesn't fit the JSON model: a CBBO trade size, or a CBBO or TCBBO bid or ask size, beyond `int.MaxValue`, or an OHLCV volume beyond `long.MaxValue`. The JSON encoding of such a record can't be read either.
+- The batch split options. `DatabentoJsonClient.SubmitBatchJobAsync` and `SubmitBatchJob` take a `BatchJobRequest`, which adds `SplitDuration`, `SplitSymbols` and `SplitSize` to the fields the positional overloads take.
+  - A split option left unset isn't sent, so the API's default applies: one file per day, not split by symbol or size.
+  - The positional overloads stay and send what they sent before.
+- `JsonRecordReader`, which reads JSON records you already have, such as a downloaded batch file, as `DbnReader` does for DBN. It has an async and a sync method for each schema `DbnReader` reads.
+  - It reads the JSON with or without pretty prices and timestamps. A batch job writes it without them by default.
+  - A record names its symbol only when the data does, as with a batch job's `map_symbols`.
+  - A line that doesn't parse, JSON that is no record (it has no `"hd"` header), or a record of another schema throws `InvalidDataException`. The stream is left open, and compressed data must be decompressed first, e.g. with `GZipStream`.
+
+### Changed
+- `DatabentoJsonClient`: a response read whole as a JSON array that doesn't parse throws `DatabentoException`, as a line that doesn't parse does. It threw the bare `JsonException` before.
+
+### Fixed
+- `CbboRecordJson.Price` and `BboRecordJson.Price` read a price written without pretty prices, an integer of 1e-9, scaled, as the other prices are. They read it unscaled before.
 
 ## [2.4.0] - 2026-11-18
 

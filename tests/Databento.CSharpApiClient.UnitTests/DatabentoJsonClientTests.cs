@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -36,6 +37,25 @@ namespace Databento.CSharpApiClient.UnitTests
 
         private static readonly DateTimeOffset AnyStart = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
         private static readonly DateTimeOffset AnyEnd   = new DateTimeOffset(2022, 5, 16, 14, 30, 0, TimeSpan.Zero);
+
+        private static readonly DateTimeOffset BatchStart = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+        private static readonly DateTimeOffset BatchEnd = new DateTimeOffset(2022, 5, 16, 13, 31, 0, TimeSpan.Zero);
+
+        // the fields SubmitBatchJobAsync sent before it took the split options
+        private static readonly string[] BeforeSplitOptions =
+        {
+            "dataset", "symbols", "schema", "start", "end", "encoding", "compression", "pretty_px", "pretty_ts", "map_symbols",
+        };
+
+        // a batch.submit_job response, in the layout of a live batch.get_job_details response
+        private const string SubmittedJobJson = "{\"id\":\"XNAS-20261123-ABCDEFGHIJ\",\"user_id\":\"USER\",\"bill_id\":null,\"cost_usd\":2.5e-6,"
+            + "\"dataset\":\"XNAS.ITCH\",\"symbols\":\"SPY,QQQ\",\"stype_in\":\"raw_symbol\",\"stype_out\":\"instrument_id\","
+            + "\"schema\":\"trades\",\"start\":\"2022-05-16T13:30:00.000000000Z\",\"end\":\"2022-05-16T13:31:00.000000000Z\","
+            + "\"limit\":null,\"encoding\":\"json\",\"compression\":\"none\",\"pretty_px\":false,\"pretty_ts\":false,\"map_symbols\":true,"
+            + "\"split_symbols\":true,\"split_duration\":\"week\",\"split_size\":2000000000,\"packaging\":null,\"delivery\":\"download\","
+            + "\"record_count\":null,\"billed_size\":null,\"actual_size\":null,\"package_size\":null,\"state\":\"received\","
+            + "\"ts_received\":\"2026-11-23T10:00:00.000000000Z\",\"ts_queued\":null,\"ts_process_start\":null,\"ts_process_done\":null,"
+            + "\"ts_expiration\":null,\"progress\":null}";
 
         // =====================================================================
         // Helpers
@@ -81,6 +101,29 @@ namespace Databento.CSharpApiClient.UnitTests
             transport
                 .Setup(t => t.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
                 .Callback<HttpRequestMessage, CancellationToken>((request, _) => requests.Add(request))
+                .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(responseBody, Encoding.UTF8, "application/json"),
+                });
+            transport.Setup(t => t.Dispose());
+
+            return new DatabentoJsonClient(new DatabentoOptions { ApiKey = AnyApiKey }, transport.Object);
+        }
+
+        // captures each request's form body as its decoded fields
+        private static DatabentoJsonClient BuildClientCapturingForms(string responseBody, out List<Dictionary<string, string>> forms)
+        {
+            List<Dictionary<string, string>> captured = new List<Dictionary<string, string>>();
+            forms = captured;
+
+            Mock<IHttpTransport> transport = new Mock<IHttpTransport>(MockBehavior.Strict);
+            transport
+                .Setup(t => t.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>()))
+                .Callback<HttpRequestMessage, CancellationToken>((request, _) => captured.Add(
+                    request.Content.ReadAsStringAsync().GetAwaiter().GetResult()
+                        .Split('&')
+                        .Select(field => field.Split('=', 2))
+                        .ToDictionary(pair => WebUtility.UrlDecode(pair[0]), pair => WebUtility.UrlDecode(pair[1]))))
                 .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     Content = new StringContent(responseBody, Encoding.UTF8, "application/json"),
@@ -764,6 +807,18 @@ namespace Databento.CSharpApiClient.UnitTests
                 client.GetCbbo1mAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd));
         }
 
+        [TestMethod]
+        public async Task GetCbbo1mAsync_MalformedJsonArray_ThrowsDatabentoException()
+        {
+            // a response read whole as a JSON array fails as a malformed line does
+            string json = "[{" + MakeHeader(rtype: 193) + ",\"side\":\"N\",\"size\":1},{\"hd\":";
+
+            using DatabentoJsonClient client = BuildClient(json);
+
+            await Assert.ThrowsExceptionAsync<DatabentoException>(() =>
+                client.GetCbbo1mAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd));
+        }
+
         // =====================================================================
         // Regression: string-encoded numeric fields parse (offline, runs in CI)
         // =====================================================================
@@ -1021,6 +1076,143 @@ namespace Databento.CSharpApiClient.UnitTests
 
             string uri = WebUtility.UrlDecode(captured[0].RequestUri.ToString());
             StringAssert.Contains(uri, "batch.list_jobs?states=queued,done&since=2026-10-01T00:00:00Z");
+        }
+
+        [TestMethod]
+        public async Task SubmitBatchJobAsync_SplitOptions_SendsThemInTheForm()
+        {
+            using DatabentoJsonClient client = BuildClientCapturingForms(SubmittedJobJson, out List<Dictionary<string, string>> forms);
+            await client.SubmitBatchJobAsync(new BatchJobRequest
+            {
+                Dataset = Datasets.XnasItch,
+                Symbols = new[] { "SPY", "QQQ" },
+                Schema = Schema.Trades,
+                StartUtc = BatchStart,
+                EndUtc = BatchEnd,
+                Encoding = "json",
+                Compression = "none",
+                MapSymbols = true,
+                SplitDuration = "week",
+                SplitSymbols = true,
+                SplitSize = 2_000_000_000,
+            });
+
+            Dictionary<string, string> form = forms.Single();
+            Assert.AreEqual("week", form["split_duration"]);
+            Assert.AreEqual("true", form["split_symbols"]);
+            Assert.AreEqual("2000000000", form["split_size"]);
+            Assert.AreEqual("SPY,QQQ", form["symbols"]);
+            Assert.AreEqual("json", form["encoding"]);
+            Assert.AreEqual("none", form["compression"]);
+            Assert.AreEqual("true", form["map_symbols"]);
+        }
+
+        [TestMethod]
+        public async Task SubmitBatchJobAsync_NoSplitOptions_LeavesThemToTheApi()
+        {
+            using DatabentoJsonClient client = BuildClientCapturingForms(SubmittedJobJson, out List<Dictionary<string, string>> forms);
+            await client.SubmitBatchJobAsync(new BatchJobRequest
+            {
+                Dataset = Datasets.XnasItch,
+                Symbols = new[] { "SPY" },
+                Schema = Schema.Trades,
+                StartUtc = BatchStart,
+                EndUtc = BatchEnd,
+            });
+
+            CollectionAssert.AreEquivalent(BeforeSplitOptions, forms.Single().Keys.ToArray());
+        }
+
+        [TestMethod]
+        [DataRow(true, false, false)]
+        [DataRow(false, true, false)]
+        [DataRow(false, false, true)]
+        public async Task SubmitBatchJobAsync_PositionalArguments_SendTheFormTheySentBefore(bool prettyPx, bool prettyTs, bool mapSymbols)
+        {
+            using DatabentoJsonClient client = BuildClientCapturingForms(SubmittedJobJson, out List<Dictionary<string, string>> forms);
+            await client.SubmitBatchJobAsync(Datasets.XnasItch, new[] { "SPY", "QQQ" }, Schema.Trades, BatchStart, BatchEnd, "json", "none", prettyPx, prettyTs, mapSymbols);
+
+            Dictionary<string, string> expected = new Dictionary<string, string>
+            {
+                ["dataset"] = "XNAS.ITCH",
+                ["symbols"] = "SPY,QQQ",
+                ["schema"] = "trades",
+                ["start"] = "2022-05-16T13:30:00Z",
+                ["end"] = "2022-05-16T13:31:00Z",
+                ["encoding"] = "json",
+                ["compression"] = "none",
+                ["pretty_px"] = prettyPx ? "true" : "false",
+                ["pretty_ts"] = prettyTs ? "true" : "false",
+                ["map_symbols"] = mapSymbols ? "true" : "false",
+            };
+            CollectionAssert.AreEquivalent(expected.ToArray(), forms.Single().ToArray());
+        }
+
+        [TestMethod]
+        public async Task SubmitBatchJobAsync_PositionalArgumentsWithoutDatasetOrSymbol_NameTheArgument()
+        {
+            using DatabentoJsonClient client = BuildClientCapturingForms(SubmittedJobJson, out List<Dictionary<string, string>> forms);
+
+            ArgumentException noDataset = await Assert.ThrowsExceptionAsync<ArgumentException>(
+                () => client.SubmitBatchJobAsync(" ", new[] { "SPY" }, Schema.Trades, BatchStart, BatchEnd));
+            ArgumentException noSymbol = await Assert.ThrowsExceptionAsync<ArgumentException>(
+                () => client.SubmitBatchJobAsync(Datasets.XnasItch, Array.Empty<string>(), Schema.Trades, BatchStart, BatchEnd));
+
+            Assert.AreEqual("dataset", noDataset.ParamName);
+            Assert.AreEqual("symbols", noSymbol.ParamName);
+            Assert.AreEqual(0, forms.Count);
+        }
+
+        [TestMethod]
+        public void SubmitBatchJob_Sync_SendsTheSplitOptions()
+        {
+            using DatabentoJsonClient client = BuildClientCapturingForms(SubmittedJobJson, out List<Dictionary<string, string>> forms);
+            BatchJob job = client.SubmitBatchJob(new BatchJobRequest
+            {
+                Dataset = Datasets.XnasItch,
+                Symbols = new[] { "SPY", "QQQ" },
+                Schema = Schema.Trades,
+                StartUtc = BatchStart,
+                EndUtc = BatchEnd,
+                SplitDuration = "none",
+            });
+
+            Assert.AreEqual("none", forms.Single()["split_duration"]);
+            Assert.AreEqual("XNAS-20261123-ABCDEFGHIJ", job.JobId);
+        }
+
+        [TestMethod]
+        public async Task SubmitBatchJobAsync_SubmittedJob_ReadsItsSplitOptions()
+        {
+            using DatabentoJsonClient client = BuildClient(SubmittedJobJson);
+            BatchJob job = await client.SubmitBatchJobAsync(new BatchJobRequest
+            {
+                Dataset = Datasets.XnasItch,
+                Symbols = new[] { "SPY", "QQQ" },
+                Schema = Schema.Trades,
+                StartUtc = BatchStart,
+                EndUtc = BatchEnd,
+            });
+
+            Assert.AreEqual("week", job.SplitDuration);
+            Assert.IsTrue(job.SplitSymbols);
+            Assert.AreEqual(2_000_000_000L, job.SplitSize);
+        }
+
+        [TestMethod]
+        public async Task SubmitBatchJobAsync_InvalidRequest_ThrowsBeforeSending()
+        {
+            using DatabentoJsonClient client = BuildClientCapturingForms(SubmittedJobJson, out List<Dictionary<string, string>> forms);
+
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => client.SubmitBatchJobAsync((BatchJobRequest)null));
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() => client.SubmitBatchJobAsync(new BatchJobRequest
+            {
+                Dataset = Datasets.XnasItch,
+                Schema = Schema.Trades,
+                StartUtc = BatchStart,
+                EndUtc = BatchEnd,
+            }));
+            Assert.AreEqual(0, forms.Count);
         }
 
         // =====================================================================

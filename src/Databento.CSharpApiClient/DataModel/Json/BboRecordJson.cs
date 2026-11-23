@@ -21,6 +21,7 @@ namespace Databento.CSharpApiClient.DataModel.Json
 
         /// <summary>Last trade price (display-scaled). <see langword="null"/> if no trade in this interval.</summary>
         [JsonPropertyName("price")]
+        [JsonConverter(typeof(NullableNanoPriceConverter))]
         public double? Price { get; set; }
 
         /// <summary>Last trade size in lots.</summary>

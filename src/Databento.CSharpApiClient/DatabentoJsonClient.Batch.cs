@@ -22,6 +22,52 @@ namespace Databento.CSharpApiClient
         // ================================================================
 
         /// <summary>
+        /// Submits a batch data job and returns the created <see cref="BatchJob"/> with its assigned ID. Batch jobs are processed
+        /// asynchronously; poll <see cref="GetBatchJobDetailsAsync"/> for status.
+        /// </summary>
+        /// <param name="request">The data, its encoding, and how the output is split into files.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="request"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">The request names no dataset or no symbol.</exception>
+        public async Task<BatchJob> SubmitBatchJobAsync(BatchJobRequest request, CancellationToken ct = default)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            ThrowIfNoDatasetOrSymbol(request.Dataset, request.Symbols, nameof(request), nameof(request));
+
+            List<KeyValuePair<string, string>> form = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("dataset", request.Dataset),
+                new KeyValuePair<string, string>("symbols", string.Join(",", request.Symbols)),
+                new KeyValuePair<string, string>("schema", request.Schema),
+                new KeyValuePair<string, string>("start", request.StartUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture)),
+                new KeyValuePair<string, string>("end", request.EndUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture)),
+                new KeyValuePair<string, string>("encoding", request.Encoding),
+                new KeyValuePair<string, string>("compression", request.Compression),
+                new KeyValuePair<string, string>("pretty_px", request.PrettyPx ? "true" : "false"),
+                new KeyValuePair<string, string>("pretty_ts", request.PrettyTs ? "true" : "false"),
+                new KeyValuePair<string, string>("map_symbols", request.MapSymbols ? "true" : "false"),
+            };
+
+            // a split option left unset is not sent, so the API's default applies, as it did before the client took them
+            if(!string.IsNullOrEmpty(request.SplitDuration))
+                form.Add(new KeyValuePair<string, string>("split_duration", request.SplitDuration));
+            if(request.SplitSymbols)
+                form.Add(new KeyValuePair<string, string>("split_symbols", "true"));
+            if(request.SplitSize.HasValue)
+                form.Add(new KeyValuePair<string, string>("split_size", request.SplitSize.Value.ToString(CultureInfo.InvariantCulture)));
+
+            string json = await this.PostFormAsync("batch.submit_job", form, ct).ConfigureAwait(false);
+            return JsonSerializer.Deserialize<BatchJob>(json, RecordDeserializeOptions);
+        }
+
+        /// <summary>Submits a batch data job and returns the created <see cref="BatchJob"/> with its assigned ID.</summary>
+        /// <param name="request">The data, its encoding, and how the output is split into files.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="request"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">The request names no dataset or no symbol.</exception>
+        public BatchJob SubmitBatchJob(BatchJobRequest request)
+            => this.SubmitBatchJobAsync(request).GetAwaiter().GetResult();
+
+        /// <summary>
         /// Submits a batch data job and returns the created <see cref="BatchJob"/> with its assigned ID.
         /// Batch jobs are processed asynchronously; poll <see cref="GetBatchJobDetailsAsync"/> for status.
         /// </summary>
@@ -49,32 +95,22 @@ namespace Databento.CSharpApiClient
             bool mapSymbols = false,
             CancellationToken ct = default)
         {
-            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
-            if(symbols == null || symbols.Count == 0)
+            ThrowIfNoDatasetOrSymbol(dataset, symbols, nameof(dataset), nameof(symbols));
+            BatchJobRequest request = new BatchJobRequest
             {
-                throw new ArgumentException("At least one symbol is required. Pass \"ALL_SYMBOLS\" explicitly to request the whole dataset.", nameof(symbols));
-            }
-
-            string symbolsJoined = string.Join(",", symbols);
-            string start = startUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
-            string end = endUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
-
-            List<KeyValuePair<string, string>> form = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("dataset", dataset),
-                new KeyValuePair<string, string>("symbols", symbolsJoined),
-                new KeyValuePair<string, string>("schema", schema),
-                new KeyValuePair<string, string>("start", start),
-                new KeyValuePair<string, string>("end", end),
-                new KeyValuePair<string, string>("encoding", encoding),
-                new KeyValuePair<string, string>("compression", compression),
-                new KeyValuePair<string, string>("pretty_px", prettyPx ? "true" : "false"),
-                new KeyValuePair<string, string>("pretty_ts", prettyTs ? "true" : "false"),
-                new KeyValuePair<string, string>("map_symbols", mapSymbols ? "true" : "false"),
+                Dataset = dataset,
+                Symbols = symbols,
+                Schema = schema,
+                StartUtc = startUtc,
+                EndUtc = endUtc,
+                Encoding = encoding,
+                Compression = compression,
+                PrettyPx = prettyPx,
+                PrettyTs = prettyTs,
+                MapSymbols = mapSymbols,
             };
 
-            string json = await this.PostFormAsync("batch.submit_job", form, ct).ConfigureAwait(false);
-            return JsonSerializer.Deserialize<BatchJob>(json, RecordDeserializeOptions);
+            return await this.SubmitBatchJobAsync(request, ct).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -96,6 +132,17 @@ namespace Databento.CSharpApiClient
             string encoding = "dbn",
             string compression = "zstd")
             => this.SubmitBatchJobAsync(dataset, symbols, schema, startUtc, endUtc, encoding, compression).GetAwaiter().GetResult();
+
+        // a job needs a dataset, and at least one symbol: an empty list silently meaning the whole dataset would be a costly
+        // surprise, so the whole dataset has to be asked for with "ALL_SYMBOLS"
+        private static void ThrowIfNoDatasetOrSymbol(string dataset, IReadOnlyList<string> symbols, string datasetParam, string symbolsParam)
+        {
+            if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", datasetParam); }
+            if(symbols == null || symbols.Count == 0)
+            {
+                throw new ArgumentException("At least one symbol is required. Pass \"ALL_SYMBOLS\" explicitly to request the whole dataset.", symbolsParam);
+            }
+        }
 
         /// <summary>
         /// Returns a summary of each batch job (its ID, state and received time), optionally limited to some states and to jobs
@@ -149,7 +196,7 @@ namespace Databento.CSharpApiClient
             => this.ListBatchJobsAsync(dataset, state).GetAwaiter().GetResult();
 
         /// <summary>Returns the current details and status of the batch job identified by <paramref name="jobId"/>.</summary>
-        /// <param name="jobId">The job identifier returned by <see cref="SubmitBatchJobAsync"/>.</param>
+        /// <param name="jobId">The job identifier returned by <see cref="SubmitBatchJobAsync(BatchJobRequest, CancellationToken)"/>.</param>
         /// <param name="ct">Cancellation token.</param>
         public async Task<BatchJob> GetBatchJobDetailsAsync(string jobId, CancellationToken ct = default)
         {
@@ -159,7 +206,7 @@ namespace Databento.CSharpApiClient
         }
 
         /// <summary>Returns the current details and status of the batch job identified by <paramref name="jobId"/>.</summary>
-        /// <param name="jobId">The job identifier returned by <see cref="SubmitBatchJob"/>.</param>
+        /// <param name="jobId">The job identifier returned by <see cref="SubmitBatchJob(BatchJobRequest)"/>.</param>
         public BatchJob GetBatchJobDetails(string jobId) => this.GetBatchJobDetailsAsync(jobId).GetAwaiter().GetResult();
 
         /// <summary>Returns the list of output files available for download for a completed batch job.</summary>

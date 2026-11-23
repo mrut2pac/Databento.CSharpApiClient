@@ -5,8 +5,8 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
+using Databento.CSharpApiClient.JsonSupport;
 using Databento.CSharpApiClient.Transport;
 
 namespace Databento.CSharpApiClient
@@ -31,18 +31,8 @@ namespace Databento.CSharpApiClient
         /// </summary>
         private readonly IHttpTransport downloadTransport;
 
-        // STJ options: property names are set via [JsonPropertyName] attributes on each model class,
-        // so no special naming policy is needed here. Unknown JSON properties are silently ignored
-        // by default. DateTime values from Databento carry Z-suffix when pretty_ts=true, so STJ
-        // correctly sets Kind=Utc without additional configuration.
-        private static readonly JsonSerializerOptions RecordDeserializeOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            // The Historical API serialises numeric fields as JSON strings when pretty_px=true
-            // (e.g. "price":"4.000000000", "bid_px":"3.700000000"); read those into the numeric DTO
-            // properties instead of throwing on the string token.
-            NumberHandling = JsonNumberHandling.AllowReadingFromString,
-        };
+        // the options every response is read with, records or not; JsonRecordReader reads with the same
+        private static readonly JsonSerializerOptions RecordDeserializeOptions = JsonRecordLines.Options;
 
         /// <summary>
         /// Initialises a new <see cref="DatabentoJsonClient"/> using the supplied options.

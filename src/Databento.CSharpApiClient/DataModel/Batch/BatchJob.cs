@@ -144,7 +144,10 @@ namespace Databento.CSharpApiClient.DataModel.Batch
         [JsonPropertyName("package_size")]
         public long? PackageSize { get; set; }
 
-        /// <summary>Processing progress in percent (0-100).</summary>
+        /// <summary>
+        /// Processing progress in percent (0-100); <see langword="null"/> in the job that submitting returns, which the API sends
+        /// without it.
+        /// </summary>
         [JsonPropertyName("progress")]
         public int? Progress { get; set; }
 

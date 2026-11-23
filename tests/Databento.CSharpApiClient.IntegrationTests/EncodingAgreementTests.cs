@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
@@ -20,6 +21,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
     /// For every schema, decodes the same request from DBN and from JSON and checks the two agree on every field
     /// (see <see cref="EncodingComparer"/>), so a misread binary layout or a field the DBN decoder skips fails. Where the DBN record
     /// maps to the JSON model (<see cref="DbnToJsonExtensions"/>), the mapped records must serialize exactly as the JSON encoding's.
+    /// The same request as JSON without pretty prices and timestamps, read by <see cref="JsonRecordReader"/>, must too.
     /// </summary>
     public class EncodingAgreementTests : IntegrationTestBase
     {
@@ -29,6 +31,26 @@ namespace Databento.CSharpApiClient.IntegrationTests
             + "LegRatioPriceNumerator,LegRatioPriceDenominator,LegRatioQtyNumerator,LegRatioQtyDenominator,LegUnderlyingId";
 
         private const string DefinitionV1Only = "TradingReferencePrice,TradingReferenceDate,MdSecurityTradingStatus,SettlementPriceType";
+
+        // the schema each row's method requests, for the same request sent without the clients
+        private static readonly Dictionary<string, string> SchemaOf = new Dictionary<string, string>
+        {
+            ["GetMboAsync"] = Schema.Mbo,
+            ["GetMbp1Async"] = Schema.Mbp1,
+            ["GetMbp10Async"] = Schema.Mbp10,
+            ["GetTbboAsync"] = Schema.Tbbo,
+            ["GetTradesAsync"] = Schema.Trades,
+            ["GetBbo1sAsync"] = Schema.Bbo1Sec,
+            ["GetOhlcv1mAsync"] = Schema.Ohlcv1Min,
+            ["GetOhlcv1dAsync"] = Schema.Ohlcv1Day,
+            ["GetStatusAsync"] = Schema.Status,
+            ["GetImbalanceAsync"] = Schema.Imbalance,
+            ["GetStatisticsAsync"] = Schema.Statistics,
+            ["GetTcbboAsync"] = Schema.Tcbbo,
+            ["GetCmbp1Async"] = Schema.Cmbp1,
+            ["GetCbbo1sAsync"] = Schema.ConsolidatedBBO1Sec,
+            ["GetDefinitionsAsync"] = Schema.Definition,
+        };
 
         [SkippableTheory]
         [InlineData("GetMboAsync", Datasets.XnasItch, "SPY", "2022-05-16T13:30:00Z", "2022-05-16T13:30:02Z", "")]
@@ -90,6 +112,21 @@ namespace Databento.CSharpApiClient.IntegrationTests
                     string fromJson = JsonSerializer.Serialize(jsonRecords[i], toJsonRecord.ReturnType);
                     Assert.True(mapped == fromJson, $"{method} {dataset} [{i}]:{Environment.NewLine}mapped {mapped}{Environment.NewLine}JSON   {fromJson}");
                 }
+            }
+
+            // the same request as JSON without pretty prices and timestamps, a batch job's default, read by JsonRecordReader, must give
+            // the very records the JSON client reads from the pretty encoding
+            Type jsonType = jsonRecords[0].GetType();
+            MethodInfo read = typeof(JsonRecordReader).GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Single(m => m.ReturnType == typeof(IEnumerable<>).MakeGenericType(jsonType));
+            byte[] plain = await this.FetchPlainJsonTimeseriesAsync(dataset, SchemaOf[method], symbol, start, end);
+            List<object> plainRecords = ((IEnumerable)read.Invoke(null, new object[] { new MemoryStream(plain) })).Cast<object>().ToList();
+            Assert.Equal(jsonRecords.Count, plainRecords.Count);
+            for(int i = 0; i < plainRecords.Count; ++i)
+            {
+                string pretty = JsonSerializer.Serialize(jsonRecords[i], jsonType);
+                string fromPlain = JsonSerializer.Serialize(plainRecords[i], jsonType);
+                Assert.True(pretty == fromPlain, $"{method} {dataset} [{i}]:{Environment.NewLine}plain  {fromPlain}{Environment.NewLine}pretty {pretty}");
             }
         }
 

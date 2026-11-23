@@ -183,6 +183,39 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
+        public async Task ResolveSymbols_UnknownSymbolType_IsRefusedNamingExactlyTheTypesSymbolTypesOffers()
+        {
+            // symbology.resolve is not billed; refusing a symbology type, it lists the ones it takes, which are what SymbolTypes
+            // offers without [Obsolete]. A type the API adds shows up here.
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DatabentoHttpException ex = await Assert.ThrowsAsync<DatabentoHttpException>(() => client.ResolveSymbolsAsync(new SymbologyRequest
+            {
+                Dataset   = Datasets.XnasItch,
+                Symbols   = ["SPY"],
+                StypeIn   = SymbolTypes.RawSymbol,
+                StypeOut  = "not_a_symbol_type",
+                StartDate = "2024-05-01",
+                EndDate   = "2024-05-02",
+            }));
+
+            Assert.Equal(400, ex.StatusCode);
+            string detail = System.Text.Json.JsonDocument.Parse(ex.ResponseBody).RootElement.GetProperty("detail").GetString();
+            Assert.Contains("Use any of [", detail, StringComparison.Ordinal);
+            string[] taken = System.Text.RegularExpressions.Regex.Matches(detail.Substring(detail.IndexOf('[', StringComparison.Ordinal)), "'([a-z_]+)'")
+                .Select(match => match.Groups[1].Value)
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+            string[] offered = typeof(SymbolTypes).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                .Where(field => Attribute.GetCustomAttribute(field, typeof(ObsoleteAttribute)) == null)
+                .Select(field => (string)field.GetRawConstantValue())
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+            Assert.Equal(offered, taken);
+        }
+
+        [SkippableFact]
         public async Task ResolveSymbols_SeveralListedOptions_ResolvesEveryOne()
         {
             this.SkipIfNoApiKey();
@@ -264,6 +297,77 @@ namespace Databento.CSharpApiClient.IntegrationTests
             using MemoryStream copy = new MemoryStream();
             await content.CopyToAsync(copy);
             Assert.Equal(smallest.Size, copy.Length);
+        }
+
+        [SkippableFact]
+        public async Task SubmitBatchJob_JsonSplitBySymbol_FilesReadBackAsTheTimeseriesRecords()
+        {
+            // submitting a job is billed every run, so this runs only when asked for
+            this.SkipIfNoApiKey();
+            Skip.IfNot(Environment.GetEnvironmentVariable(SubmitBatchJobVariable) == "1", "Set " + SubmitBatchJobVariable + "=1 to submit a billed batch job.");
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DateTimeOffset start = new DateTimeOffset(2022, 5, 16, 13, 30, 0, TimeSpan.Zero);
+            DateTimeOffset end = start.AddMinutes(1);
+            BatchJob submitted = await client.SubmitBatchJobAsync(new BatchJobRequest
+            {
+                Dataset = Datasets.XnasItch,
+                Symbols = new[] { "SPY", "QQQ" },
+                Schema = Schema.Trades,
+                StartUtc = start,
+                EndUtc = end,
+                Encoding = BatchEncoding.Json,
+                Compression = BatchCompression.None,
+                MapSymbols = true,
+                SplitDuration = BatchSplitDuration.Day,
+                SplitSymbols = true,
+                SplitSize = 1_000_000_000,
+            });
+
+            Assert.Equal("day", submitted.SplitDuration);
+            Assert.True(submitted.SplitSymbols);
+            Assert.Equal(1_000_000_000L, submitted.SplitSize);
+
+            // the job is written without pretty prices and timestamps, the API's default, and split into one file per symbol
+            await WaitUntilDoneAsync(client, submitted.JobId, TimeSpan.FromMinutes(20));
+            BatchFile[] files = await client.ListBatchFilesAsync(submitted.JobId);
+            BatchFile[] dataFiles = files.Where(file => file.Filename.EndsWith(".json", StringComparison.Ordinal) && !BatchMetadataFiles.Contains(file.Filename)).ToArray();
+            Assert.True(dataFiles.Length == 2, string.Join(", ", files.Select(file => file.Filename)));
+
+            foreach(BatchFile file in dataFiles)
+            {
+                using Stream content = await client.DownloadBatchFileAsync(file.HttpsUrl);
+                TradeRecordJson[] fromFile = JsonRecordReader.ReadTrades(content).ToArray();
+                string symbol = Assert.Single(fromFile.Select(record => record.Symbol).Distinct());
+
+                TradeRecordJson[] fromTimeseries = await client.GetTradesAsync(Datasets.XnasItch, symbol, start, end);
+                Assert.NotEmpty(fromTimeseries);
+                Assert.Equal(
+                    fromTimeseries.Select(record => System.Text.Json.JsonSerializer.Serialize(record)),
+                    fromFile.Select(record => System.Text.Json.JsonSerializer.Serialize(record)));
+            }
+        }
+
+        private const string SubmitBatchJobVariable = "DATABENTO_SUBMIT_BATCH_JOB";
+
+        // the files a batch job writes beside its data
+        private static readonly string[] BatchMetadataFiles = { "metadata.json", "symbology.json", "condition.json", "manifest.json" };
+
+        private static async Task WaitUntilDoneAsync(DatabentoJsonClient client, string jobId, TimeSpan timeout)
+        {
+            DateTime giveUp = DateTime.UtcNow + timeout;
+            while(true)
+            {
+                BatchJob job = await client.GetBatchJobDetailsAsync(jobId);
+                if(job.State == "done")
+                {
+                    return;
+                }
+
+                Assert.True(job.State != "expired", "Batch job " + jobId + " expired before it was done.");
+                Assert.True(DateTime.UtcNow < giveUp, "Batch job " + jobId + " is still " + job.State + " after " + timeout + ".");
+                await Task.Delay(TimeSpan.FromSeconds(15));
+            }
         }
 
         // =====================================================================

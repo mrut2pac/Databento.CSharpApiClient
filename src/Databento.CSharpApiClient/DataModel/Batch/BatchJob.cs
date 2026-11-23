@@ -102,8 +102,8 @@ namespace Databento.CSharpApiClient.DataModel.Batch
         public string Delivery { get; set; }
 
         /// <summary>
-        /// Job lifecycle state: <c>"received"</c>, <c>"queued"</c>, <c>"processing"</c>,
-        /// <c>"done"</c>, or <c>"expired"</c>.
+        /// Job lifecycle state, one of <see cref="BatchJobStates"/>: <c>"queued"</c>, <c>"processing"</c>, <c>"done"</c> or
+        /// <c>"expired"</c>. It stays a string, so a state the API adds later still reads.
         /// </summary>
         [JsonPropertyName("state")]
         public string State { get; set; }
@@ -144,7 +144,10 @@ namespace Databento.CSharpApiClient.DataModel.Batch
         [JsonPropertyName("package_size")]
         public long? PackageSize { get; set; }
 
-        /// <summary>Processing progress in percent (0-100).</summary>
+        /// <summary>
+        /// Processing progress in percent (0-100); <see langword="null"/> in the job that submitting returns, which the API sends
+        /// without it.
+        /// </summary>
         [JsonPropertyName("progress")]
         public int? Progress { get; set; }
 

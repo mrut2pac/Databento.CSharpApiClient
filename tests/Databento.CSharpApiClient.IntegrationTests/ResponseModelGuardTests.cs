@@ -123,6 +123,29 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Assert.Single(Check("batch.list_jobs", summary.Replace("\"state\"", "\"status\"", StringComparison.Ordinal)));
         }
 
+        [Fact]
+        public void Check_JobWithoutProgress_IsExpectedOnlyFromSubmitJob()
+        {
+            // a live batch.get_job_details response; batch.submit_job answers with the same keys but "progress", which a job just
+            // submitted doesn't have yet
+            string details = "{\"id\":\"XNAS-20261007-QNNA8K8TYH\",\"user_id\":\"USER\",\"bill_id\":null,\"cost_usd\":1.56462193e-6,"
+                + "\"dataset\":\"XNAS.ITCH\",\"symbols\":\"SPY,QQQ\",\"stype_in\":\"raw_symbol\",\"stype_out\":\"instrument_id\","
+                + "\"schema\":\"ohlcv-1d\",\"start\":\"2024-05-01T00:00:00.000000000Z\",\"end\":\"2024-05-02T00:00:00.000000000Z\","
+                + "\"limit\":null,\"encoding\":\"json\",\"compression\":null,\"pretty_px\":false,\"pretty_ts\":false,\"map_symbols\":false,"
+                + "\"split_symbols\":false,\"split_duration\":\"day\",\"split_size\":null,\"packaging\":null,\"delivery\":\"download\","
+                + "\"record_count\":1,\"billed_size\":56,\"actual_size\":56,\"package_size\":3359,\"state\":\"done\","
+                + "\"ts_received\":\"2026-10-07T15:27:59.842454000Z\",\"ts_queued\":\"2026-10-07T15:32:20.205087000Z\","
+                + "\"ts_process_start\":\"2026-10-07T15:32:41.530682000Z\",\"ts_process_done\":\"2026-10-07T15:32:52.567753000Z\","
+                + "\"ts_expiration\":\"2026-11-06T15:40:00.000000000Z\",\"progress\":100}";
+            string submitted = details.Replace(",\"progress\":100", string.Empty, StringComparison.Ordinal);
+
+            Assert.Empty(Check("batch.get_job_details?job_id=XNAS-20261007-QNNA8K8TYH", details));
+            Assert.Empty(Check("batch.submit_job", submitted));
+            Assert.Equal(
+                "never sent: BatchJob.Progress maps \"progress\", which no object carries (batch.get_job_details)",
+                Assert.Single(Check("batch.get_job_details?job_id=XNAS-20261007-QNNA8K8TYH", submitted)));
+        }
+
         // a definition carrying every key both layouts share, plus the layout-specific ones given
         private static string DefinitionWith(string layoutKeys)
             => "{\"ts_recv\":\"2024-05-01T00:00:00.000000000Z\"," + Header + ",\"raw_symbol\":\"X\",\"security_update_action\":\"A\","

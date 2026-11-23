@@ -294,117 +294,61 @@ namespace Databento.CSharpApiClient
         // ================================================================
 
         private static IAsyncEnumerable<CbboRecordJson> DeserializeCbboJson(Stream stream, CancellationToken ct)
-            => ReadJsonLinesAsync<CbboRecordJson>(stream, rec => rec?.Header != null, ct);
+            => JsonRecordLines.ReadAsync<CbboRecordJson>(stream, rec => rec.Header, requireHeader: false, MalformedResponseLine, ct);
 
         private static IAsyncEnumerable<OhlcvRecordJson> DeserializeOhlcvJson(Stream stream, CancellationToken ct)
-            => ReadJsonLinesAsync<OhlcvRecordJson>(stream, rec => rec?.Header != null, ct);
+            => JsonRecordLines.ReadAsync<OhlcvRecordJson>(stream, rec => rec.Header, requireHeader: false, MalformedResponseLine, ct);
 
         private static IAsyncEnumerable<TradeRecordJson> DeserializeTradesJson(Stream stream, CancellationToken ct)
-            => ReadJsonLinesAsync<TradeRecordJson>(stream, rec => rec?.Header != null, ct);
+            => JsonRecordLines.ReadAsync<TradeRecordJson>(stream, rec => rec.Header, requireHeader: false, MalformedResponseLine, ct);
 
         private static IAsyncEnumerable<Mbp1RecordJson> DeserializeMbp1Json(Stream stream, CancellationToken ct)
-            => ReadJsonLinesAsync<Mbp1RecordJson>(stream, rec => rec?.Header != null, ct);
+            => JsonRecordLines.ReadAsync<Mbp1RecordJson>(stream, rec => rec.Header, requireHeader: false, MalformedResponseLine, ct);
 
         private static IAsyncEnumerable<StatisticsRecordJson> DeserializeStatisticsJson(Stream stream, CancellationToken ct)
-            => ReadJsonLinesAsync<StatisticsRecordJson>(stream, rec => rec?.Header != null, ct);
+            => JsonRecordLines.ReadAsync<StatisticsRecordJson>(stream, rec => rec.Header, requireHeader: false, MalformedResponseLine, ct);
 
         private static IAsyncEnumerable<DefinitionRecordJson> DeserializeDefinitionsJson(Stream stream, CancellationToken ct)
-            => ReadJsonLinesAsync<DefinitionRecordJson>(stream, rec => rec?.Header != null, ct);
+            => JsonRecordLines.ReadAsync<DefinitionRecordJson>(stream, rec => rec.Header, requireHeader: false, MalformedResponseLine, ct);
 
         private static IAsyncEnumerable<MboRecordJson> DeserializeMboJson(Stream stream, CancellationToken ct)
-            => ReadJsonLinesAsync<MboRecordJson>(stream, rec => rec?.Header != null, ct);
+            => JsonRecordLines.ReadAsync<MboRecordJson>(stream, rec => rec.Header, requireHeader: false, MalformedResponseLine, ct);
 
         private static IAsyncEnumerable<Mbp10RecordJson> DeserializeMbp10Json(Stream stream, CancellationToken ct)
-            => ReadJsonLinesAsync<Mbp10RecordJson>(stream, rec => rec?.Header != null, ct);
+            => JsonRecordLines.ReadAsync<Mbp10RecordJson>(stream, rec => rec.Header, requireHeader: false, MalformedResponseLine, ct);
 
         private static IAsyncEnumerable<BboRecordJson> DeserializeBboJson(Stream stream, CancellationToken ct)
-            => ReadJsonLinesAsync<BboRecordJson>(stream, rec => rec?.Header != null, ct);
+            => JsonRecordLines.ReadAsync<BboRecordJson>(stream, rec => rec.Header, requireHeader: false, MalformedResponseLine, ct);
 
         private static IAsyncEnumerable<TbboRecordJson> DeserializeTbboJson(Stream stream, CancellationToken ct)
-            => ReadJsonLinesAsync<TbboRecordJson>(stream, rec => rec?.Header != null, ct);
+            => JsonRecordLines.ReadAsync<TbboRecordJson>(stream, rec => rec.Header, requireHeader: false, MalformedResponseLine, ct);
 
         private static IAsyncEnumerable<TcbboRecordJson> DeserializeTcbboJson(Stream stream, CancellationToken ct)
-            => ReadJsonLinesAsync<TcbboRecordJson>(stream, rec => rec?.Header != null, ct);
+            => JsonRecordLines.ReadAsync<TcbboRecordJson>(stream, rec => rec.Header, requireHeader: false, MalformedResponseLine, ct);
 
         private static IAsyncEnumerable<Cmbp1RecordJson> DeserializeCmbp1Json(Stream stream, CancellationToken ct)
-            => ReadJsonLinesAsync<Cmbp1RecordJson>(stream, rec => rec?.Header != null, ct);
+            => JsonRecordLines.ReadAsync<Cmbp1RecordJson>(stream, rec => rec.Header, requireHeader: false, MalformedResponseLine, ct);
 
         private static IAsyncEnumerable<StatusRecordJson> DeserializeStatusJson(Stream stream, CancellationToken ct)
-            => ReadJsonLinesAsync<StatusRecordJson>(stream, rec => rec?.Header != null, ct);
+            => JsonRecordLines.ReadAsync<StatusRecordJson>(stream, rec => rec.Header, requireHeader: false, MalformedResponseLine, ct);
 
         private static IAsyncEnumerable<ImbalanceRecordJson> DeserializeImbalanceJson(Stream stream, CancellationToken ct)
-            => ReadJsonLinesAsync<ImbalanceRecordJson>(stream, rec => rec?.Header != null, ct);
+            => JsonRecordLines.ReadAsync<ImbalanceRecordJson>(stream, rec => rec.Header, requireHeader: false, MalformedResponseLine, ct);
 
         private static IAsyncEnumerable<SymbolMappingRecordJson> DeserializeSymbolMappingJson(Stream stream, CancellationToken ct)
-            => ReadJsonLinesAsync<SymbolMappingRecordJson>(stream, rec => rec?.Header != null, ct);
+            => JsonRecordLines.ReadAsync<SymbolMappingRecordJson>(stream, rec => rec.Header, requireHeader: false, MalformedResponseLine, ct);
 
-        private static async IAsyncEnumerable<T> ReadJsonLinesAsync<T>(Stream stream, Func<T, bool> isValid, [EnumeratorCancellation] CancellationToken ct)
+        // a response line that fails to parse is a real error, not "no data", thrown as a DatabentoException
+        private static Exception MalformedResponseLine(string recordType, long lineNumber, Exception ex)
         {
-            using(StreamReader sr = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 64 * 1024, leaveOpen: false))
-            {
-                string line = await sr.ReadLineAsync(ct).ConfigureAwait(false);
-
-                // A JSON array document starts with '['; it is read whole, so it does not stream. Anything else is
-                // newline-delimited JSON (the timeseries encoding), read one line, and so one record, at a time.
-                if(line != null && line.StartsWith('['))
-                {
-                    string json = line + "\n" + await sr.ReadToEndAsync(ct).ConfigureAwait(false);
-                    List<T> arr = JsonSerializer.Deserialize<List<T>>(json, RecordDeserializeOptions);
-                    foreach(T item in arr ?? new List<T>())
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        if(isValid(item))
-                        {
-                            yield return item;
-                        }
-                    }
-
-                    yield break;
-                }
-
-                long lineNumber = 0;
-                for(; line != null; line = await sr.ReadLineAsync(ct).ConfigureAwait(false))
-                {
-                    ct.ThrowIfCancellationRequested();
-                    lineNumber++;
-
-                    // A blank separator line (e.g. a trailing newline) is legal in JSONL and carries
-                    // no record. Any non-blank line is expected to be a complete record object.
-                    if(string.IsNullOrWhiteSpace(line))
-                    {
-                        continue;
-                    }
-
-                    T item = DeserializeJsonLine<T>(line, lineNumber);
-                    if(isValid(item))
-                    {
-                        yield return item;
-                    }
-                }
-            }
-        }
-
-        private static T DeserializeJsonLine<T>(string line, long lineNumber)
-        {
-            try
-            {
-                return JsonSerializer.Deserialize<T>(line, RecordDeserializeOptions);
-            }
-            catch(Exception ex) when(ex is JsonException or FormatException or OverflowException or NotSupportedException)
-            {
-                // A record that fails to parse is a real error, not "no data". Swallowing it
-                // here previously returned zero rows for responses that actually contained
-                // data (e.g. string-encoded numeric fields), so surface it to the caller.
-                // A custom converter may throw Format/Overflow rather than JsonException.
-                throw new DatabentoException(
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "Failed to deserialize a {0} record from the JSONL response at line {1}: {2}",
-                        typeof(T).Name,
-                        lineNumber,
-                        ex.Message),
-                    ex);
-            }
+            return new DatabentoException(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "Failed to deserialize a {0} record from the JSONL response at line {1}: {2}",
+                    recordType,
+                    lineNumber,
+                    ex.Message),
+                ex);
         }
 
         // ================================================================

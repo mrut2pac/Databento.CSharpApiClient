@@ -39,6 +39,26 @@ Added
   downloaded as DBN can be saved as JSON and read back like records downloaded as JSON. A value the JSON model
   can't hold (a CBBO size, or a CBBO or TCBBO bid or ask size, beyond int.MaxValue, or an OHLCV volume beyond
   long.MaxValue) throws OverflowException.
+- Batch split options: SubmitBatchJobAsync/SubmitBatchJob take a BatchJobRequest with SplitDuration, SplitSymbols
+  and SplitSize. Its encoding, compression and split duration are the enums BatchEncoding, BatchCompression and
+  BatchSplitDuration; a split option left unset is left to the API (one file per day). The positional overloads
+  send what they sent before.
+- JsonRecordReader: reads the records of JSON data the caller already has (such as a downloaded batch file), as
+  DbnReader does for DBN, with or without pretty prices and timestamps (batch jobs leave them off by default).
+  A line that doesn't parse, JSON that is no record, or a record of another schema throws InvalidDataException.
+- BatchJobStates: constants for the batch job states.
+
+Changed
+- DatabentoJsonClient: a response read whole as a JSON array that doesn't parse throws DatabentoException, as a
+  line that doesn't parse does (it threw JsonException).
+
+Deprecated
+- SymbolTypes.Nasdaq, OccSymbol, Cfi and Isin: the Historical API refuses them with HTTP 400; it takes only
+  raw_symbol, parent, instrument_id and continuous.
+
+Fixed
+- CbboRecordJson.Price and BboRecordJson.Price read a price written without pretty prices (an integer of 1e-9)
+  scaled, as every other price is; they read it unscaled.
 
 v2.4.0 — 2026-11-18
 

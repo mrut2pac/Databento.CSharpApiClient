@@ -1,5 +1,7 @@
 using System.IO;
 
+using Databento.CSharpApiClient.DataModel.Json;
+
 namespace Databento.CSharpApiClient.DataModel.Dbn
 {
     /// <summary>
@@ -45,6 +47,20 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             {
                 throw new System.IO.InvalidDataException("Truncated DBN BBO level.");
             }
+        }
+
+        // the level as the JSON encoding carries it; an undefined price stays NaN, as the JSON model reads it
+        internal Mbp1LevelJson ToJsonLevel()
+        {
+            return new Mbp1LevelJson
+            {
+                BidPrice = this.BidPrice,
+                AskPrice = this.AskPrice,
+                BidSize = this.BidSize,
+                AskSize = this.AskSize,
+                BidCount = this.BidCount,
+                AskCount = this.AskCount,
+            };
         }
     }
 }

@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 
+using Databento.CSharpApiClient.DataModel.Json;
+
 namespace Databento.CSharpApiClient.DataModel.Dbn
 {
     /// <summary>
@@ -113,6 +115,30 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             {
                 throw new InvalidDataException("Truncated DBN Statistics record.");
             }
+        }
+
+        /// <summary>
+        /// Returns this record as a <see cref="StatisticsRecordJson"/>, with the values <see cref="DatabentoJsonClient"/> reads from the
+        /// JSON encoding of the same record. An undefined event time becomes <see langword="null"/>, and an undefined price stays
+        /// <see cref="double.NaN"/> and an undefined quantity its sentinel, as the JSON model reads them.
+        /// </summary>
+        public StatisticsRecordJson ToJsonRecord()
+        {
+            return new StatisticsRecordJson
+            {
+                Header = DbnRecordHeader.ToJsonHeader(this.RecordType, this.PublisherId, this.InstrumentId, this.TsEventUtc),
+                TsReceivedUtc = this.TsReceivedUtc,
+                TsRefUtc = this.TsRefUtc,
+                Price = this.Price,
+                Quantity = this.Quantity,
+                Sequence = this.Sequence,
+                TsInDelta = this.TsInDelta,
+                StatType = this.StatType,
+                ChannelId = this.ChannelId,
+                UpdateAction = this.UpdateAction,
+                StatFlags = this.StatFlags,
+                Symbol = this.Symbol,
+            };
         }
 
         DateTime? IRecord.TsEventUtc => UndefinedValues.Timestamp(this.TsEventUtc);

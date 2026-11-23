@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 
+using Databento.CSharpApiClient.DataModel.Json;
+
 namespace Databento.CSharpApiClient.DataModel.Dbn
 {
     /// <summary>
@@ -95,6 +97,27 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             {
                 throw new InvalidDataException("Truncated DBN BBO record.");
             }
+        }
+
+        /// <summary>
+        /// Returns this record as a <see cref="BboRecordJson"/>, with the values <see cref="DatabentoJsonClient"/> reads from the JSON
+        /// encoding of the same record. An undefined <see cref="Price"/> or event time becomes <see langword="null"/>, and an
+        /// undefined bid or ask price stays <see cref="double.NaN"/>, as the JSON model reads them.
+        /// </summary>
+        public BboRecordJson ToJsonRecord()
+        {
+            return new BboRecordJson
+            {
+                Header = DbnRecordHeader.ToJsonHeader(this.RecordType, this.PublisherId, this.InstrumentId, this.TsEventUtc),
+                Price = UndefinedValues.Price(this.Price),
+                Size = this.Size,
+                Side = this.Side,
+                Flags = this.Flags,
+                TsReceivedUtc = this.TsReceivedUtc,
+                Sequence = this.Sequence,
+                Levels = this.Level == null ? null : new[] { this.Level.ToJsonLevel() },
+                Symbol = this.Symbol,
+            };
         }
 
         DateTime? IRecord.TsEventUtc => UndefinedValues.Timestamp(this.TsEventUtc);

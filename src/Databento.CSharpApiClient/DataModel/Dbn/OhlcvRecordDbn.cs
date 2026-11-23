@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 
+using Databento.CSharpApiClient.DataModel.Json;
+
 namespace Databento.CSharpApiClient.DataModel.Dbn
 {
     /// <summary>
@@ -78,6 +80,26 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             {
                 throw new InvalidDataException("Truncated DBN OHLCV record.");
             }
+        }
+
+        /// <summary>
+        /// Returns this record as an <see cref="OhlcvRecordJson"/>, with the values <see cref="DatabentoJsonClient"/> reads from the JSON
+        /// encoding of the same record. An undefined event time becomes <see langword="null"/> and an undefined price stays
+        /// <see cref="double.NaN"/>, as the JSON model reads them.
+        /// </summary>
+        /// <exception cref="OverflowException">The volume is beyond <see cref="long.MaxValue"/>, which the JSON model can't hold.</exception>
+        public OhlcvRecordJson ToJsonRecord()
+        {
+            return new OhlcvRecordJson
+            {
+                Header = DbnRecordHeader.ToJsonHeader(this.RecordType, this.PublisherId, this.InstrumentId, this.TsEventUtc),
+                Open = this.Open,
+                High = this.High,
+                Low = this.Low,
+                Close = this.Close,
+                Volume = checked((long)this.Volume),
+                Symbol = this.Symbol,
+            };
         }
 
         DateTime? IRecord.TsEventUtc => UndefinedValues.Timestamp(this.TsEventUtc);

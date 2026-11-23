@@ -24,11 +24,11 @@ namespace Databento.CSharpApiClient.DataModel.Batch
         /// <summary>Exclusive end of the requested time range (UTC).</summary>
         public DateTimeOffset EndUtc { get; set; }
 
-        /// <summary>Output encoding: <c>"dbn"</c> (the default), <c>"csv"</c> or <c>"json"</c>.</summary>
-        public string Encoding { get; set; } = "dbn";
+        /// <summary>Output encoding; DBN unless set.</summary>
+        public BatchEncoding Encoding { get; set; } = BatchEncoding.Dbn;
 
-        /// <summary>Output compression: <c>"zstd"</c> (the default) or <c>"none"</c>.</summary>
-        public string Compression { get; set; } = "zstd";
+        /// <summary>Output compression; Zstandard unless set.</summary>
+        public BatchCompression Compression { get; set; } = BatchCompression.Zstd;
 
         /// <summary>Whether CSV or JSON output writes prices as display decimals rather than integers of 1e-9.</summary>
         public bool PrettyPx { get; set; }
@@ -39,11 +39,8 @@ namespace Databento.CSharpApiClient.DataModel.Batch
         /// <summary>Whether CSV or JSON output names each record's symbol.</summary>
         public bool MapSymbols { get; set; }
 
-        /// <summary>
-        /// The longest period one output file covers, e.g. <c>"day"</c>, <c>"week"</c>, <c>"month"</c> or <c>"none"</c>;
-        /// <see langword="null"/> leaves it to the API, which splits by day.
-        /// </summary>
-        public string SplitDuration { get; set; }
+        /// <summary>The longest period one output file covers; <see langword="null"/> leaves it to the API, which splits by day.</summary>
+        public BatchSplitDuration? SplitDuration { get; set; }
 
         /// <summary>Whether the output is split into one file per symbol.</summary>
         public bool SplitSymbols { get; set; }

@@ -29,41 +29,34 @@ namespace Databento.CSharpApiClient
         /// <param name="ct">Cancellation token.</param>
         /// <exception cref="ArgumentNullException"><paramref name="request"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">The request names no dataset or no symbol.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">An encoding, compression or split duration is outside its enum.</exception>
         public async Task<BatchJob> SubmitBatchJobAsync(BatchJobRequest request, CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(request);
             ThrowIfNoDatasetOrSymbol(request.Dataset, request.Symbols, nameof(request), nameof(request));
 
-            List<KeyValuePair<string, string>> form = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("dataset", request.Dataset),
-                new KeyValuePair<string, string>("symbols", string.Join(",", request.Symbols)),
-                new KeyValuePair<string, string>("schema", request.Schema),
-                new KeyValuePair<string, string>("start", request.StartUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture)),
-                new KeyValuePair<string, string>("end", request.EndUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture)),
-                new KeyValuePair<string, string>("encoding", request.Encoding),
-                new KeyValuePair<string, string>("compression", request.Compression),
-                new KeyValuePair<string, string>("pretty_px", request.PrettyPx ? "true" : "false"),
-                new KeyValuePair<string, string>("pretty_ts", request.PrettyTs ? "true" : "false"),
-                new KeyValuePair<string, string>("map_symbols", request.MapSymbols ? "true" : "false"),
-            };
-
-            // a split option left unset is not sent, so the API's default applies, as it did before the client took them
-            if(!string.IsNullOrEmpty(request.SplitDuration))
-                form.Add(new KeyValuePair<string, string>("split_duration", request.SplitDuration));
-            if(request.SplitSymbols)
-                form.Add(new KeyValuePair<string, string>("split_symbols", "true"));
-            if(request.SplitSize.HasValue)
-                form.Add(new KeyValuePair<string, string>("split_size", request.SplitSize.Value.ToString(CultureInfo.InvariantCulture)));
-
-            string json = await this.PostFormAsync("batch.submit_job", form, ct).ConfigureAwait(false);
-            return JsonSerializer.Deserialize<BatchJob>(json, RecordDeserializeOptions);
+            return await this.PostBatchJobAsync(
+                request.Dataset,
+                request.Symbols,
+                request.Schema,
+                request.StartUtc,
+                request.EndUtc,
+                request.Encoding.ToApiValue(nameof(request)),
+                request.Compression.ToApiValue(nameof(request)),
+                request.PrettyPx,
+                request.PrettyTs,
+                request.MapSymbols,
+                request.SplitDuration?.ToApiValue(nameof(request)),
+                request.SplitSymbols,
+                request.SplitSize,
+                ct).ConfigureAwait(false);
         }
 
         /// <summary>Submits a batch data job and returns the created <see cref="BatchJob"/> with its assigned ID.</summary>
         /// <param name="request">The data, its encoding, and how the output is split into files.</param>
         /// <exception cref="ArgumentNullException"><paramref name="request"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">The request names no dataset or no symbol.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">An encoding, compression or split duration is outside its enum.</exception>
         public BatchJob SubmitBatchJob(BatchJobRequest request)
             => this.SubmitBatchJobAsync(request).GetAwaiter().GetResult();
 
@@ -96,21 +89,23 @@ namespace Databento.CSharpApiClient
             CancellationToken ct = default)
         {
             ThrowIfNoDatasetOrSymbol(dataset, symbols, nameof(dataset), nameof(symbols));
-            BatchJobRequest request = new BatchJobRequest
-            {
-                Dataset = dataset,
-                Symbols = symbols,
-                Schema = schema,
-                StartUtc = startUtc,
-                EndUtc = endUtc,
-                Encoding = encoding,
-                Compression = compression,
-                PrettyPx = prettyPx,
-                PrettyTs = prettyTs,
-                MapSymbols = mapSymbols,
-            };
 
-            return await this.SubmitBatchJobAsync(request, ct).ConfigureAwait(false);
+            // the encoding and compression strings are sent as given, as they always were, and no split option
+            return await this.PostBatchJobAsync(
+                dataset,
+                symbols,
+                schema,
+                startUtc,
+                endUtc,
+                encoding,
+                compression,
+                prettyPx,
+                prettyTs,
+                mapSymbols,
+                splitDuration: null,
+                splitSymbols: false,
+                splitSize: null,
+                ct).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -132,6 +127,49 @@ namespace Databento.CSharpApiClient
             string encoding = "dbn",
             string compression = "zstd")
             => this.SubmitBatchJobAsync(dataset, symbols, schema, startUtc, endUtc, encoding, compression).GetAwaiter().GetResult();
+
+        // posts a job, every value as the API's text: both overloads' arguments end up here
+        private async Task<BatchJob> PostBatchJobAsync(
+            string dataset,
+            IReadOnlyList<string> symbols,
+            string schema,
+            DateTimeOffset startUtc,
+            DateTimeOffset endUtc,
+            string encoding,
+            string compression,
+            bool prettyPx,
+            bool prettyTs,
+            bool mapSymbols,
+            string splitDuration,
+            bool splitSymbols,
+            long? splitSize,
+            CancellationToken ct)
+        {
+            List<KeyValuePair<string, string>> form = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("dataset", dataset),
+                new KeyValuePair<string, string>("symbols", string.Join(",", symbols)),
+                new KeyValuePair<string, string>("schema", schema),
+                new KeyValuePair<string, string>("start", startUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture)),
+                new KeyValuePair<string, string>("end", endUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture)),
+                new KeyValuePair<string, string>("encoding", encoding),
+                new KeyValuePair<string, string>("compression", compression),
+                new KeyValuePair<string, string>("pretty_px", prettyPx ? "true" : "false"),
+                new KeyValuePair<string, string>("pretty_ts", prettyTs ? "true" : "false"),
+                new KeyValuePair<string, string>("map_symbols", mapSymbols ? "true" : "false"),
+            };
+
+            // a split option left unset is not sent, so the API's default applies, as it did before the client took them
+            if(splitDuration != null)
+                form.Add(new KeyValuePair<string, string>("split_duration", splitDuration));
+            if(splitSymbols)
+                form.Add(new KeyValuePair<string, string>("split_symbols", "true"));
+            if(splitSize.HasValue)
+                form.Add(new KeyValuePair<string, string>("split_size", splitSize.Value.ToString(CultureInfo.InvariantCulture)));
+
+            string json = await this.PostFormAsync("batch.submit_job", form, ct).ConfigureAwait(false);
+            return JsonSerializer.Deserialize<BatchJob>(json, RecordDeserializeOptions);
+        }
 
         // a job needs a dataset, and at least one symbol: an empty list silently meaning the whole dataset would be a costly
         // surprise, so the whole dataset has to be asked for with "ALL_SYMBOLS"

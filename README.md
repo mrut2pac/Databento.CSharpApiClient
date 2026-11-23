@@ -76,7 +76,7 @@ await foreach (TcbboRecordDbn trade in DbnReader.ReadTcbboAsync(dbn))
 
 Data that is still compressed fails with an `InvalidDataException` saying it does not start with `DBN`.
 
-`JsonRecordReader` does the same for JSON data, such as a batch file submitted with `Encoding = "json"`. It reads the JSON with or without pretty prices and timestamps, and a record names its symbol when the job was submitted with `MapSymbols`:
+`JsonRecordReader` does the same for JSON data, such as a batch file submitted with `Encoding = BatchEncoding.Json`. It reads the JSON with or without pretty prices and timestamps, and a record names its symbol when the job was submitted with `MapSymbols`:
 
 ```csharp
 using FileStream file = File.OpenRead("xnas-itch-20220516.trades.json");
@@ -98,13 +98,15 @@ BatchJob job = await client.SubmitBatchJobAsync(new BatchJobRequest
     Schema = Schema.Trades,
     StartUtc = start,
     EndUtc = end,
-    Encoding = "json",
-    Compression = "none",   // zstd by default, which JsonRecordReader can only read through a zstd library
+    Encoding = BatchEncoding.Json,
+    Compression = BatchCompression.None,   // zstd by default, which JsonRecordReader can only read through a zstd library
     MapSymbols = true,
-    SplitDuration = "week",
+    SplitDuration = BatchSplitDuration.Week,
     SplitSymbols = true,
 });
 ```
+
+The encoding, compression and split duration are enums of the values the API takes; a value cast from outside them throws before anything is sent.
 
 Poll `GetBatchJobDetailsAsync(job.JobId)` until its `State` is `"done"`, then list its files with `ListBatchFilesAsync` and download each with `DownloadBatchFileAsync`.
 

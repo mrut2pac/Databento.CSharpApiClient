@@ -110,6 +110,29 @@ namespace Databento.CSharpApiClient.UnitTests
             return new DatabentoJsonClient(new DatabentoOptions { ApiKey = AnyApiKey }, transport.Object);
         }
 
+        // a batch job request that passes validation, with what a test sets on it
+        private static BatchJobRequest ValidRequest(Action<BatchJobRequest> set)
+        {
+            BatchJobRequest request = new BatchJobRequest
+            {
+                Dataset = Datasets.XnasItch,
+                Symbols = new[] { "SPY" },
+                Schema = Schema.Trades,
+                StartUtc = BatchStart,
+                EndUtc = BatchEnd,
+            };
+            set(request);
+            return request;
+        }
+
+        // the form a batch job request is submitted with
+        private static async Task<Dictionary<string, string>> SubmitAsync(BatchJobRequest request)
+        {
+            using DatabentoJsonClient client = BuildClientCapturingForms(SubmittedJobJson, out List<Dictionary<string, string>> forms);
+            await client.SubmitBatchJobAsync(request);
+            return forms.Single();
+        }
+
         // captures each request's form body as its decoded fields
         private static DatabentoJsonClient BuildClientCapturingForms(string responseBody, out List<Dictionary<string, string>> forms)
         {
@@ -1089,10 +1112,10 @@ namespace Databento.CSharpApiClient.UnitTests
                 Schema = Schema.Trades,
                 StartUtc = BatchStart,
                 EndUtc = BatchEnd,
-                Encoding = "json",
-                Compression = "none",
+                Encoding = BatchEncoding.Json,
+                Compression = BatchCompression.None,
                 MapSymbols = true,
-                SplitDuration = "week",
+                SplitDuration = BatchSplitDuration.Week,
                 SplitSymbols = true,
                 SplitSize = 2_000_000_000,
             });
@@ -1121,6 +1144,81 @@ namespace Databento.CSharpApiClient.UnitTests
             });
 
             CollectionAssert.AreEquivalent(BeforeSplitOptions, forms.Single().Keys.ToArray());
+
+            // a request left at its defaults asks for what the positional overloads' defaults ask for: DBN, zstd-compressed
+            Assert.AreEqual("dbn", forms.Single()["encoding"]);
+            Assert.AreEqual("zstd", forms.Single()["compression"]);
+        }
+
+        // the API's own values for each, as Databento's clients send them
+        [TestMethod]
+        [DataRow(BatchEncoding.Dbn, "dbn")]
+        [DataRow(BatchEncoding.Csv, "csv")]
+        [DataRow(BatchEncoding.Json, "json")]
+        public async Task SubmitBatchJobAsync_Encoding_SendsTheApiValue(BatchEncoding encoding, string sent)
+        {
+            Dictionary<string, string> form = await SubmitAsync(ValidRequest(r => r.Encoding = encoding));
+            Assert.AreEqual(sent, form["encoding"]);
+        }
+
+        [TestMethod]
+        [DataRow(BatchCompression.None, "none")]
+        [DataRow(BatchCompression.Zstd, "zstd")]
+        public async Task SubmitBatchJobAsync_Compression_SendsTheApiValue(BatchCompression compression, string sent)
+        {
+            Dictionary<string, string> form = await SubmitAsync(ValidRequest(r => r.Compression = compression));
+            Assert.AreEqual(sent, form["compression"]);
+        }
+
+        [TestMethod]
+        [DataRow(BatchSplitDuration.Day, "day")]
+        [DataRow(BatchSplitDuration.Week, "week")]
+        [DataRow(BatchSplitDuration.Month, "month")]
+        [DataRow(BatchSplitDuration.Year, "year")]
+        [DataRow(BatchSplitDuration.None, "none")]
+        public async Task SubmitBatchJobAsync_SplitDuration_SendsTheApiValue(BatchSplitDuration splitDuration, string sent)
+        {
+            Dictionary<string, string> form = await SubmitAsync(ValidRequest(r => r.SplitDuration = splitDuration));
+            Assert.AreEqual(sent, form["split_duration"]);
+        }
+
+        [TestMethod]
+        public async Task SubmitBatchJobAsync_EveryEnumValue_IsSent()
+        {
+            // a value added to an enum without its API value would fail every request that uses it
+            foreach(BatchEncoding encoding in Enum.GetValues<BatchEncoding>())
+            {
+                Assert.IsFalse(string.IsNullOrEmpty((await SubmitAsync(ValidRequest(r => r.Encoding = encoding)))["encoding"]), encoding.ToString());
+            }
+
+            foreach(BatchCompression compression in Enum.GetValues<BatchCompression>())
+            {
+                Assert.IsFalse(string.IsNullOrEmpty((await SubmitAsync(ValidRequest(r => r.Compression = compression)))["compression"]), compression.ToString());
+            }
+
+            foreach(BatchSplitDuration splitDuration in Enum.GetValues<BatchSplitDuration>())
+            {
+                Assert.IsFalse(string.IsNullOrEmpty((await SubmitAsync(ValidRequest(r => r.SplitDuration = splitDuration)))["split_duration"]), splitDuration.ToString());
+            }
+        }
+
+        [TestMethod]
+        public async Task SubmitBatchJobAsync_UndefinedEnumValue_ThrowsBeforeSending()
+        {
+            using DatabentoJsonClient client = BuildClientCapturingForms(SubmittedJobJson, out List<Dictionary<string, string>> forms);
+
+            ArgumentOutOfRangeException encoding = await Assert.ThrowsExceptionAsync<ArgumentOutOfRangeException>(
+                () => client.SubmitBatchJobAsync(ValidRequest(r => r.Encoding = (BatchEncoding)99)));
+            ArgumentOutOfRangeException compression = await Assert.ThrowsExceptionAsync<ArgumentOutOfRangeException>(
+                () => client.SubmitBatchJobAsync(ValidRequest(r => r.Compression = (BatchCompression)99)));
+            ArgumentOutOfRangeException splitDuration = await Assert.ThrowsExceptionAsync<ArgumentOutOfRangeException>(
+                () => client.SubmitBatchJobAsync(ValidRequest(r => r.SplitDuration = (BatchSplitDuration)99)));
+
+            Assert.AreEqual(0, forms.Count);
+            Assert.AreEqual("request", encoding.ParamName);
+            Assert.AreEqual("request", compression.ParamName);
+            Assert.AreEqual("request", splitDuration.ParamName);
+            StringAssert.Contains(encoding.Message, "Encoding");
         }
 
         [TestMethod]
@@ -1149,6 +1247,33 @@ namespace Databento.CSharpApiClient.UnitTests
         }
 
         [TestMethod]
+        [DataRow("JSON", "Zstd")]
+        [DataRow("parquet", "gzip")]
+        [DataRow(null, null)]
+        public async Task SubmitBatchJobAsync_PositionalStringsNoEnumHolds_AreSentAsGiven(string encoding, string compression)
+        {
+            // the positional overloads pass their strings through, so a value only the API knows (or doesn't) still goes out as given
+            using DatabentoJsonClient client = BuildClientCapturingForms(SubmittedJobJson, out List<Dictionary<string, string>> forms);
+            await client.SubmitBatchJobAsync(Datasets.XnasItch, new[] { "SPY" }, Schema.Trades, BatchStart, BatchEnd, encoding, compression);
+
+            Assert.AreEqual(encoding ?? string.Empty, forms.Single()["encoding"]);
+            Assert.AreEqual(compression ?? string.Empty, forms.Single()["compression"]);
+        }
+
+        [TestMethod]
+        public async Task SubmitBatchJobAsync_PositionalDefaults_SendDbnZstdAndNoSplitOptions()
+        {
+            using DatabentoJsonClient client = BuildClientCapturingForms(SubmittedJobJson, out List<Dictionary<string, string>> forms);
+            await client.SubmitBatchJobAsync(Datasets.XnasItch, new[] { "SPY" }, Schema.Trades, BatchStart, BatchEnd);
+
+            Dictionary<string, string> form = forms.Single();
+            CollectionAssert.AreEquivalent(BeforeSplitOptions, form.Keys.ToArray());
+            Assert.AreEqual("dbn", form["encoding"]);
+            Assert.AreEqual("zstd", form["compression"]);
+            Assert.AreEqual("false", form["map_symbols"]);
+        }
+
+        [TestMethod]
         public async Task SubmitBatchJobAsync_PositionalArgumentsWithoutDatasetOrSymbol_NameTheArgument()
         {
             using DatabentoJsonClient client = BuildClientCapturingForms(SubmittedJobJson, out List<Dictionary<string, string>> forms);
@@ -1174,7 +1299,7 @@ namespace Databento.CSharpApiClient.UnitTests
                 Schema = Schema.Trades,
                 StartUtc = BatchStart,
                 EndUtc = BatchEnd,
-                SplitDuration = "none",
+                SplitDuration = BatchSplitDuration.None,
             });
 
             Assert.AreEqual("none", forms.Single()["split_duration"]);

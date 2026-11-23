@@ -283,10 +283,10 @@ namespace Databento.CSharpApiClient.IntegrationTests
                 Schema = Schema.Trades,
                 StartUtc = start,
                 EndUtc = end,
-                Encoding = "json",
-                Compression = "none",
+                Encoding = BatchEncoding.Json,
+                Compression = BatchCompression.None,
                 MapSymbols = true,
-                SplitDuration = "day",
+                SplitDuration = BatchSplitDuration.Day,
                 SplitSymbols = true,
                 SplitSize = 1_000_000_000,
             });

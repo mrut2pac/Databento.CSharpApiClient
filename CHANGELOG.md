@@ -13,8 +13,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - `Symbol` is copied as the DBN record has it. It is `null` where the stream's metadata maps the instrument to no symbol, even for a single-symbol request, whose JSON records get the requested symbol.
   - They throw `OverflowException` when a value doesn't fit the JSON model: a CBBO trade size, or a CBBO or TCBBO bid or ask size, beyond `int.MaxValue`, or an OHLCV volume beyond `long.MaxValue`. The JSON encoding of such a record can't be read either.
 - The batch split options. `DatabentoJsonClient.SubmitBatchJobAsync` and `SubmitBatchJob` take a `BatchJobRequest`, which adds `SplitDuration`, `SplitSymbols` and `SplitSize` to the fields the positional overloads take.
+  - Its `Encoding`, `Compression` and `SplitDuration` are the enums `BatchEncoding`, `BatchCompression` and `BatchSplitDuration`, which hold only values the API takes. A value cast from outside the enum throws `ArgumentOutOfRangeException` before anything is sent.
   - A split option left unset isn't sent, so the API's default applies: one file per day, not split by symbol or size.
-  - The positional overloads stay and send what they sent before.
+  - The positional overloads stay, still take their encoding and compression as strings, and send what they sent before.
 - `JsonRecordReader`, which reads JSON records you already have, such as a downloaded batch file, as `DbnReader` does for DBN. It has an async and a sync method for each schema `DbnReader` reads.
   - It reads the JSON with or without pretty prices and timestamps. A batch job writes it without them by default.
   - A record names its symbol only when the data does, as with a batch job's `map_symbols`.

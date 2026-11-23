@@ -7,11 +7,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### Added
-- `ToJsonRecord()` on `BboRecordDbn`, `CbboRecordDbn`, `TcbboRecordDbn`, `TradeRecordDbn`, `OhlcvRecordDbn` and `StatisticsRecordDbn`, the DBN records that have a record interface. It returns the record as the JSON model (`BboRecordJson`, ...), holding the values `DatabentoJsonClient` reads from the JSON encoding of the same record.
+- `ToJsonRecord()` extension methods, in `DbnToJsonExtensions`, for `BboRecordDbn`, `CbboRecordDbn`, `TcbboRecordDbn`, `TradeRecordDbn`, `OhlcvRecordDbn` and `StatisticsRecordDbn`, the DBN records that have a record interface. Each returns the record as the JSON model (`BboRecordJson`, ...), holding the values `DatabentoJsonClient` reads from the JSON encoding of the same record.
   - So records downloaded as DBN can be saved as JSON and read back like records downloaded as JSON.
-  - An undefined price on a CBBO or BBO record, or an undefined event time in the header, becomes `null`, as the JSON models hold them. Other undefined prices stay `NaN`, and an undefined receive time stays `DateTime.MinValue`.
+  - An undefined `Price` on a CBBO or BBO record, or an undefined event time in the header, becomes `null`, as the JSON models hold them. Other undefined prices stay `NaN`, and an undefined receive time stays `DateTime.MinValue`.
   - `Symbol` is copied as the DBN record has it. It is `null` where the stream's metadata maps the instrument to no symbol, even for a single-symbol request, whose JSON records get the requested symbol.
-  - It throws `OverflowException` when a value doesn't fit the JSON model: a CBBO trade size, or a CBBO or TCBBO bid or ask size, beyond `int.MaxValue`, or an OHLCV volume beyond `long.MaxValue`. The JSON encoding of such a record can't be read either.
+  - They throw `OverflowException` when a value doesn't fit the JSON model: a CBBO trade size, or a CBBO or TCBBO bid or ask size, beyond `int.MaxValue`, or an OHLCV volume beyond `long.MaxValue`. The JSON encoding of such a record can't be read either.
 
 ## [2.4.0] - 2026-11-18
 

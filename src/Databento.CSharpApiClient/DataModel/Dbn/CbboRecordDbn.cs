@@ -1,8 +1,6 @@
 using System;
 using System.IO;
 
-using Databento.CSharpApiClient.DataModel.Json;
-
 namespace Databento.CSharpApiClient.DataModel.Dbn
 {
     /// <summary>
@@ -107,27 +105,6 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             {
                 throw new InvalidDataException("Couldn't read CBBO record but consumed all input bytes!");
             }
-        }
-
-        /// <summary>
-        /// Returns this record as a <see cref="CbboRecordJson"/>, with the values <see cref="DatabentoJsonClient"/> reads from the JSON
-        /// encoding of the same record. An undefined last trade price or event time becomes <see langword="null"/>, and an
-        /// undefined bid or ask price stays <see cref="double.NaN"/>, as the JSON model reads them.
-        /// </summary>
-        /// <exception cref="OverflowException">A size is beyond <see cref="int.MaxValue"/>, which the JSON model can't hold.</exception>
-        public CbboRecordJson ToJsonRecord()
-        {
-            return new CbboRecordJson
-            {
-                Header = DbnRecordHeader.ToJsonHeader(this.RecordType, this.PublisherId, this.InstrumentId, this.TsEventUtc),
-                TsReceivedUtc = this.TsReceivedUtc,
-                Side = this.Side,
-                Price = UndefinedValues.Price(this.Price),
-                Size = checked((int)this.Size),
-                Flags = this.Flags,
-                Levels = new[] { CbboLevelDbn.ToJsonLevel(this.BidPrice, this.AskPrice, this.BidSize, this.AskSize, this.BidPublisherId, this.AskPublisherId) },
-                Symbol = this.Symbol,
-            };
         }
 
         private static TradeAggressor ReadSide(byte side)

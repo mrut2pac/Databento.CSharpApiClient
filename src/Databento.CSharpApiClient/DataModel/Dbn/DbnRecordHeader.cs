@@ -1,8 +1,6 @@
 using System;
 using System.IO;
 
-using Databento.CSharpApiClient.DataModel.Json;
-
 namespace Databento.CSharpApiClient.DataModel.Dbn
 {
     /// <summary>
@@ -61,19 +59,6 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             {
                 return null;
             }
-        }
-
-        // a decoded record's header fields as the JSON encoding's header: an undefined event time, which the decoder reads as
-        // DateTime.MinValue, is null in JSON
-        internal static RecordHeaderJson ToJsonHeader(RType recordType, ushort publisherId, uint instrumentId, DateTime tsEventUtc)
-        {
-            return new RecordHeaderJson
-            {
-                TsEventUtc = UndefinedValues.Timestamp(tsEventUtc),
-                RecordType = recordType,
-                PublisherId = publisherId,
-                InstrumentId = instrumentId,
-            };
         }
     }
 }

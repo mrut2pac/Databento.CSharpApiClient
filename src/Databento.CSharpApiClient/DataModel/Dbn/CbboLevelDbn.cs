@@ -1,7 +1,5 @@
 using System.IO;
 
-using Databento.CSharpApiClient.DataModel.Json;
-
 namespace Databento.CSharpApiClient.DataModel.Dbn
 {
     /// <summary>
@@ -50,24 +48,6 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             {
                 throw new System.IO.InvalidDataException("Truncated DBN consolidated BBO level.");
             }
-        }
-
-        internal CbboLevel1RecordJson ToJsonLevel()
-            => ToJsonLevel(this.BidPrice, this.AskPrice, this.BidSize, this.AskSize, this.BidPublisherId, this.AskPublisherId);
-
-        // a consolidated level as the JSON encoding carries it, for TCBBO's level and CBBO's flat fields alike: the JSON model holds
-        // sizes as int, and an undefined price stays NaN, as the JSON model reads it
-        internal static CbboLevel1RecordJson ToJsonLevel(double bidPrice, double askPrice, uint bidSize, uint askSize, ushort bidPublisherId, ushort askPublisherId)
-        {
-            return new CbboLevel1RecordJson
-            {
-                BidPrice = bidPrice,
-                AskPrice = askPrice,
-                BidSize = checked((int)bidSize),
-                AskSize = checked((int)askSize),
-                BidPublisherId = bidPublisherId,
-                AskPublisherId = askPublisherId,
-            };
         }
     }
 }

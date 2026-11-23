@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Databento.CSharpApiClient.DataModel;
+using Databento.CSharpApiClient.DataModel.Dbn;
 using Databento.CSharpApiClient.Exceptions;
 
 using Xunit;
@@ -18,7 +19,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
     /// <summary>
     /// For every schema, decodes the same request from DBN and from JSON and checks the two agree on every field
     /// (see <see cref="EncodingComparer"/>), so a misread binary layout or a field the DBN decoder skips fails. Where the DBN record
-    /// maps to the JSON model (<c>ToJsonRecord</c>), the mapped records must serialize exactly as the JSON encoding's.
+    /// maps to the JSON model (<see cref="DbnToJsonExtensions"/>), the mapped records must serialize exactly as the JSON encoding's.
     /// </summary>
     public class EncodingAgreementTests : IntegrationTestBase
     {
@@ -77,7 +78,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
 
             // a DBN record that maps to the JSON model must map to the very record the JSON encoding gives, serialized alike; the
             // records with a record interface are the ones that map, so a renamed method can't switch this check off unnoticed
-            MethodInfo toJsonRecord = dbnRecords[0].GetType().GetMethod("ToJsonRecord", Type.EmptyTypes);
+            MethodInfo toJsonRecord = typeof(DbnToJsonExtensions).GetMethod(nameof(DbnToJsonExtensions.ToJsonRecord), new[] { dbnRecords[0].GetType() });
             Assert.True(
                 (dbnRecords[0] is IRecord) == (toJsonRecord != null),
                 dbnRecords[0].GetType().Name + (toJsonRecord == null ? " has a record interface but no ToJsonRecord()" : " has ToJsonRecord() but no record interface"));
@@ -85,7 +86,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
             {
                 for(int i = 0; i < dbnRecords.Count; ++i)
                 {
-                    string mapped = JsonSerializer.Serialize(toJsonRecord.Invoke(dbnRecords[i], null), toJsonRecord.ReturnType);
+                    string mapped = JsonSerializer.Serialize(toJsonRecord.Invoke(null, new[] { dbnRecords[i] }), toJsonRecord.ReturnType);
                     string fromJson = JsonSerializer.Serialize(jsonRecords[i], toJsonRecord.ReturnType);
                     Assert.True(mapped == fromJson, $"{method} {dataset} [{i}]:{Environment.NewLine}mapped {mapped}{Environment.NewLine}JSON   {fromJson}");
                 }

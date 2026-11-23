@@ -19,12 +19,12 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Databento.CSharpApiClient.UnitTests
 {
     /// <summary>
-    /// A DBN record's <c>ToJsonRecord</c> gives the record the JSON client reads from the JSON encoding of the same record, so
-    /// records downloaded as DBN can be saved as JSON and read back with no trace of the transport. Each test pairs a DBN record
-    /// with the JSON line the API sends for it (pretty prices and timestamps, as the client requests them).
+    /// <see cref="DbnToJsonExtensions"/> gives a DBN record as the record the JSON client reads from the JSON encoding of the same
+    /// record, so records downloaded as DBN can be saved as JSON and read back with no trace of the transport. Each test pairs a
+    /// DBN record with the JSON line the API sends for it (pretty prices and timestamps, as the client requests them).
     /// </summary>
     [TestClass]
-    public class DbnToJsonRecordTests
+    public class DbnToJsonExtensionsTests
     {
         private const string AnyDataset = Datasets.OpraPillar;
         private const string AnyApiKey = "test-api-key-0000";
@@ -141,6 +141,17 @@ namespace Databento.CSharpApiClient.UnitTests
             Assert.AreEqual(uint.MaxValue, tcbbo.ToJsonRecord().Size);
             Assert.AreEqual(int.MaxValue, tcbbo.ToJsonRecord().Level1.BidSize);
             Assert.AreEqual(long.MaxValue, ohlcv.ToJsonRecord().Volume);
+        }
+
+        [TestMethod]
+        public void ToJsonRecord_NullRecord_ThrowsArgumentNullException()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() => ((BboRecordDbn)null).ToJsonRecord());
+            Assert.ThrowsException<ArgumentNullException>(() => ((CbboRecordDbn)null).ToJsonRecord());
+            Assert.ThrowsException<ArgumentNullException>(() => ((TcbboRecordDbn)null).ToJsonRecord());
+            Assert.ThrowsException<ArgumentNullException>(() => ((TradeRecordDbn)null).ToJsonRecord());
+            Assert.ThrowsException<ArgumentNullException>(() => ((OhlcvRecordDbn)null).ToJsonRecord());
+            Assert.ThrowsException<ArgumentNullException>(() => ((StatisticsRecordDbn)null).ToJsonRecord());
         }
 
         // =====================================================================

@@ -4,9 +4,12 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Databento.CSharpApiClient.DataModel;
+using Databento.CSharpApiClient.DataModel.Dbn;
 using Databento.CSharpApiClient.Exceptions;
 
 using Xunit;
@@ -15,7 +18,8 @@ namespace Databento.CSharpApiClient.IntegrationTests
 {
     /// <summary>
     /// For every schema, decodes the same request from DBN and from JSON and checks the two agree on every field
-    /// (see <see cref="EncodingComparer"/>), so a misread binary layout or a field the DBN decoder skips fails.
+    /// (see <see cref="EncodingComparer"/>), so a misread binary layout or a field the DBN decoder skips fails. Where the DBN record
+    /// maps to the JSON model (<see cref="DbnToJsonExtensions"/>), the mapped records must serialize exactly as the JSON encoding's.
     /// </summary>
     public class EncodingAgreementTests : IntegrationTestBase
     {
@@ -39,6 +43,7 @@ namespace Databento.CSharpApiClient.IntegrationTests
         [InlineData("GetImbalanceAsync", Datasets.XnasItch, "SPY", "2024-05-01T19:55:00Z", "2024-05-01T20:00:00Z", "")]
         [InlineData("GetImbalanceAsync", "ARCX.PILLAR", "SPY", "2024-05-01T19:55:00Z", "2024-05-01T20:00:00Z", "")]
         [InlineData("GetStatisticsAsync", Datasets.GlbxMdp3, "ESH4", "2024-01-02T00:00:00Z", "2024-01-03T00:00:00Z", "")]
+        [InlineData("GetStatisticsAsync", Datasets.OpraPillar, OpraPut, "2024-05-01T00:00:00Z", "2024-05-02T00:00:00Z", "")]
         [InlineData("GetTcbboAsync", Datasets.OpraPillar, OpraPut, "2024-05-01T14:00:00Z", "2024-05-01T14:05:00Z", "")]
         [InlineData("GetCmbp1Async", Datasets.OpraPillar, OpraPut, "2024-05-01T14:00:00Z", "2024-05-01T14:01:00Z", "")]
         [InlineData("GetCbbo1sAsync", Datasets.OpraPillar, "SPXW  250908C06475000", "2025-09-05T14:00:00Z", "2025-09-05T14:10:00Z", "")]
@@ -70,6 +75,22 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Assert.NotEmpty(dbnRecords);
             IReadOnlyList<string> problems = EncodingComparer.Compare(dbnRecords, jsonRecords, ignored.Split(',', StringSplitOptions.RemoveEmptyEntries));
             Assert.True(problems.Count == 0, method + " " + dataset + ":" + Environment.NewLine + string.Join(Environment.NewLine, problems));
+
+            // a DBN record that maps to the JSON model must map to the very record the JSON encoding gives, serialized alike; the
+            // records with a record interface are the ones that map, so a renamed method can't switch this check off unnoticed
+            MethodInfo toJsonRecord = typeof(DbnToJsonExtensions).GetMethod(nameof(DbnToJsonExtensions.ToJsonRecord), new[] { dbnRecords[0].GetType() });
+            Assert.True(
+                (dbnRecords[0] is IRecord) == (toJsonRecord != null),
+                dbnRecords[0].GetType().Name + (toJsonRecord == null ? " has a record interface but no ToJsonRecord()" : " has ToJsonRecord() but no record interface"));
+            if(toJsonRecord != null)
+            {
+                for(int i = 0; i < dbnRecords.Count; ++i)
+                {
+                    string mapped = JsonSerializer.Serialize(toJsonRecord.Invoke(null, new[] { dbnRecords[i] }), toJsonRecord.ReturnType);
+                    string fromJson = JsonSerializer.Serialize(jsonRecords[i], toJsonRecord.ReturnType);
+                    Assert.True(mapped == fromJson, $"{method} {dataset} [{i}]:{Environment.NewLine}mapped {mapped}{Environment.NewLine}JSON   {fromJson}");
+                }
+            }
         }
 
         // Both clients name the per-schema methods alike: Get*Async(dataset, symbol, startUtc, endUtc, ct)

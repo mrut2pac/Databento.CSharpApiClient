@@ -20,9 +20,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - It reads the JSON with or without pretty prices and timestamps. A batch job writes it without them by default.
   - A record names its symbol only when the data does, as with a batch job's `map_symbols`.
   - A line that doesn't parse, JSON that is no record (it has no `"hd"` header), or a record of another schema throws `InvalidDataException`. The stream is left open, and compressed data must be decompressed first, e.g. with `GZipStream`.
+- `BatchJobStates`, constants for the batch job states (`queued`, `processing`, `done`, `expired`) that `BatchJob.State` holds and `ListBatchJobsAsync` filters on.
 
 ### Changed
 - `DatabentoJsonClient`: a response read whole as a JSON array that doesn't parse throws `DatabentoException`, as a line that doesn't parse does. It threw the bare `JsonException` before.
+
+### Deprecated
+- `SymbolTypes.Nasdaq`, `OccSymbol`, `Cfi` and `Isin`. The Historical API refuses them with HTTP 400, as `stype_in` and `stype_out` alike; it takes only `raw_symbol`, `parent`, `instrument_id` and `continuous`. For OPRA options, the raw symbol is the OCC symbol.
 
 ### Fixed
 - `CbboRecordJson.Price` and `BboRecordJson.Price` read a price written without pretty prices, an integer of 1e-9, scaled, as the other prices are. They read it unscaled before.

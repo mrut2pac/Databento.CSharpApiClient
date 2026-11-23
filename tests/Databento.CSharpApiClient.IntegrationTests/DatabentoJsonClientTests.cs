@@ -183,6 +183,39 @@ namespace Databento.CSharpApiClient.IntegrationTests
         }
 
         [SkippableFact]
+        public async Task ResolveSymbols_UnknownSymbolType_IsRefusedNamingExactlyTheTypesSymbolTypesOffers()
+        {
+            // symbology.resolve is not billed; refusing a symbology type, it lists the ones it takes, which are what SymbolTypes
+            // offers without [Obsolete]. A type the API adds shows up here.
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            DatabentoHttpException ex = await Assert.ThrowsAsync<DatabentoHttpException>(() => client.ResolveSymbolsAsync(new SymbologyRequest
+            {
+                Dataset   = Datasets.XnasItch,
+                Symbols   = ["SPY"],
+                StypeIn   = SymbolTypes.RawSymbol,
+                StypeOut  = "not_a_symbol_type",
+                StartDate = "2024-05-01",
+                EndDate   = "2024-05-02",
+            }));
+
+            Assert.Equal(400, ex.StatusCode);
+            string detail = System.Text.Json.JsonDocument.Parse(ex.ResponseBody).RootElement.GetProperty("detail").GetString();
+            Assert.Contains("Use any of [", detail, StringComparison.Ordinal);
+            string[] taken = System.Text.RegularExpressions.Regex.Matches(detail.Substring(detail.IndexOf('[', StringComparison.Ordinal)), "'([a-z_]+)'")
+                .Select(match => match.Groups[1].Value)
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+            string[] offered = typeof(SymbolTypes).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                .Where(field => Attribute.GetCustomAttribute(field, typeof(ObsoleteAttribute)) == null)
+                .Select(field => (string)field.GetRawConstantValue())
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+            Assert.Equal(offered, taken);
+        }
+
+        [SkippableFact]
         public async Task ResolveSymbols_SeveralListedOptions_ResolvesEveryOne()
         {
             this.SkipIfNoApiKey();

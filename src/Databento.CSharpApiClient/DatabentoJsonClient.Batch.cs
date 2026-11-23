@@ -187,7 +187,7 @@ namespace Databento.CSharpApiClient
         /// received since a time. <see cref="GetBatchJobDetailsAsync"/> returns a job's full details.
         /// </summary>
         /// <param name="states">
-        /// States to include, e.g. <c>"queued"</c>, <c>"processing"</c>, <c>"done"</c>, <c>"expired"</c>; <see langword="null"/> or empty
+        /// States to include, from <see cref="BatchJobStates"/>, e.g. <c>"queued"</c> or <c>"done"</c>; <see langword="null"/> or empty
         /// leaves the filter to the API, which then lists jobs in every state.
         /// </param>
         /// <param name="since">Only jobs received at or after this time; <see langword="null"/> for no limit.</param>

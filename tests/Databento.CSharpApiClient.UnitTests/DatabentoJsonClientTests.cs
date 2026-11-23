@@ -540,6 +540,35 @@ namespace Databento.CSharpApiClient.UnitTests
         // =====================================================================
 
         [TestMethod]
+        public void SymbolTypes_TheHistoricalApiTakesOnlyFour_TheRestAreObsolete()
+        {
+            // symbology.resolve refuses any other stype_in or stype_out: "Use any of [instrument_id, raw_symbol, parent, continuous]"
+            System.Reflection.FieldInfo[] constants = typeof(SymbolTypes).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            string[] usable = constants
+                .Where(field => Attribute.GetCustomAttribute(field, typeof(ObsoleteAttribute)) == null)
+                .Select(field => (string)field.GetRawConstantValue())
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+            string[] obsolete = constants
+                .Where(field => Attribute.GetCustomAttribute(field, typeof(ObsoleteAttribute)) != null)
+                .Select(field => field.Name)
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+
+            CollectionAssert.AreEqual(new[] { "continuous", "instrument_id", "parent", "raw_symbol" }, usable);
+            CollectionAssert.AreEqual(new[] { "Cfi", "Isin", "Nasdaq", "OccSymbol" }, obsolete);
+        }
+
+        [TestMethod]
+        public void BatchJobStates_AreTheStatesTheApiNames()
+        {
+            Assert.AreEqual("queued", BatchJobStates.Queued);
+            Assert.AreEqual("processing", BatchJobStates.Processing);
+            Assert.AreEqual("done", BatchJobStates.Done);
+            Assert.AreEqual("expired", BatchJobStates.Expired);
+        }
+
+        [TestMethod]
         public void MethodsTheHistoricalApiCannotServe_AreObsolete()
         {
             // timeseries.get_range has no symbol_mapping schema, and no dataset lists ohlcv-eod

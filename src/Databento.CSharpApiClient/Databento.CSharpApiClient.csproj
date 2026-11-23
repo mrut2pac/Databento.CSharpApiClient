@@ -21,7 +21,7 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>2.4.0</Version>
+    <Version>2.5.0</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
@@ -31,6 +31,15 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
+v2.5.0 — 2026-11-23
+
+Added
+- DbnToJsonExtensions.ToJsonRecord(): returns a BBO, CBBO, TCBBO, trade, OHLCV or statistics DBN record as its
+  JSON model, with the values DatabentoJsonClient reads from the JSON encoding of the same record, so records
+  downloaded as DBN can be saved as JSON and read back like records downloaded as JSON. A value the JSON model
+  can't hold (a CBBO size, or a CBBO or TCBBO bid or ask size, beyond int.MaxValue, or an OHLCV volume beyond
+  long.MaxValue) throws OverflowException.
+
 v2.4.0 — 2026-11-18
 
 Added

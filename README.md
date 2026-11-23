@@ -86,6 +86,31 @@ await foreach (TradeRecordJson trade in JsonRecordReader.ReadTradesAsync(file))
 }
 ```
 
+## Saving DBN records as JSON
+
+`ToJsonRecord()` turns a BBO, CBBO, TCBBO, trade, OHLCV or statistics DBN record into its JSON model, with the values `DatabentoJsonClient` reads from the JSON encoding of the same record. Records downloaded as DBN can then be saved as JSON and read back like records downloaded as JSON. The extension methods are in `DbnToJsonExtensions`, in the `Databento.CSharpApiClient.DataModel.Dbn` namespace, and the JSON records in `Databento.CSharpApiClient.DataModel.Json`:
+
+```csharp
+using System.Text.Json;
+
+using (StreamWriter writer = File.CreateText("opra-pillar-20240118.tcbbo.json"))
+{
+    await foreach (TcbboRecordDbn trade in client.StreamTcbboAsync(Datasets.OpraPillar, "SPXW  240119C04800000", start, end, cancellationToken))
+    {
+        await writer.WriteLineAsync(JsonSerializer.Serialize(trade.ToJsonRecord()));
+    }
+}
+
+// later
+using FileStream saved = File.OpenRead("opra-pillar-20240118.tcbbo.json");
+foreach (TcbboRecordJson trade in JsonRecordReader.ReadTcbbo(saved))
+{
+    // ...
+}
+```
+
+A value the JSON model can't hold, such as a CBBO size beyond `int.MaxValue`, throws `OverflowException`.
+
 ## Batch jobs
 
 `SubmitBatchJobAsync` takes a `BatchJobRequest`, which also says how the output is split into files: by period (`SplitDuration`, a day unless set), by symbol (`SplitSymbols`) and by size in bytes (`SplitSize`):

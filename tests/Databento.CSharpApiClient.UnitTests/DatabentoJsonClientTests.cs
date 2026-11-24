@@ -327,7 +327,7 @@ namespace Databento.CSharpApiClient.UnitTests
         [TestMethod]
         public async Task GetStatusAsync_ValidJsonLine_ReturnsParsedRecord()
         {
-            // Shape of a live XNAS.ITCH status record: action, reason and trading_event are numeric codes.
+            // Shape of an XNAS.ITCH status record: action, reason and trading_event are numeric codes.
             string json = "{" + MakeHeader(rtype: 18) + ",\"ts_recv\":\"2022-05-16T13:30:00.000000000Z\","
                 + "\"action\":7,\"reason\":2,\"trading_event\":1,"
                 + "\"is_trading\":\"N\",\"is_quoting\":\"~\",\"is_short_sell_restricted\":\"N\"}";
@@ -350,11 +350,11 @@ namespace Databento.CSharpApiClient.UnitTests
         [TestMethod]
         public async Task GetStatisticsAsync_UndefinedQuantity_ParsesTheInt64Sentinel()
         {
-            // A live GLBX.MDP3 statistics record as the client requests it (pretty timestamps and prices): quantity is a 64-bit integer sent
+            // A GLBX.MDP3 statistics record in the form the client requests (pretty timestamps and prices), values invented: quantity is a 64-bit integer sent
             // as a string, INT64_MAX when undefined, and an undefined ts_ref is null.
-            string json = "{\"ts_recv\":\"2024-03-15T00:22:48.057050737Z\",\"hd\":{\"ts_event\":\"2024-03-15T00:22:48.056637873Z\",\"rtype\":24,"
-                + "\"publisher_id\":1,\"instrument_id\":17077},\"ts_ref\":null,\"price\":\"5155.250000000\",\"quantity\":\"9223372036854775807\","
-                + "\"sequence\":58896890,\"ts_in_delta\":15240,\"stat_type\":5,\"channel_id\":0,\"update_action\":1,\"stat_flags\":0}";
+            string json = "{\"ts_recv\":\"2024-03-15T00:22:48.012560037Z\",\"hd\":{\"ts_event\":\"2024-03-15T00:22:48.012340073Z\",\"rtype\":24,"
+                + "\"publisher_id\":1,\"instrument_id\":17077},\"ts_ref\":null,\"price\":\"4321.750000000\",\"quantity\":\"9223372036854775807\","
+                + "\"sequence\":12345678,\"ts_in_delta\":9000,\"stat_type\":5,\"channel_id\":0,\"update_action\":1,\"stat_flags\":0}";
 
             using DatabentoJsonClient client = BuildClient(json);
             StatisticsRecordJson[] records = await client.GetStatisticsAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
@@ -362,15 +362,15 @@ namespace Databento.CSharpApiClient.UnitTests
             Assert.AreEqual(1, records.Length);
             Assert.AreEqual(long.MaxValue, records[0].Quantity);
             Assert.IsNull(records[0].TsRefUtc);
-            Assert.AreEqual(58896890u, records[0].Sequence);
+            Assert.AreEqual(12345678u, records[0].Sequence);
             Assert.AreEqual((ushort)5, records[0].StatType);
         }
 
         [TestMethod]
         public async Task GetStatisticsAsync_QuantityBeyondInt32_ParsesIt()
         {
-            string json = "{" + MakeHeader(rtype: 24) + ",\"ts_recv\":\"2024-03-15T00:22:48.057050737Z\","
-                + "\"price\":\"5155.25\",\"quantity\":\"4294967296\",\"sequence\":1,\"ts_in_delta\":0,"
+            string json = "{" + MakeHeader(rtype: 24) + ",\"ts_recv\":\"2024-03-15T00:22:48.012560037Z\","
+                + "\"price\":\"4321.75\",\"quantity\":\"4294967296\",\"sequence\":1,\"ts_in_delta\":0,"
                 + "\"stat_type\":6,\"channel_id\":0,\"update_action\":1,\"stat_flags\":0}";
 
             using DatabentoJsonClient client = BuildClient(json);
@@ -384,9 +384,9 @@ namespace Databento.CSharpApiClient.UnitTests
         // =====================================================================
 
         [TestMethod]
-        public async Task GetDefinitionsAsync_LiveOptionDefinition_ReadsTheSecurityUpdateAction()
+        public async Task GetDefinitionsAsync_OptionDefinition_ReadsTheSecurityUpdateAction()
         {
-            // A live OPRA.PILLAR definition as the client requests it (pretty timestamps and prices), trimmed to the fields under test.
+            // An OPRA.PILLAR definition in the form the client requests (pretty timestamps and prices), trimmed to the fields under test.
             string json = "{\"ts_recv\":\"2022-02-07T14:31:00.000000000Z\",\"hd\":{\"ts_event\":\"2022-02-07T14:31:00.000000000Z\",\"rtype\":19,"
                 + "\"publisher_id\":30,\"instrument_id\":1310693},\"raw_symbol\":\"SPXW  220207C04295000\",\"security_update_action\":\"A\","
                 + "\"instrument_class\":\"C\",\"expiration\":\"2022-02-07T00:00:00.000000000Z\",\"activation\":null,\"exchange\":\"OPRA\","
@@ -402,15 +402,15 @@ namespace Databento.CSharpApiClient.UnitTests
         }
 
         [TestMethod]
-        public async Task GetDefinitionsAsync_LiveGlbxFutureInDbnV3Layout_ReadsEveryField()
+        public async Task GetDefinitionsAsync_GlbxFutureInDbnV3Layout_ReadsEveryField()
         {
-            // a live GLBX.MDP3 definition, served in the DBN v3 layout: it carries the leg fields, and raw_instrument_id as a string
-            string json = "{\"ts_recv\":\"2024-05-01T00:00:00.000000000Z\",\"hd\":{\"ts_event\":\"2024-04-28T11:03:56.364648873Z\","
+            // a GLBX.MDP3 definition in the form the API serves it, in the DBN v3 layout, values invented: it carries the leg fields, and raw_instrument_id as a string
+            string json = "{\"ts_recv\":\"2024-05-01T00:00:00.000000000Z\",\"hd\":{\"ts_event\":\"2024-04-28T11:03:56.000000300Z\","
                 + "\"rtype\":19,\"publisher_id\":1,\"instrument_id\":5602},\"raw_symbol\":\"ESM4\","
                 + "\"security_update_action\":\"A\",\"instrument_class\":\"F\",\"min_price_increment\":\"0.250000000\","
                 + "\"display_factor\":\"0.010000000\",\"expiration\":\"2024-06-21T13:30:00.000000000Z\","
-                + "\"activation\":\"2022-03-18T13:30:00.000000000Z\",\"high_limit_price\":\"5488.000000000\","
-                + "\"low_limit_price\":\"4774.500000000\",\"max_price_variation\":\"6.000000000\","
+                + "\"activation\":\"2022-03-18T13:30:00.000000000Z\",\"high_limit_price\":\"6000.000000000\","
+                + "\"low_limit_price\":\"4500.250000000\",\"max_price_variation\":\"6.000000000\","
                 + "\"unit_of_measure_qty\":\"50.000000000\",\"min_price_increment_amount\":\"0.125000000\",\"price_ratio\":null,"
                 + "\"inst_attrib_value\":270351,\"underlying_id\":0,\"raw_instrument_id\":\"5602\",\"market_depth_implied\":0,"
                 + "\"market_depth\":10,\"market_segment_id\":64,\"max_trade_vol\":3000,\"min_lot_size\":0,"
@@ -454,17 +454,17 @@ namespace Databento.CSharpApiClient.UnitTests
         }
 
         [TestMethod]
-        public async Task GetDefinitionsAsync_LiveOpraOptionInDbnV1Layout_ReadsEveryField()
+        public async Task GetDefinitionsAsync_OpraOptionInDbnV1Layout_ReadsEveryField()
         {
-            // a live OPRA.PILLAR definition, served in the DBN v1 layout: no leg fields, raw_instrument_id as a number
-            string json = "{\"ts_recv\":\"2024-05-01T10:30:00.680511059Z\",\"hd\":{\"ts_event\":\"2024-05-01T10:30:00.680302848Z\","
-                + "\"rtype\":19,\"publisher_id\":30,\"instrument_id\":1275068601},\"raw_symbol\":\"SPY   240501P00501000\","
+            // an OPRA.PILLAR definition in the form the API serves it, in the DBN v1 layout, values invented: no leg fields, raw_instrument_id as a number
+            string json = "{\"ts_recv\":\"2024-05-01T10:30:00.500000300Z\",\"hd\":{\"ts_event\":\"2024-05-01T10:30:00.500000100Z\","
+                + "\"rtype\":19,\"publisher_id\":30,\"instrument_id\":1275000001},\"raw_symbol\":\"SPY   240501P00501000\","
                 + "\"security_update_action\":\"A\",\"instrument_class\":\"P\",\"min_price_increment\":null,"
                 + "\"display_factor\":null,\"expiration\":\"2024-05-01T00:00:00.000000000Z\",\"activation\":null,"
                 + "\"high_limit_price\":null,\"low_limit_price\":null,\"max_price_variation\":null,"
                 + "\"trading_reference_price\":null,\"unit_of_measure_qty\":null,\"min_price_increment_amount\":null,"
-                + "\"price_ratio\":null,\"inst_attrib_value\":2147483647,\"underlying_id\":1308622850,"
-                + "\"raw_instrument_id\":1275068601,\"market_depth_implied\":2147483647,\"market_depth\":2147483647,"
+                + "\"price_ratio\":null,\"inst_attrib_value\":2147483647,\"underlying_id\":1308600002,"
+                + "\"raw_instrument_id\":1275000001,\"market_depth_implied\":2147483647,\"market_depth\":2147483647,"
                 + "\"market_segment_id\":4294967295,\"max_trade_vol\":4294967295,\"min_lot_size\":2147483647,"
                 + "\"min_lot_size_block\":2147483647,\"min_lot_size_round_lot\":2147483647,\"min_trade_vol\":4294967295,"
                 + "\"contract_multiplier\":2147483647,\"decay_quantity\":2147483647,\"original_contract_size\":2147483647,"
@@ -480,9 +480,9 @@ namespace Databento.CSharpApiClient.UnitTests
             using DatabentoJsonClient client = BuildClient(json);
             DefinitionRecordJson record = (await client.GetDefinitionsAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd))[0];
 
-            Assert.AreEqual(1275068601UL, record.RawInstrumentId);
+            Assert.AreEqual(1275000001UL, record.RawInstrumentId);
             Assert.IsTrue(double.IsNaN(record.ContractMultiplier));
-            Assert.AreEqual(1308622850u, record.UnderlyingId);
+            Assert.AreEqual(1308600002u, record.UnderlyingId);
             Assert.IsTrue(double.IsNaN(record.TradingReferencePrice));
             Assert.AreEqual((ushort)65535, record.TradingReferenceDate);
             Assert.AreEqual((ushort)76, record.ChannelId);
@@ -522,10 +522,10 @@ namespace Databento.CSharpApiClient.UnitTests
         [TestMethod]
         public async Task GetImbalanceAsync_AuctionTime_ReadsTheScheduledTimeOrNull()
         {
-            // the auction_time values ARCX.PILLAR (closing auction) and XNAS.ITCH send live
+            // the two auction_time forms ARCX.PILLAR (closing auction) and XNAS.ITCH send: a time, or null
             string json = "{\"ts_recv\":\"2024-05-01T19:55:00.000000000Z\",\"hd\":{\"ts_event\":\"2024-05-01T19:55:00.000000000Z\",\"rtype\":20,"
                 + "\"publisher_id\":12,\"instrument_id\":1},\"auction_time\":\"2024-05-01T16:00:00.000000000Z\"}\n"
-                + "{\"ts_recv\":\"2024-05-01T19:50:00.039320280Z\",\"hd\":{\"ts_event\":\"2024-05-01T19:50:00.039148508Z\",\"rtype\":20,"
+                + "{\"ts_recv\":\"2024-05-01T19:50:00.000000700Z\",\"hd\":{\"ts_event\":\"2024-05-01T19:50:00.000000500Z\",\"rtype\":20,"
                 + "\"publisher_id\":2,\"instrument_id\":15144},\"auction_time\":null}";
 
             using DatabentoJsonClient client = BuildClient(json);

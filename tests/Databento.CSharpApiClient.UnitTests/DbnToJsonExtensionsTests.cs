@@ -388,23 +388,23 @@ namespace Databento.CSharpApiClient.UnitTests
                 RecordType = RType.Statistics,
                 PublisherId = 1,
                 InstrumentId = 17077,
-                TsEventUtc = Utc(2024, 3, 15, 0, 22, 48).AddTicks(566378),
-                TsReceivedUtc = Utc(2024, 3, 15, 0, 22, 48).AddTicks(570507),
+                TsEventUtc = Utc(2024, 3, 15, 0, 22, 48).AddTicks(123400),
+                TsReceivedUtc = Utc(2024, 3, 15, 0, 22, 48).AddTicks(125600),
                 TsRefUtc = Utc(2024, 3, 14, 0, 0, 0),
-                Price = 5155.25,
+                Price = 4321.75,
                 Quantity = 2048000,
-                Sequence = 58896890,
-                TsInDelta = 15240,
+                Sequence = 12345678,
+                TsInDelta = 9000,
                 StatType = 3,
                 ChannelId = 2,
                 UpdateAction = 1,
                 StatFlags = MessageInfoBits.PublisherSpecific,
                 Symbol = symbol,
             };
-            string apiLine = "{\"ts_recv\":\"2024-03-15T00:22:48.057050700Z\","
-                + "\"hd\":{\"ts_event\":\"2024-03-15T00:22:48.056637800Z\",\"rtype\":24,\"publisher_id\":1,\"instrument_id\":17077},"
-                + "\"ts_ref\":\"2024-03-14T00:00:00.000000000Z\",\"price\":\"5155.250000000\",\"quantity\":\"2048000\","
-                + "\"sequence\":58896890,\"ts_in_delta\":15240,\"stat_type\":3,\"channel_id\":2,\"update_action\":1,\"stat_flags\":2}";
+            string apiLine = "{\"ts_recv\":\"2024-03-15T00:22:48.012560000Z\","
+                + "\"hd\":{\"ts_event\":\"2024-03-15T00:22:48.012340000Z\",\"rtype\":24,\"publisher_id\":1,\"instrument_id\":17077},"
+                + "\"ts_ref\":\"2024-03-14T00:00:00.000000000Z\",\"price\":\"4321.750000000\",\"quantity\":\"2048000\","
+                + "\"sequence\":12345678,\"ts_in_delta\":9000,\"stat_type\":3,\"channel_id\":2,\"update_action\":1,\"stat_flags\":2}";
 
             StatisticsRecordJson json = dbn.ToJsonRecord();
 
@@ -427,7 +427,7 @@ namespace Databento.CSharpApiClient.UnitTests
                 TsRefUtc = null,
                 Price = double.NaN,
                 Quantity = long.MaxValue,
-                Sequence = 58896891,
+                Sequence = 12345679,
                 TsInDelta = 0,
                 StatType = 5,
                 ChannelId = 0,
@@ -438,7 +438,7 @@ namespace Databento.CSharpApiClient.UnitTests
             string apiLine = "{\"ts_recv\":\"2024-03-15T00:22:49.000000000Z\","
                 + "\"hd\":{\"ts_event\":\"2024-03-15T00:22:48.000000000Z\",\"rtype\":24,\"publisher_id\":1,\"instrument_id\":17077},"
                 + "\"ts_ref\":null,\"price\":null,\"quantity\":\"9223372036854775807\","
-                + "\"sequence\":58896891,\"ts_in_delta\":0,\"stat_type\":5,\"channel_id\":0,\"update_action\":2,\"stat_flags\":0}";
+                + "\"sequence\":12345679,\"ts_in_delta\":0,\"stat_type\":5,\"channel_id\":0,\"update_action\":2,\"stat_flags\":0}";
 
             StatisticsRecordJson json = dbn.ToJsonRecord();
 

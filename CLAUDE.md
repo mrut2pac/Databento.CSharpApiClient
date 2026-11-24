@@ -83,6 +83,12 @@ Integration tests use `[SkippableFact]` from `Xunit.SkippableFact`. Without the 
 
 ## Releasing to NuGet.org
 
+**Code changes and version bumps are separate PRs.** This is a public repo, so its history should show each release as its own step.
+
+- **Feature or fix PRs** change code and tests, and add their entry under CHANGELOG `[Unreleased]`. They never touch `<Version>` or `<PackageReleaseNotes>`.
+- **The version bump is a separate `chore:` PR**, opened once every feature PR of the release is merged. It holds only the version, the release notes and the CHANGELOG cut (step 2 below), plus the live-run record (step 1).
+- When it isn't clear which kind of PR a change belongs in, ask the maintainer before opening it.
+
 1. Decide whether the live integration suite must run before this release. Diff from the last `v*` tag to the tip of the preparation branch, which is the commit that will be tagged. A run is needed when anything touches the wire: request building, response parsing or decoding, models, retries or transport. A run is also needed when the last full live run predates such a change. Unit tests alone are not enough for such changes, because the fixtures share the decoder's assumptions about the format. When a run is needed:
    - Price it with `metadata.get_cost`, which is free; a full run cost about $1 as of 2.4.0.
    - Run the suite on the preparation branch's tip, and don't tag until it is green.

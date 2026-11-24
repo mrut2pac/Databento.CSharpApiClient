@@ -1,9 +1,11 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Databento.CSharpApiClient/Databento.CSharpApiClient.csproj" />
+    <Project Path="src/Databento.CSharpApiClient.Caching/Databento.CSharpApiClient.Caching.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Databento.CSharpApiClient.UnitTests/Databento.CSharpApiClient.UnitTests.csproj" />
+    <Project Path="tests/Databento.CSharpApiClient.Caching.UnitTests/Databento.CSharpApiClient.Caching.UnitTests.csproj" />
     <Project Path="tests/Databento.CSharpApiClient.IntegrationTests/Databento.CSharpApiClient.IntegrationTests.csproj" />
   </Folder>
 </Solution>

@@ -33,6 +33,12 @@ jobs:
             -c Debug --no-build --no-restore --nologo \
             --logger "console;verbosity=normal"
 
+      - name: Caching unit tests
+        run: |
+          dotnet test tests/Databento.CSharpApiClient.Caching.UnitTests/Databento.CSharpApiClient.Caching.UnitTests.csproj \
+            -c Debug --no-build --no-restore --nologo \
+            --logger "console;verbosity=normal"
+
       - name: Verify pack
         run: |
           dotnet pack src/Databento.CSharpApiClient/Databento.CSharpApiClient.csproj \

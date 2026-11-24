@@ -12,11 +12,15 @@ No external runtime dependencies — only `System.Text.Json` (inbox on .NET 8+).
 ```
 src/
   Databento.CSharpApiClient/        ← the library (packaged to NuGet)
+  Databento.CSharpApiClient.Caching/  ← the cache and Parquet archive on top of it (not packaged yet)
 tests/
   Databento.CSharpApiClient.UnitTests/          ← deterministic, no network
+  Databento.CSharpApiClient.Caching.UnitTests/  ← the Caching package's, deterministic, no network
   Databento.CSharpApiClient.IntegrationTests/   ← live API, skipped without DATABENTO_API_KEY
 .github/workflows/ci.yml            ← CI: build + unit tests on every push/PR; publish on v* tag
 ```
+
+`Databento.CSharpApiClient.Caching` is a separate package so the client keeps no dependencies: it references the client and Parquet.Net, nothing else. It is not packed (`IsPackable` false) and `publish.yml` packs only the client, so a `v*` tag never ships it.
 
 ---
 

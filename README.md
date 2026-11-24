@@ -155,6 +155,16 @@ var options = new DatabentoOptions
 | `DatabentoClient` | DBN binary | Highest fidelity — nanosecond timestamps, nano-price integers, exact byte layout |
 | `DatabentoJsonClient` | JSON | Simpler integration, all metadata + batch endpoints |
 
+Both implement `IDatabentoTimeseriesClient`: the CBBO, BBO, TCBBO, trades, OHLCV and statistics calls, returning the record interfaces. Code written against it takes either client, or another implementation such as a cache, and tests can hand it a fake. The interface holds the async calls for several symbols; extension methods add the one-symbol and synchronous forms, so an implementation writes only 11 methods.
+
+```csharp
+using IDatabentoTimeseriesClient client = useDbn
+    ? new DatabentoClient(options)
+    : new DatabentoJsonClient(options);
+
+ICbboRecord[] quotes = await client.GetCbbo1mAsync(Datasets.OpraPillar, symbols, startUtc, endUtc);
+```
+
 ## Supported datasets
 
 | Constant | Description |

@@ -9,6 +9,18 @@ namespace Databento.CSharpApiClient
         // no timestamp
         private const ulong UndefinedTimestamp = 0xFFFF_FFFF_FFFF_FFFFUL;
 
+        /// <summary>
+        /// Copies records into a new array of an interface they implement: casting the array instead would leave an array that throws
+        /// <see cref="ArrayTypeMismatchException"/> when another implementation is stored in it
+        /// </summary>
+        public static TInterface[] AsInterfaces<TRecord, TInterface>(TRecord[] records)
+            where TRecord : class, TInterface
+        {
+            TInterface[] copy = new TInterface[records.Length];
+            Array.Copy(records, copy, records.Length);
+            return copy;
+        }
+
         public static DateTime ParseUnixNs(string nsRaw)
         {
             if(string.IsNullOrWhiteSpace(nsRaw))

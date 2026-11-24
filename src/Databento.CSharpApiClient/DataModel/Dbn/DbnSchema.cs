@@ -2,7 +2,7 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
 {
     /// <summary>
     /// Schema identifier stored in <see cref="DbnMetadata"/>.
-    /// Mirrors the <c>schema</c> query parameter accepted by <c>timeseries.get_range</c>.
+    /// Mirrors the <c>schema</c> parameter accepted by <c>timeseries.get_range</c>.
     /// </summary>
     public enum DbnSchema : ushort
     {

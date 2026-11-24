@@ -111,8 +111,8 @@ namespace Databento.CSharpApiClient
             DbnRecordLayout<TRecord> layout,
             [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            string path = BuildTimeseriesQuery(dataset, schema, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
-            using(Stream stream = await this.OpenGetAsync(path, cancellationToken).ConfigureAwait(false))
+            List<KeyValuePair<string, string>> form = BuildTimeseriesForm(dataset, schema, symbols, startUtc, endUtc, SymbolTypes.RawSymbol);
+            using(Stream stream = await this.OpenPostAsync("timeseries.get_range", form, cancellationToken).ConfigureAwait(false))
             {
                 await foreach(TRecord record in DbnDecoder.DecodeAsync(stream, layout, cancellationToken).ConfigureAwait(false))
                 {
@@ -132,12 +132,16 @@ namespace Databento.CSharpApiClient
         // HTTP transport with retry
         // =====================================================================================
 
-        private async Task<Stream> OpenGetAsync(string path, CancellationToken cancellationToken)
+        private async Task<Stream> OpenPostAsync(string path, IReadOnlyList<KeyValuePair<string, string>> form, CancellationToken cancellationToken)
         {
+            // the parameters go in a form body, since a query string holds only fewer than 300 OPRA symbols of the 2,000 the API takes;
             // only the status is retried, before any of the body is read: once records have been handed out, a retry would repeat them
             HttpResponseMessage response = await HttpRetryExecutor.SendWithRetryAsync(
                 this.transport,
-                () => new HttpRequestMessage(HttpMethod.Get, path),
+                () => new HttpRequestMessage(HttpMethod.Post, path)
+                {
+                    Content = new FormUrlEncodedContent(form),
+                },
                 this.options,
                 retryEnabled: true,
                 cancellationToken).ConfigureAwait(false);
@@ -175,10 +179,10 @@ namespace Databento.CSharpApiClient
         }
 
         // =====================================================================================
-        // Query builder
+        // Form builder
         // =====================================================================================
 
-        private static string BuildTimeseriesQuery(
+        private static List<KeyValuePair<string, string>> BuildTimeseriesForm(
             string dataset,
             string schema,
             IReadOnlyList<string> symbols,
@@ -186,30 +190,17 @@ namespace Databento.CSharpApiClient
             DateTimeOffset endUtc,
             string stypeIn)
         {
-            string start = startUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
-            string end = endUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
-
-            StringBuilder symbolList = new StringBuilder();
-            for(int i = 0; i < symbols.Count; i++)
+            return new List<KeyValuePair<string, string>>
             {
-                if(i > 0)
-                {
-                    symbolList.Append(',');
-                }
-
-                symbolList.Append(Uri.EscapeDataString(symbols[i]));
-            }
-
-            StringBuilder sb = new StringBuilder();
-            sb.Append("timeseries.get_range");
-            sb.Append("?dataset=").Append(Uri.EscapeDataString(dataset));
-            sb.Append("&schema=").Append(Uri.EscapeDataString(schema));
-            sb.Append("&symbols=").Append(symbolList);
-            sb.Append("&start=").Append(Uri.EscapeDataString(start));
-            sb.Append("&end=").Append(Uri.EscapeDataString(end));
-            sb.Append("&stype_in=").Append(Uri.EscapeDataString(stypeIn ?? "raw_symbol"));
-            sb.Append("&encoding=dbn&compression=none");
-            return sb.ToString();
+                new KeyValuePair<string, string>("dataset", dataset),
+                new KeyValuePair<string, string>("schema", schema),
+                new KeyValuePair<string, string>("symbols", string.Join(",", symbols)),
+                new KeyValuePair<string, string>("start", startUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture)),
+                new KeyValuePair<string, string>("end", endUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture)),
+                new KeyValuePair<string, string>("stype_in", stypeIn ?? SymbolTypes.RawSymbol),
+                new KeyValuePair<string, string>("encoding", "dbn"),
+                new KeyValuePair<string, string>("compression", "none"),
+            };
         }
     }
 }

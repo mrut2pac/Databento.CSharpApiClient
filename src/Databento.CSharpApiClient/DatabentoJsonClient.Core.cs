@@ -35,6 +35,36 @@ namespace Databento.CSharpApiClient
                 ct);
         }
 
+        // Serves the requests that carry a symbol list: their parameters go in a form body, since a query string holds fewer than 300
+        // OPRA symbols of the 2,000 the API takes. They are reads, so they are retried like a GET; every attempt sends a new copy of
+        // the form, as a request's content is read when it is sent.
+        private Task<HttpResponseMessage> PostWithRetryAsync(string path, IReadOnlyList<KeyValuePair<string, string>> form, CancellationToken ct)
+        {
+            return HttpRetryExecutor.SendWithRetryAsync(
+                this.transport,
+                () => new HttpRequestMessage(HttpMethod.Post, path)
+                {
+                    Content = new FormUrlEncodedContent(form),
+                },
+                this.options,
+                retryEnabled: true,
+                ct);
+        }
+
+        private async Task<string> PostRawJsonAsync(string path, IReadOnlyList<KeyValuePair<string, string>> form, CancellationToken ct)
+        {
+            using(HttpResponseMessage response = await this.PostWithRetryAsync(path, form, ct).ConfigureAwait(false))
+            {
+                string body = await ReadBodyAsync(response, ct).ConfigureAwait(false);
+                if(!response.IsSuccessStatusCode)
+                {
+                    throw BuildHttpException((int)response.StatusCode, body);
+                }
+
+                return body;
+            }
+        }
+
         private async Task<string> GetRawJsonAsync(string path, CancellationToken ct)
         {
             using(HttpResponseMessage response = await this.GetWithRetryAsync(path, ct).ConfigureAwait(false))
@@ -80,7 +110,8 @@ namespace Databento.CSharpApiClient
 
         // Serves batch.submit_job and symbology.resolve, and retries neither: batch.submit_job is NOT idempotent, and
         // retrying it could create duplicate jobs, so retries are disabled here on purpose. symbology.resolve could be
-        // retried safely, but goes through here too. Do not route batch.submit_job through the retrying GET helpers.
+        // retried safely, but goes through here too. Do not route batch.submit_job through the retrying helpers
+        // (GetWithRetryAsync, PostWithRetryAsync, PostRawJsonAsync).
         private async Task<string> PostFormAsync(string path, IEnumerable<KeyValuePair<string, string>> form, CancellationToken ct)
         {
             using(HttpResponseMessage response = await HttpRetryExecutor.SendWithRetryAsync(
@@ -157,19 +188,19 @@ namespace Databento.CSharpApiClient
             CancellationToken ct)
         {
             // built here, when the method is called, so bad arguments are refused then rather than on the first MoveNextAsync
-            string path = BuildTimeseriesQuery(dataset, schema, symbols, startUtc, endUtc);
+            List<KeyValuePair<string, string>> form = BuildTimeseriesForm(dataset, schema, symbols, startUtc, endUtc);
             string requestedSymbol = CoversMoreThanOneSymbol(symbols) ? null : symbols[0];
-            return this.StreamGenericRecordsCoreAsync(path, requestedSymbol, deserialize, ct);
+            return this.StreamGenericRecordsCoreAsync(form, requestedSymbol, deserialize, ct);
         }
 
         private async IAsyncEnumerable<T> StreamGenericRecordsCoreAsync<T>(
-            string path,
+            IReadOnlyList<KeyValuePair<string, string>> form,
             string requestedSymbol,
             Func<Stream, CancellationToken, IAsyncEnumerable<T>> deserialize,
             [EnumeratorCancellation] CancellationToken ct)
         {
             // only the status is retried, before any of the body is read: once records have been handed out, a retry would repeat them
-            using(HttpResponseMessage response = await this.GetWithRetryAsync(path, ct).ConfigureAwait(false))
+            using(HttpResponseMessage response = await this.PostWithRetryAsync(TimeseriesGetRange, form, ct).ConfigureAwait(false))
             {
                 if(!response.IsSuccessStatusCode)
                 {
@@ -206,10 +237,12 @@ namespace Databento.CSharpApiClient
         }
 
         // ================================================================
-        // Query builder
+        // Form builders
         // ================================================================
 
-        private static string BuildTimeseriesQuery(
+        private const string TimeseriesGetRange = "timeseries.get_range";
+
+        private static List<KeyValuePair<string, string>> BuildTimeseriesForm(
             string dataset,
             string schema,
             IReadOnlyList<string> symbols,
@@ -225,29 +258,34 @@ namespace Databento.CSharpApiClient
                 throw new ArgumentException("At least one symbol is required. Pass \"ALL_SYMBOLS\" explicitly to request the whole dataset.", nameof(symbols));
             }
 
-            string start = startUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
-            string end = endUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
-            string symbolParam = string.Join(",", symbols);
-
-            StringBuilder sb = new StringBuilder();
-            sb.Append("timeseries.get_range");
-            sb.Append("?dataset=").Append(Uri.EscapeDataString(dataset));
-            sb.Append("&schema=").Append(Uri.EscapeDataString(schema));
-            sb.Append("&symbols=").Append(Uri.EscapeDataString(symbolParam));
-            sb.Append("&start=").Append(Uri.EscapeDataString(start));
-            sb.Append("&end=").Append(Uri.EscapeDataString(end));
-            sb.Append("&stype_in=").Append(Uri.EscapeDataString(stypeIn ?? SymbolTypes.RawSymbol));
-            sb.Append("&pretty_px=true&pretty_ts=true&encoding=json&compression=none");
+            List<KeyValuePair<string, string>> form = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("dataset", dataset),
+                new KeyValuePair<string, string>("schema", schema),
+                new KeyValuePair<string, string>("symbols", string.Join(",", symbols)),
+                new KeyValuePair<string, string>("start", FormatTimestamp(startUtc)),
+                new KeyValuePair<string, string>("end", FormatTimestamp(endUtc)),
+                new KeyValuePair<string, string>("stype_in", stypeIn ?? SymbolTypes.RawSymbol),
+                new KeyValuePair<string, string>("pretty_px", "true"),
+                new KeyValuePair<string, string>("pretty_ts", "true"),
+                new KeyValuePair<string, string>("encoding", "json"),
+                new KeyValuePair<string, string>("compression", "none"),
+            };
 
             if(CoversMoreThanOneSymbol(symbols))
             {
                 // The response interleaves the requested symbols, so each record has to name its own.
                 // It is deliberately not requested for a single symbol: the caller already knows the
                 // answer, and the field is repeated on every record rather than sent once per response.
-                sb.Append("&map_symbols=true");
+                form.Add(new KeyValuePair<string, string>("map_symbols", "true"));
             }
 
-            return sb.ToString();
+            return form;
+        }
+
+        private static string FormatTimestamp(DateTimeOffset timestamp)
+        {
+            return timestamp.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -260,8 +298,7 @@ namespace Databento.CSharpApiClient
                 || string.Equals(symbols[0], AllSymbols, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string BuildMetadataCountQuery(
-            string endpoint,
+        private static List<KeyValuePair<string, string>> BuildMetadataCountForm(
             string dataset,
             IReadOnlyList<string> symbols,
             string schema,
@@ -269,24 +306,21 @@ namespace Databento.CSharpApiClient
             DateTimeOffset endUtc)
         {
             if(string.IsNullOrWhiteSpace(dataset)) { throw new ArgumentException("dataset required", nameof(dataset)); }
+            if(string.IsNullOrWhiteSpace(schema)) { throw new ArgumentException("schema required", nameof(schema)); }
             if(symbols == null || symbols.Count == 0)
             {
                 throw new ArgumentException("At least one symbol is required. Pass \"ALL_SYMBOLS\" explicitly to request the whole dataset.", nameof(symbols));
             }
 
-            string start = startUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
-            string end = endUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
-            string symbolParam = string.Join(",", symbols);
-
-            StringBuilder sb = new StringBuilder();
-            sb.Append(endpoint);
-            sb.Append("?dataset=").Append(Uri.EscapeDataString(dataset));
-            sb.Append("&schema=").Append(Uri.EscapeDataString(schema));
-            sb.Append("&symbols=").Append(Uri.EscapeDataString(symbolParam));
-            sb.Append("&start=").Append(Uri.EscapeDataString(start));
-            sb.Append("&end=").Append(Uri.EscapeDataString(end));
-            sb.Append("&stype_in=").Append(Uri.EscapeDataString(SymbolTypes.RawSymbol));
-            return sb.ToString();
+            return new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("dataset", dataset),
+                new KeyValuePair<string, string>("schema", schema),
+                new KeyValuePair<string, string>("symbols", string.Join(",", symbols)),
+                new KeyValuePair<string, string>("start", FormatTimestamp(startUtc)),
+                new KeyValuePair<string, string>("end", FormatTimestamp(endUtc)),
+                new KeyValuePair<string, string>("stype_in", SymbolTypes.RawSymbol),
+            };
         }
 
         // ================================================================

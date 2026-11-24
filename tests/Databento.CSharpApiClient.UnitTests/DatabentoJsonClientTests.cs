@@ -903,12 +903,12 @@ namespace Databento.CSharpApiClient.UnitTests
         {
             // The caller already knows the symbol, and map_symbols repeats it on every record rather
             // than sending it once - so asking for it here is pure payload for no information.
-            using DatabentoJsonClient client = BuildClientCapturingRequest(out List<HttpRequestMessage> captured);
+            using DatabentoJsonClient client = BuildClientCapturingForms(string.Empty, out List<Dictionary<string, string>> forms);
             await client.GetCbbo1mAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
 
-            Assert.AreEqual(1, captured.Count);
-            StringAssert.Contains(captured[0].RequestUri.ToString(), "symbols=SPY");
-            Assert.IsFalse(captured[0].RequestUri.ToString().Contains("map_symbols"));
+            Assert.AreEqual(1, forms.Count);
+            Assert.AreEqual("SPY", forms[0]["symbols"]);
+            Assert.IsFalse(forms[0].ContainsKey("map_symbols"));
         }
 
         [TestMethod]
@@ -916,22 +916,22 @@ namespace Databento.CSharpApiClient.UnitTests
         {
             // The response interleaves the symbols, so without this each record could only be attributed
             // by resolving instrument ids through a second symbology call.
-            using DatabentoJsonClient client = BuildClientCapturingRequest(out List<HttpRequestMessage> captured);
+            using DatabentoJsonClient client = BuildClientCapturingForms(string.Empty, out List<Dictionary<string, string>> forms);
             await client.GetCbbo1mAsync(AnyDataset, new[] { "SPY", "QQQ" }, AnyStart, AnyEnd);
 
-            Assert.AreEqual(1, captured.Count);
-            StringAssert.Contains(captured[0].RequestUri.ToString(), "map_symbols=true");
+            Assert.AreEqual(1, forms.Count);
+            Assert.AreEqual("true", forms[0]["map_symbols"]);
         }
 
         [TestMethod]
         public async Task GetCbbo1mAsync_AllSymbols_RequestsMapSymbols()
         {
             // One entry, but it stands for the whole dataset - so the response is multi-symbol.
-            using DatabentoJsonClient client = BuildClientCapturingRequest(out List<HttpRequestMessage> captured);
+            using DatabentoJsonClient client = BuildClientCapturingForms(string.Empty, out List<Dictionary<string, string>> forms);
             await client.GetCbbo1mAsync(AnyDataset, new[] { "ALL_SYMBOLS" }, AnyStart, AnyEnd);
 
-            Assert.AreEqual(1, captured.Count);
-            StringAssert.Contains(captured[0].RequestUri.ToString(), "map_symbols=true");
+            Assert.AreEqual(1, forms.Count);
+            Assert.AreEqual("true", forms[0]["map_symbols"]);
         }
 
         [TestMethod]
@@ -939,11 +939,11 @@ namespace Databento.CSharpApiClient.UnitTests
         {
             // The single-symbol overload wraps its argument into a one-element list, so ALL_SYMBOLS has to
             // be recognised there too - it is one entry that stands for the whole dataset.
-            using DatabentoJsonClient client = BuildClientCapturingRequest(out List<HttpRequestMessage> captured);
+            using DatabentoJsonClient client = BuildClientCapturingForms(string.Empty, out List<Dictionary<string, string>> forms);
             await client.GetCbbo1mAsync(AnyDataset, "ALL_SYMBOLS", AnyStart, AnyEnd);
 
-            Assert.AreEqual(1, captured.Count);
-            StringAssert.Contains(captured[0].RequestUri.ToString(), "map_symbols=true");
+            Assert.AreEqual(1, forms.Count);
+            Assert.AreEqual("true", forms[0]["map_symbols"]);
         }
 
         [TestMethod]
@@ -951,22 +951,22 @@ namespace Databento.CSharpApiClient.UnitTests
         {
             // ALL_SYMBOLS is documented as the sole entry, but a list carrying it alongside another symbol
             // is still multi-symbol, so the records must name themselves either way.
-            using DatabentoJsonClient client = BuildClientCapturingRequest(out List<HttpRequestMessage> captured);
+            using DatabentoJsonClient client = BuildClientCapturingForms(string.Empty, out List<Dictionary<string, string>> forms);
             await client.GetCbbo1mAsync(AnyDataset, new[] { "SPY", "ALL_SYMBOLS" }, AnyStart, AnyEnd);
 
-            Assert.AreEqual(1, captured.Count);
-            StringAssert.Contains(captured[0].RequestUri.ToString(), "map_symbols=true");
+            Assert.AreEqual(1, forms.Count);
+            Assert.AreEqual("true", forms[0]["map_symbols"]);
         }
 
         [TestMethod]
         public async Task GetOhlcv1mAsync_SeveralSymbols_RequestsMapSymbols()
         {
-            // The rule lives in the shared query builder, so it holds for every timeseries schema.
-            using DatabentoJsonClient client = BuildClientCapturingRequest(out List<HttpRequestMessage> captured);
+            // The rule lives in the shared form builder, so it holds for every timeseries schema.
+            using DatabentoJsonClient client = BuildClientCapturingForms(string.Empty, out List<Dictionary<string, string>> forms);
             await client.GetOhlcv1mAsync(AnyDataset, new[] { "SPY", "QQQ" }, AnyStart, AnyEnd);
 
-            Assert.AreEqual(1, captured.Count);
-            StringAssert.Contains(captured[0].RequestUri.ToString(), "map_symbols=true");
+            Assert.AreEqual(1, forms.Count);
+            Assert.AreEqual("true", forms[0]["map_symbols"]);
         }
 
         [TestMethod]

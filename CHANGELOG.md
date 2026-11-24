@@ -6,6 +6,14 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+- `IDatabentoTimeseriesClient`: the time-series calls whose records have a record interface (CBBO, BBO, TCBBO, trades, OHLCV and statistics), returning the record interfaces (`ICbboRecord[]`, ...).
+  - Code written against it takes either client, or another implementation such as a cache, chosen by configuration or replaced by a fake in tests.
+  - It holds the 11 async calls for several symbols, so an implementation writes only those. `DatabentoTimeseriesClientExtensions` adds the one-symbol and synchronous forms of each; a one-symbol call sends what the clients' own one-symbol calls send.
+  - `DatabentoJsonClient` and `DatabentoClient` implement it explicitly, so their own methods still return their record classes and nothing changes for existing callers.
+  - Each call returns a new array the caller owns: the client's records copied into an array of the interface, which takes any implementation of it.
+  - A call added to it later comes with a default implementation that throws `NotSupportedException`, so outside implementations keep compiling.
+
 ## [2.6.0] - 2026-11-24
 
 ### Changed

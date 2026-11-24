@@ -21,7 +21,7 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>2.5.0</Version>
+    <Version>2.6.0</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
@@ -31,6 +31,18 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
+v2.6.0 — 2026-11-24
+
+Changed
+- The requests that carry a symbol list send their parameters as a POST form, as Databento's own client does: the
+  timeseries calls of DatabentoJsonClient and DatabentoClient, and GetCostAsync, GetRecordCountAsync and
+  GetBillableSizeAsync, with their sync forms. So one request can carry the 2,000 symbols the API takes; in a GET
+  query string fewer than 300 OPRA symbols already passed the 8 KB a server accepts. Parameters and answers are
+  the same, and a 429 or 5xx answer is retried as before.
+- Compatibility: the parameters are no longer in the URI. A custom IHttpTransport, mock or cache that tells these
+  requests apart by URI must read the form body; a GET-only retry policy or cache no longer acts on them; and a
+  BaseUri that redirects with 301/302 loses the form, as a redirected POST is resent as a GET.
+
 v2.5.0 — 2026-11-23
 
 Added

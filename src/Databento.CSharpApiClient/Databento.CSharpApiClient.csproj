@@ -21,7 +21,7 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>2.6.0</Version>
+    <Version>2.7.0</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
@@ -31,6 +31,16 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
+v2.7.0 - 2026-11-24
+
+Added
+- IDatabentoTimeseriesClient: the CBBO, BBO, TCBBO, trades, OHLCV and statistics calls, returning the record
+  interfaces, so code can take either client or another implementation, such as a cache, or a fake in tests.
+  It holds the 11 async calls for several symbols; DatabentoTimeseriesClientExtensions adds the one-symbol and
+  sync forms. Both clients implement it explicitly, so their own methods are unchanged. Each call returns a new
+  array the caller owns, and a call added later comes with a default implementation that throws
+  NotSupportedException.
+
 v2.6.0 — 2026-11-24
 
 Changed

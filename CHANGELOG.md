@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-11-24
+
 ### Added
 - `IDatabentoTimeseriesClient`: the time-series calls whose records have a record interface (CBBO, BBO, TCBBO, trades, OHLCV and statistics), returning the record interfaces (`ICbboRecord[]`, ...).
   - Code written against it takes either client, or another implementation such as a cache, chosen by configuration or replaced by a fake in tests.
@@ -266,7 +268,8 @@ Initial release.
 - HTTP retry with exponential back-off and jitter
 - Zero external dependencies — pure `System.Text.Json` on .NET 8+
 
-[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.6.0...HEAD
+[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.7.0...HEAD
+[2.7.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.3.0...v2.4.0

@@ -661,8 +661,8 @@ namespace Databento.CSharpApiClient.UnitTests
                     TsReceived = Start.AddSeconds(1).AddMicroseconds(100),
                     TsRef = Start,
                     TsRefUndefined = true,
-                    Price = 5155.25, Quantity = long.MaxValue,
-                    Sequence = 58896890, TsInDelta = 15240,
+                    Price = 4321.75, Quantity = long.MaxValue,
+                    Sequence = 12345678, TsInDelta = 9000,
                     StatType = 5, ChannelId = 3, UpdateAction = 1, StatFlags = 0x02,
                 },
                 new StatisticsSeed
@@ -671,8 +671,8 @@ namespace Databento.CSharpApiClient.UnitTests
                     TsEvent = Start.AddSeconds(2),
                     TsReceived = Start.AddSeconds(2).AddMicroseconds(80),
                     TsRef = Start,
-                    Price = 5160.00, Quantity = 4294967296L,
-                    Sequence = 58896891, TsInDelta = 15000,
+                    Price = 4322.50, Quantity = 4294967296L,
+                    Sequence = 12345679, TsInDelta = 8000,
                     StatType = 9, ChannelId = 3, UpdateAction = 2, StatFlags = 0x01,
                 },
             };

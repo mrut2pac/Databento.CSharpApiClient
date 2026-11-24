@@ -58,6 +58,13 @@ Integration tests use `[SkippableFact]` from `Xunit.SkippableFact`. Without the 
 
 ---
 
+## Market data
+
+- **Never commit or share real market data.** Databento's terms forbid redistributing the data it sells, and this repo is public. No record Databento (or any vendor) delivered goes into the repo, a PR, an issue or a test as it came: not DBN, JSON, CSV or Parquet files, and not responses pasted into tests. Integration tests read live data at run time and keep none of it.
+- **Fixtures are invented.** Write records by hand, or keep a real record's layout and replace every price, size, count, sequence, statistic and timestamp (`ts_event`, `ts_recv` and the rest) with invented values before it is committed; a fixture file gets a `README.md` beside it saying it only mimics the schema and is not exchange data. Symbols, instrument ids, record types and metadata are format, not data, and may stay.
+
+---
+
 ## Coding conventions
 
 - **No external runtime dependencies.** If you're tempted to add a NuGet package, think twice. The whole value proposition is zero deps on .NET 8+.

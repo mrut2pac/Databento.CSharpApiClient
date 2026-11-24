@@ -170,8 +170,7 @@ namespace Databento.CSharpApiClient
         /// <param name="ct">Cancellation token.</param>
         public async Task<long> GetRecordCountAsync(string dataset, IReadOnlyList<string> symbols, string schema, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
         {
-            string path = BuildMetadataCountQuery("metadata.get_record_count", dataset, symbols, schema, startUtc, endUtc);
-            string json = await this.GetRawJsonAsync(path, ct).ConfigureAwait(false);
+            string json = await this.PostRawJsonAsync("metadata.get_record_count", BuildMetadataCountForm(dataset, symbols, schema, startUtc, endUtc), ct).ConfigureAwait(false);
             return JsonSerializer.Deserialize<long>(json, RecordDeserializeOptions);
         }
 
@@ -197,8 +196,7 @@ namespace Databento.CSharpApiClient
         /// <param name="ct">Cancellation token.</param>
         public async Task<long> GetBillableSizeAsync(string dataset, IReadOnlyList<string> symbols, string schema, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
         {
-            string path = BuildMetadataCountQuery("metadata.get_billable_size", dataset, symbols, schema, startUtc, endUtc);
-            string json = await this.GetRawJsonAsync(path, ct).ConfigureAwait(false);
+            string json = await this.PostRawJsonAsync("metadata.get_billable_size", BuildMetadataCountForm(dataset, symbols, schema, startUtc, endUtc), ct).ConfigureAwait(false);
             return JsonSerializer.Deserialize<long>(json, RecordDeserializeOptions);
         }
 
@@ -224,8 +222,7 @@ namespace Databento.CSharpApiClient
         /// <param name="ct">Cancellation token.</param>
         public async Task<double> GetCostAsync(string dataset, IReadOnlyList<string> symbols, string schema, DateTimeOffset startUtc, DateTimeOffset endUtc, CancellationToken ct = default)
         {
-            string path = BuildMetadataCountQuery("metadata.get_cost", dataset, symbols, schema, startUtc, endUtc);
-            string json = await this.GetRawJsonAsync(path, ct).ConfigureAwait(false);
+            string json = await this.PostRawJsonAsync("metadata.get_cost", BuildMetadataCountForm(dataset, symbols, schema, startUtc, endUtc), ct).ConfigureAwait(false);
             return JsonSerializer.Deserialize<double>(json, RecordDeserializeOptions);
         }
 

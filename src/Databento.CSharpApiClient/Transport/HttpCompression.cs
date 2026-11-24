@@ -11,7 +11,7 @@ namespace Databento.CSharpApiClient.Transport
     /// <remarks>
     /// Compression here is transport-level and transparent: the runtime decodes the body before it reaches
     /// the caller, so a response stream reads exactly as it did before. It is deliberately not the API's own
-    /// <c>compression</c> query parameter, which frames the payload itself and would need a decoder this
+    /// <c>compression</c> request parameter, which frames the payload itself and would need a decoder this
     /// package does not carry.
     /// <para>
     /// Batch artifacts are downloaded through <see cref="CreatePlainHandler"/> instead. They are already

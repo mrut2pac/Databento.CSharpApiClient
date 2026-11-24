@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+- The requests that carry a symbol list now send their parameters as a POST form, as Databento's own client does. These are the timeseries calls of `DatabentoJsonClient` and `DatabentoClient` (`Get*Async`, `Stream*Async` and their sync forms) and `DatabentoJsonClient.GetCostAsync`, `GetRecordCountAsync`, `GetBillableSizeAsync` and their sync forms.
+  - So one request can carry the 2,000 symbols the API takes. In the query string of a GET, fewer than 300 OPRA symbols already passed the 8 KB a server accepts, and a longer list was refused before it reached Databento.
+  - The parameters and answers are the same, and a 429 or 5xx answer is retried as before.
+  - Compatibility: the parameters are no longer in the request's URI. A custom `IHttpTransport`, mock or cache that tells these requests apart by their URI must read the form body instead. A retry policy or cache that acts on GET only no longer acts on them, and a `BaseUri` that answers with a 301 or 302 redirect loses the form, since a redirected POST is sent again as a GET.
+
 ## [2.5.0] - 2026-11-23
 
 ### Added

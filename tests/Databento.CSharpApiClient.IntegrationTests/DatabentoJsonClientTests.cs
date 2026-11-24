@@ -1294,6 +1294,53 @@ namespace Databento.CSharpApiClient.IntegrationTests
             Assert.True(cost >= 0.0);
         }
 
+        [SkippableFact]
+        public async Task GetCost_TwoThousandListedOptions_IsAnswered()
+        {
+            // Both calls are free: symbology.resolve and metadata.get_cost are not billed. Databento takes 2,000 symbols a request,
+            // which fit a POST form; in a GET query string fewer than 300 OPRA symbols already passed what a server accepts.
+            this.SkipIfNoApiKey();
+            using DatabentoJsonClient client = this.CreateJsonClient();
+
+            double cost;
+            try
+            {
+                // OPRA resolves a parent to instrument ids only, and those to raw symbols
+                SymbologyResolution chain = await client.ResolveSymbolsAsync(new SymbologyRequest
+                {
+                    Dataset   = Datasets.OpraPillar,
+                    Symbols   = ["SPXW.OPT"],
+                    StypeIn   = SymbolTypes.Parent,
+                    StypeOut  = SymbolTypes.InstrumentId,
+                    StartDate = "2024-05-01",
+                    EndDate   = "2024-05-02",
+                });
+                string[] instrumentIds = chain.Result.Values.SelectMany(mapped => mapped).Select(mapped => mapped.Symbol).Distinct(StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).Take(2000).ToArray();
+                Assert.Equal(2000, instrumentIds.Length);
+
+                SymbologyResolution contracts = await client.ResolveSymbolsAsync(new SymbologyRequest
+                {
+                    Dataset   = Datasets.OpraPillar,
+                    Symbols   = instrumentIds,
+                    StypeIn   = SymbolTypes.InstrumentId,
+                    StypeOut  = SymbolTypes.RawSymbol,
+                    StartDate = "2024-05-01",
+                    EndDate   = "2024-05-02",
+                });
+                string[] symbols = contracts.Result.Values.SelectMany(mapped => mapped).Select(mapped => mapped.Symbol).Distinct(StringComparer.Ordinal).ToArray();
+                Assert.Equal(2000, symbols.Length);
+
+                cost = await client.GetCostAsync(Datasets.OpraPillar, symbols, Schema.ConsolidatedBBO1Min, new DateTimeOffset(2024, 5, 1, 14, 30, 0, TimeSpan.Zero), new DateTimeOffset(2024, 5, 1, 14, 31, 0, TimeSpan.Zero));
+            }
+            catch(DatabentoHttpException ex)
+            {
+                SkipIfNoLicense(ex);
+                throw;
+            }
+
+            Assert.True(cost > 0.0, "a minute of 2,000 listed contracts' quotes costs something");
+        }
+
         // =====================================================================
         // Metadata: ListConditions
         // =====================================================================

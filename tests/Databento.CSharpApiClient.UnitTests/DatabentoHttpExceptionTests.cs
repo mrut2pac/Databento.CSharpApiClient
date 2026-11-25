@@ -85,6 +85,7 @@ namespace Databento.CSharpApiClient.UnitTests
             Assert.AreEqual(DatabentoErrorCase.DataEndAfterAvailableEnd, DatabentoHttpException.MapErrorCase("data_end_after_available_end"));
             Assert.AreEqual(DatabentoErrorCase.DataSchemaNotFullyAvailable, DatabentoHttpException.MapErrorCase("data_schema_not_fully_available"));
             Assert.AreEqual(DatabentoErrorCase.LicenseNotFoundUnauthorized, DatabentoHttpException.MapErrorCase("license_not_found_unauthorized"));
+            Assert.AreEqual(DatabentoErrorCase.DatasetUnavailableRange, DatabentoHttpException.MapErrorCase("dataset_unavailable_range"));
             Assert.AreEqual(DatabentoErrorCase.Unknown, DatabentoHttpException.MapErrorCase(null));
         }
     }

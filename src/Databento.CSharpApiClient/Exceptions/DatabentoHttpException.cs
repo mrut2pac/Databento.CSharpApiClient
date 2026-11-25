@@ -122,6 +122,8 @@ namespace Databento.CSharpApiClient.Exceptions
                     return DatabentoErrorCase.DataSchemaNotFullyAvailable;
                 case "license_not_found_unauthorized":
                     return DatabentoErrorCase.LicenseNotFoundUnauthorized;
+                case "dataset_unavailable_range":
+                    return DatabentoErrorCase.DatasetUnavailableRange;
                 default:
                     return DatabentoErrorCase.Unknown;
             }

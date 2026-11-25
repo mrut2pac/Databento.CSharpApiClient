@@ -49,5 +49,11 @@ namespace Databento.CSharpApiClient.Exceptions
         /// dataset.
         /// </summary>
         LicenseNotFoundUnauthorized,
+
+        /// <summary>
+        /// <c>dataset_unavailable_range</c> — the requested range is outside what the dataset makes available to the API key, as for a
+        /// range past the cutoff of a license without live data.
+        /// </summary>
+        DatasetUnavailableRange,
     }
 }

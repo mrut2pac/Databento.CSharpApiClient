@@ -6,6 +6,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+- `StatTypes`: the `stat_type` values of the `statistics` schema (`OpenInterest`, `SettlementPrice`, ...), to compare `IStatisticsRecord.StatType` with instead of a bare number.
+- `Datasets`: the current datasets it lacked, among them `DbixCore` (`DBIX.CORE`), `EqusMini`, `XnasBasic`, `XnysPillar`, `IfusImpact` and `XeurEobi` (18 in all).
+- `DatabentoErrorCase.DatasetUnavailableRange`: the `dataset_unavailable_range` error case, which Databento answers for a range outside what the dataset makes available to the API key. It mapped to `Unknown` before.
+
 ## [2.7.0] - 2026-11-24
 
 ### Added

@@ -21,7 +21,7 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>2.7.0</Version>
+    <Version>2.7.1</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
@@ -31,6 +31,16 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
+v2.7.1 - 2026-11-25
+
+Added
+- StatTypes: the stat_type values of the statistics schema (OpenInterest, SettlementPrice, ...), to compare
+  IStatisticsRecord.StatType with instead of a bare number.
+- Datasets: the 18 current datasets it lacked, among them DbixCore (DBIX.CORE), EqusMini, XnasBasic, XnysPillar,
+  IfusImpact and XeurEobi.
+- DatabentoErrorCase.DatasetUnavailableRange: the dataset_unavailable_range error case, which Databento answers for
+  a range outside what the dataset makes available to the API key. It mapped to Unknown before.
+
 v2.7.0 - 2026-11-24
 
 Added

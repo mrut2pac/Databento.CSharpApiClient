@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [2.7.1] - 2026-11-25
+
 ### Added
 - `StatTypes`: the `stat_type` values of the `statistics` schema (`OpenInterest`, `SettlementPrice`, ...), to compare `IStatisticsRecord.StatType` with instead of a bare number.
 - `Datasets`: the current datasets it lacked, among them `DbixCore` (`DBIX.CORE`), `EqusMini`, `XnasBasic`, `XnysPillar`, `IfusImpact` and `XeurEobi` (18 in all).
@@ -273,7 +275,8 @@ Initial release.
 - HTTP retry with exponential back-off and jitter
 - Zero external dependencies — pure `System.Text.Json` on .NET 8+
 
-[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.7.0...HEAD
+[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.7.1...HEAD
+[2.7.1]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.7.0...v2.7.1
 [2.7.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.4.0...v2.5.0

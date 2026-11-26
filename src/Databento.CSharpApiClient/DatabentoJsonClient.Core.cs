@@ -205,11 +205,6 @@ namespace Databento.CSharpApiClient
                 if(!response.IsSuccessStatusCode)
                 {
                     string errBody = await ReadBodyAsync(response, ct).ConfigureAwait(false);
-                    if(IsNoDataResponse((int)response.StatusCode, errBody))
-                    {
-                        yield break;
-                    }
-
                     throw BuildHttpException((int)response.StatusCode, errBody);
                 }
 
@@ -388,12 +383,6 @@ namespace Databento.CSharpApiClient
         // ================================================================
         // Error helpers
         // ================================================================
-
-        private static bool IsNoDataResponse(int statusCode, string body)
-        {
-            return statusCode == 422
-                && DatabentoHttpException.MapErrorCase(DatabentoHttpException.ExtractErrorCase(body)) == DatabentoErrorCase.DataEndAfterAvailableEnd;
-        }
 
         private static DatabentoHttpException BuildHttpException(int statusCode, string body)
         {

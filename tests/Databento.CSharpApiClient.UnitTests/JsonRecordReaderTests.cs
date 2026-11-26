@@ -212,6 +212,83 @@ namespace Databento.CSharpApiClient.UnitTests
         }
 
         [TestMethod]
+        public async Task ReadTcbboAsync_JsonArray_YieldsRecordsBeforeTheWholeArrayIsRead()
+        {
+            // an array is read as it arrives, one record at a time, not whole: here the stream fails after its first 200 records
+            string head = "[" + string.Join(",", Enumerable.Repeat(PrettyTcbbo, 200)) + ",";
+            List<TcbboRecordJson> read = new List<TcbboRecordJson>();
+
+            await Assert.ThrowsExceptionAsync<IOException>(async () =>
+            {
+                await foreach(TcbboRecordJson record in JsonRecordReader.ReadTcbboAsync(new FakeFailingAfterStream(Encoding.UTF8.GetBytes(head))))
+                {
+                    read.Add(record);
+                }
+            });
+
+            Assert.IsTrue(read.Count > 0, "records came out before the stream failed");
+        }
+
+        [TestMethod]
+        public async Task ReadTcbboAsync_JsonArrayAfterAByteOrderMark_YieldsTheRecords()
+        {
+            byte[] bom = Encoding.UTF8.GetPreamble();
+            byte[] array = Encoding.UTF8.GetBytes("[" + PrettyTcbbo + "," + SecondPrettyTcbbo + "]");
+
+            TcbboRecordJson[] read = await ReadAllAsync(JsonRecordReader.ReadTcbboAsync(new MemoryStream(bom.Concat(array).ToArray())));
+
+            Assert.AreEqual(2, read.Length);
+            Assert.AreEqual(4.0, read[1].Price);
+        }
+
+        [TestMethod]
+        public async Task ReadTcbboAsync_JsonLinesAfterAByteOrderMark_YieldsTheRecords()
+        {
+            byte[] bom = Encoding.UTF8.GetPreamble();
+            byte[] lines = Encoding.UTF8.GetBytes(PrettyTcbbo + "\n" + SecondPrettyTcbbo + "\n");
+
+            TcbboRecordJson[] read = await ReadAllAsync(JsonRecordReader.ReadTcbboAsync(new FakeOneByteStream(bom.Concat(lines).ToArray())));
+
+            Assert.AreEqual(2, read.Length);
+            Assert.AreEqual(4.0, read[1].Price);
+        }
+
+        [TestMethod]
+        public async Task ReadTcbboAsync_StreamThatCannotBeRead_ThrowsArgumentException()
+        {
+            MemoryStream closed = ToStream(PrettyTcbbo);
+            closed.Dispose();
+
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() => ReadAllAsync(JsonRecordReader.ReadTcbboAsync(closed)));
+        }
+
+        [TestMethod]
+        public async Task ReadTcbboAsync_JsonArrayFollowedByText_ThrowsInvalidData()
+        {
+            InvalidDataException ex = await Assert.ThrowsExceptionAsync<InvalidDataException>(
+                () => ReadAllAsync(JsonRecordReader.ReadTcbboAsync(ToStream("[" + PrettyTcbbo + "] x"))));
+
+            Assert.IsInstanceOfType(ex.InnerException, typeof(JsonException));
+        }
+
+        [TestMethod]
+        public async Task ReadTcbboAsync_EmptyJsonArray_YieldsNothing()
+        {
+            Assert.AreEqual(0, (await ReadAllAsync(JsonRecordReader.ReadTcbboAsync(ToStream("[]")))).Length);
+        }
+
+        [TestMethod]
+        public async Task ReadTcbboAsync_JsonArrayOneByteAtATime_YieldsTheRecords()
+        {
+            byte[] array = Encoding.UTF8.GetBytes("[" + PrettyTcbbo + ",\n " + SecondPrettyTcbbo + "]\n");
+
+            TcbboRecordJson[] read = await ReadAllAsync(JsonRecordReader.ReadTcbboAsync(new FakeOneByteStream(array)));
+
+            Assert.AreEqual(2, read.Length);
+            Assert.AreEqual(4.0, read[1].Price);
+        }
+
+        [TestMethod]
         public async Task ReadCbboAsync_TradePriceThatIsNoPrice_ThrowsInvalidDataFromAJsonError()
         {
             string data = PrettyCbbo.Replace("\"price\":\"4.010000000\"", "\"price\":\"not_a_price\"", StringComparison.Ordinal);
@@ -393,6 +470,92 @@ namespace Databento.CSharpApiClient.UnitTests
         }
 
         private static MemoryStream ToStream(string data) => new MemoryStream(Encoding.UTF8.GetBytes(data));
+
+        /// <summary>
+        /// A stream that gives its bytes, at most <c>chunk</c> a read, then fails as a broken connection would or ends
+        /// </summary>
+        private class FakeChunkedStream : Stream
+        {
+            private readonly byte[] bytes;
+
+            private readonly int chunk;
+
+            private readonly bool failAtEnd;
+
+            private int position;
+
+            public FakeChunkedStream(byte[] bytes, int chunk, bool failAtEnd)
+            {
+                this.bytes = bytes;
+                this.chunk = chunk;
+                this.failAtEnd = failAtEnd;
+            }
+
+            public override bool CanRead => true;
+
+            public override bool CanSeek => false;
+
+            public override bool CanWrite => false;
+
+            public override long Length => throw new NotSupportedException();
+
+            public override long Position
+            {
+                get => throw new NotSupportedException();
+                set => throw new NotSupportedException();
+            }
+
+            public override int Read(Span<byte> buffer)
+            {
+                int count = Math.Min(Math.Min(this.chunk, buffer.Length), this.bytes.Length - this.position);
+                if(count == 0 && buffer.Length > 0 && this.failAtEnd)
+                {
+                    throw new IOException("The connection broke.");
+                }
+
+                this.bytes.AsSpan(this.position, count).CopyTo(buffer);
+                this.position += count;
+                return count;
+            }
+
+            public override int Read(byte[] buffer, int offset, int count) => this.Read(buffer.AsSpan(offset, count));
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => ValueTask.FromResult(this.Read(buffer.Span));
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => Task.FromResult(this.Read(buffer.AsSpan(offset, count)));
+
+            public override void Flush()
+            {
+            }
+
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+            public override void SetLength(long value) => throw new NotSupportedException();
+
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
+
+        /// <summary>
+        /// A stream that gives its bytes, then fails as a broken connection would
+        /// </summary>
+        private sealed class FakeFailingAfterStream : FakeChunkedStream
+        {
+            public FakeFailingAfterStream(byte[] bytes)
+                : base(bytes, int.MaxValue, failAtEnd: true)
+            {
+            }
+        }
+
+        /// <summary>
+        /// A stream that gives one byte a read, so every token is cut across reads
+        /// </summary>
+        private sealed class FakeOneByteStream : FakeChunkedStream
+        {
+            public FakeOneByteStream(byte[] bytes)
+                : base(bytes, 1, failAtEnd: false)
+            {
+            }
+        }
 
         private static string Serialize<T>(T[] records) => string.Join("\n", records.Select(record => JsonSerializer.Serialize(record)));
 

@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
+using System.Threading.Tasks;
 
 using Databento.CSharpApiClient.DataModel.Json;
 
@@ -36,7 +37,7 @@ namespace Databento.CSharpApiClient.JsonSupport
 
         /// <summary>
         /// Reads the records of <paramref name="stream"/> one at a time and leaves it open. Newline-delimited JSON, the timeseries and
-        /// batch encoding, is read one line at a time; a JSON array document is read whole, as line 1. Blank lines are skipped, and so
+        /// batch encoding, is read one line at a time; a JSON array document (in UTF-8) one element at a time, as line 1. Blank lines are skipped, and so
         /// are records without a header unless <paramref name="requireHeader"/>. A line that doesn't parse, or a headerless record
         /// when one is required, is thrown as the exception <paramref name="malformedLine"/> makes of the record's type name, the line
         /// number and the failure.
@@ -49,28 +50,47 @@ namespace Databento.CSharpApiClient.JsonSupport
             [EnumeratorCancellation] CancellationToken ct)
             where T : class
         {
-            using(StreamReader sr = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 64 * 1024, leaveOpen: true))
+            if(!stream.CanRead)
             {
-                string line = await sr.ReadLineAsync(ct).ConfigureAwait(false);
+                // as the StreamReader that read every stream before refused it
+                throw new ArgumentException("Stream was not readable.", nameof(stream));
+            }
 
-                // A JSON array document starts with '['; it is read whole, so it does not stream. Anything else is
-                // newline-delimited JSON (the timeseries encoding), read one line, and so one record, at a time.
-                if(line != null && line.StartsWith('['))
+            // A JSON array document starts with '[', after a UTF-8 byte order mark if any; anything else is newline-delimited JSON
+            // (the timeseries encoding). The first bytes are read to tell them apart, then read again with the rest.
+            byte[] head = new byte[4];
+            int headLength = 0;
+            while(headLength < head.Length)
+            {
+                int read = await stream.ReadAsync(head.AsMemory(headLength), ct).ConfigureAwait(false);
+                if(read == 0)
                 {
-                    string json = line + "\n" + await sr.ReadToEndAsync(ct).ConfigureAwait(false);
-                    List<T> arr = ReadLine<List<T>>(json, 1, typeof(T).Name, malformedLine);
-                    foreach(T item in arr ?? new List<T>())
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        if(IsRecord(item, header, requireHeader, 1, malformedLine))
-                        {
-                            yield return item;
-                        }
-                    }
-
-                    yield break;
+                    break;
                 }
 
+                headLength += read;
+            }
+
+            int first = headLength >= 3 && head[0] == 0xEF && head[1] == 0xBB && head[2] == 0xBF ? 3 : 0;
+            PrefixedStream data = new PrefixedStream(head, headLength, stream);
+            if(first < headLength && head[first] == '[')
+            {
+                // read one record at a time as the array arrives, never the whole document at once
+                await foreach(T item in ReadArrayAsync<T>(data, malformedLine, ct).ConfigureAwait(false))
+                {
+                    ct.ThrowIfCancellationRequested();
+                    if(IsRecord(item, header, requireHeader, 1, malformedLine))
+                    {
+                        yield return item;
+                    }
+                }
+
+                yield break;
+            }
+
+            using(StreamReader sr = new StreamReader(data, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 64 * 1024, leaveOpen: true))
+            {
+                string line = await sr.ReadLineAsync(ct).ConfigureAwait(false);
                 long lineNumber = 0;
                 for(; line != null; line = await sr.ReadLineAsync(ct).ConfigureAwait(false))
                 {
@@ -90,6 +110,38 @@ namespace Databento.CSharpApiClient.JsonSupport
                         yield return item;
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Reads a JSON array document's elements as they are read; a document that doesn't parse, or isn't one array, is thrown as
+        /// the exception <paramref name="malformedLine"/> makes of it, as line 1.
+        /// </summary>
+        private static async IAsyncEnumerable<T> ReadArrayAsync<T>(Stream stream, Func<string, long, Exception, Exception> malformedLine, [EnumeratorCancellation] CancellationToken ct)
+        {
+            IAsyncEnumerator<T> items = JsonSerializer.DeserializeAsyncEnumerable<T>(stream, Options, ct).GetAsyncEnumerator(ct);
+            try
+            {
+                while(true)
+                {
+                    try
+                    {
+                        if(!await items.MoveNextAsync().ConfigureAwait(false))
+                        {
+                            yield break;
+                        }
+                    }
+                    catch(Exception ex) when(ex is JsonException or FormatException or OverflowException or NotSupportedException)
+                    {
+                        throw malformedLine(typeof(T).Name, 1, ex);
+                    }
+
+                    yield return items.Current;
+                }
+            }
+            finally
+            {
+                await items.DisposeAsync().ConfigureAwait(false);
             }
         }
 

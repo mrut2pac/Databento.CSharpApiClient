@@ -6,6 +6,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+- The README's link to the CHANGELOG points at GitHub, so it works on the nuget.org package page, which cannot resolve a relative link.
+
 ## [2.7.2] - 2026-11-26
 
 ### Fixed

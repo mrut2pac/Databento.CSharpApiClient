@@ -11,7 +11,7 @@ Pure-managed C# HTTP client for the [Databento Historical API](https://databento
 - Batch jobs: submit, list, download files
 - Retry / backoff: exponential + equal jitter, honours `Retry-After`, configurable via `DatabentoOptions`
 
-See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+See [CHANGELOG.md](https://github.com/mrut2pac/Databento.CSharpApiClient/blob/main/CHANGELOG.md) for the full version history.
 
 ## Installation
 

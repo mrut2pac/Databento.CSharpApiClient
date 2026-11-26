@@ -6,6 +6,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+- `JsonRecordReader`, and the JSON client's responses, read a JSON array document one record at a time as it arrives, as they read JSON lines, instead of reading the whole document into strings first. Reading a large array, such as a day of 1-second CBBO records saved as one array, held the whole day several times over on the large object heap; on invented `cbbo-1s` days of 12,000 records it allocated a sixth as much and took no longer. An array is still recognized by a leading `[` (after a UTF-8 byte order mark), and text after it, or a record that does not parse, is still refused with `InvalidDataException`, possibly once records before it have been read, as with JSON lines. The one change in what is read: an array in UTF-16 or UTF-32, which Databento never sends, is no longer recognized as one.
+
 ## [2.7.1] - 2026-11-25
 
 ### Added

@@ -16,7 +16,7 @@ namespace Databento.CSharpApiClient.UnitTests
 {
     /// <summary>
     /// The JSON client's streaming methods yield records line by line as the response arrives, retry only before the body
-    /// is read, answer "no data" with an empty stream and dispose the response however the enumeration ends.
+    /// is read, throw an error answer as <see cref="DatabentoHttpException"/> and dispose the response however the enumeration ends.
     /// </summary>
     [TestClass]
     public class JsonStreamingTests
@@ -93,17 +93,32 @@ namespace Databento.CSharpApiClient.UnitTests
         }
 
         [TestMethod]
-        public async Task StreamTradesAsync_NoDataAnswer_YieldsNothing()
+        public async Task StreamTradesAsync_EmptyBody_YieldsNothing()
         {
-            string noData = "{\"detail\":{\"case\":\"data_end_after_available_end\",\"message\":\"end is after available range\"}}";
-            FakeTransport transport = new FakeTransport(_ => new HttpResponseMessage((HttpStatusCode)422)
-            {
-                Content = new StringContent(noData, Encoding.UTF8, "application/json"),
-            });
+            FakeTransport transport = new FakeTransport(_ => Ok(string.Empty));
 
             List<TradeRecordJson> records = await ToListAsync(BuildClient(transport).StreamTradesAsync(AnyDataset, AnySymbol, Start, End));
 
             Assert.AreEqual(0, records.Count);
+        }
+
+        [TestMethod]
+        public async Task StreamTradesAsync_DataEndAfterAvailableEnd_ThrowsWithTheStatusAndCase()
+        {
+            // a refusal, not an empty range: the DBN client throws the same exception for it
+            string refusal = "{\"detail\":{\"case\":\"data_end_after_available_end\",\"message\":\"end is after available range\"}}";
+            FakeTransport transport = new FakeTransport(_ => new HttpResponseMessage((HttpStatusCode)422)
+            {
+                Content = new StringContent(refusal, Encoding.UTF8, "application/json"),
+            });
+
+            DatabentoHttpException ex = await Assert.ThrowsExceptionAsync<DatabentoHttpException>(
+                () => ToListAsync(BuildClient(transport).StreamTradesAsync(AnyDataset, AnySymbol, Start, End)));
+
+            Assert.AreEqual(422, ex.StatusCode);
+            Assert.AreEqual("data_end_after_available_end", ex.ErrorCase);
+            Assert.AreEqual(DatabentoErrorCase.DataEndAfterAvailableEnd, ex.Code);
+            StringAssert.Contains(ex.Message, "end is after available range");
         }
 
         [TestMethod]
@@ -120,7 +135,7 @@ namespace Databento.CSharpApiClient.UnitTests
         }
 
         [TestMethod]
-        public async Task StreamTradesAsync_NoDataAnswer_DisposesTheResponse()
+        public async Task StreamTradesAsync_DataEndAfterAvailableEnd_DisposesTheResponse()
         {
             FakeContentStream body = new FakeContentStream(Encoding.UTF8.GetBytes(
                 "{\"detail\":{\"case\":\"data_end_after_available_end\",\"message\":\"end is after available range\"}}"));
@@ -129,7 +144,7 @@ namespace Databento.CSharpApiClient.UnitTests
                 Content = new StreamContent(body),
             });
 
-            await ToListAsync(BuildClient(transport).StreamTradesAsync(AnyDataset, AnySymbol, Start, End));
+            await Assert.ThrowsExceptionAsync<DatabentoHttpException>(() => ToListAsync(BuildClient(transport).StreamTradesAsync(AnyDataset, AnySymbol, Start, End)));
 
             Assert.IsTrue(body.IsDisposed);
         }

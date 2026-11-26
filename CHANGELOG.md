@@ -6,6 +6,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+- `DatabentoJsonClient`: a time-series request whose `end` is after the dataset's available end now throws `DatabentoHttpException` (`422`, `Code` `DataEndAfterAvailableEnd`), as `DatabentoClient` always has. It returned no records before, so a refused range could not be told from a range without records.
+  - This covers every time-series call, `Get*Async`, `Stream*Async` and their sync forms, of every schema.
+  - Compatibility: code that relied on an empty answer for such a range must catch the exception, or end the range at the dataset's available end (`GetDatasetRangeAsync`). A range that has no records still returns an empty array or stream.
+
 ### Fixed
 - The README's link to the CHANGELOG points at GitHub, so it works on the nuget.org package page, which cannot resolve a relative link.
 

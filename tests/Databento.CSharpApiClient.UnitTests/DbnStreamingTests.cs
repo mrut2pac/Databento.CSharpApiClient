@@ -191,16 +191,22 @@ namespace Databento.CSharpApiClient.UnitTests
         }
 
         [TestMethod]
-        public async Task StreamTcbboAsync_NoDataAnswer_Throws()
+        public async Task StreamTcbboAsync_DataEndAfterAvailableEnd_Throws()
         {
-            // the DBN client has always refused this answer; only the JSON client reads it as no records
+            // a refusal, not an empty range: the JSON client throws the same exception for it
             string noData = "{\"detail\":{\"case\":\"data_end_after_available_end\",\"message\":\"end is after available range\"}}";
             FakeTransport transport = new FakeTransport(_ => new HttpResponseMessage((HttpStatusCode)422)
             {
                 Content = new StringContent(noData),
             });
 
-            await Assert.ThrowsExceptionAsync<DatabentoHttpException>(() => ToListAsync(BuildClient(transport).StreamTcbboAsync(AnyDataset, AnySymbol, Start, End)));
+            DatabentoHttpException ex = await Assert.ThrowsExceptionAsync<DatabentoHttpException>(
+                () => ToListAsync(BuildClient(transport).StreamTcbboAsync(AnyDataset, AnySymbol, Start, End)));
+
+            Assert.AreEqual(422, ex.StatusCode);
+            Assert.AreEqual("data_end_after_available_end", ex.ErrorCase);
+            Assert.AreEqual(DatabentoErrorCase.DataEndAfterAvailableEnd, ex.Code);
+            StringAssert.Contains(ex.Message, "end is after available range");
         }
 
         [TestMethod]

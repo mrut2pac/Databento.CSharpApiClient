@@ -182,14 +182,26 @@ namespace Databento.CSharpApiClient.UnitTests
         }
 
         [TestMethod]
-        public async Task GetMboAsync_NoDataResponse_ReturnsEmptyArray()
+        public async Task GetMboAsync_EmptyResponse_ReturnsEmptyArray()
         {
-            string errorBody = "{\"detail\":{\"case\":\"data_end_after_available_end\",\"message\":\"end is after available range\"}}";
-            using DatabentoJsonClient client = BuildClientWithStatusCode(HttpStatusCode.UnprocessableEntity, errorBody);
+            using DatabentoJsonClient client = BuildClient(string.Empty);
 
             MboRecordJson[] records = await client.GetMboAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
 
             Assert.AreEqual(0, records.Length);
+        }
+
+        [TestMethod]
+        public async Task GetMboAsync_DataEndAfterAvailableEnd_ThrowsWithTheStatusAndCase()
+        {
+            string errorBody = "{\"detail\":{\"case\":\"data_end_after_available_end\",\"message\":\"end is after available range\"}}";
+            using DatabentoJsonClient client = BuildClientWithStatusCode(HttpStatusCode.UnprocessableEntity, errorBody);
+
+            DatabentoHttpException ex = await Assert.ThrowsExceptionAsync<DatabentoHttpException>(() =>
+                client.GetMboAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd));
+
+            Assert.AreEqual(422, ex.StatusCode);
+            Assert.AreEqual(DatabentoErrorCase.DataEndAfterAvailableEnd, ex.Code);
         }
 
         // =====================================================================
@@ -249,14 +261,16 @@ namespace Databento.CSharpApiClient.UnitTests
         }
 
         [TestMethod]
-        public async Task GetBbo1sAsync_NoDataResponse_ReturnsEmptyArray()
+        public async Task GetBbo1sAsync_DataEndAfterAvailableEnd_ThrowsDatabentoHttpException()
         {
             string errorBody = "{\"detail\":{\"case\":\"data_end_after_available_end\",\"message\":\"end is after available range\"}}";
             using DatabentoJsonClient client = BuildClientWithStatusCode(HttpStatusCode.UnprocessableEntity, errorBody);
 
-            BboRecordJson[] records = await client.GetBbo1sAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd);
+            DatabentoHttpException ex = await Assert.ThrowsExceptionAsync<DatabentoHttpException>(() =>
+                client.GetBbo1sAsync(AnyDataset, AnySymbol, AnyStart, AnyEnd));
 
-            Assert.AreEqual(0, records.Length);
+            Assert.AreEqual(422, ex.StatusCode);
+            Assert.AreEqual(DatabentoErrorCase.DataEndAfterAvailableEnd, ex.Code);
         }
 
         // =====================================================================

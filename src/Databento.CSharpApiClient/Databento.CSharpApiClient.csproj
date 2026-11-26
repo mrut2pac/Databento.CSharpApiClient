@@ -21,7 +21,7 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>2.7.1</Version>
+    <Version>2.7.2</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
@@ -31,6 +31,14 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
+v2.7.2 - 2026-11-26
+
+Fixed
+- JsonRecordReader, and the JSON client's responses, read a JSON array document one record at a time as it arrives,
+  instead of reading the whole document into strings first, which held a large array several times over on the
+  large object heap. An array is still recognized by a leading [ (after a UTF-8 byte order mark); an array in UTF-16
+  or UTF-32 no longer is.
+
 v2.7.1 - 2026-11-25
 
 Added

@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [2.7.2] - 2026-11-26
+
 ### Fixed
 - `JsonRecordReader`, and the JSON client's responses, read a JSON array document one record at a time as it arrives, as they read JSON lines, instead of reading the whole document into strings first. Reading a large array, such as a day of 1-second CBBO records saved as one array, held the whole day several times over on the large object heap; on invented `cbbo-1s` days of 12,000 records it allocated a sixth as much and took no longer. An array is still recognized by a leading `[` (after a UTF-8 byte order mark), and text after it, or a record that does not parse, is still refused with `InvalidDataException`, possibly once records before it have been read, as with JSON lines. The one change in what is read: an array in UTF-16 or UTF-32, which Databento never sends, is no longer recognized as one.
 
@@ -278,7 +280,8 @@ Initial release.
 - HTTP retry with exponential back-off and jitter
 - Zero external dependencies — pure `System.Text.Json` on .NET 8+
 
-[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.7.1...HEAD
+[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.7.2...HEAD
+[2.7.2]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.7.1...v2.7.2
 [2.7.1]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.7.0...v2.7.1
 [2.7.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.5.0...v2.6.0

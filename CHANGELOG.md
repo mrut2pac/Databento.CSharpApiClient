@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-11-26
+
 ### Changed
 - `DatabentoJsonClient`: a time-series request whose `end` is after the dataset's available end now throws `DatabentoHttpException` (`422`, `Code` `DataEndAfterAvailableEnd`), as `DatabentoClient` always has. It returned no records before, so a refused range could not be told from a range without records.
   - This covers every time-series call, `Get*Async`, `Stream*Async` and their sync forms, of every schema.
@@ -288,7 +290,8 @@ Initial release.
 - HTTP retry with exponential back-off and jitter
 - Zero external dependencies — pure `System.Text.Json` on .NET 8+
 
-[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.7.2...HEAD
+[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.8.0...HEAD
+[2.8.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.7.2...v2.8.0
 [2.7.2]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.7.1...v2.7.2
 [2.7.1]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.7.0...v2.7.1
 [2.7.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.6.0...v2.7.0

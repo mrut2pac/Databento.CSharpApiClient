@@ -21,7 +21,7 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>2.7.2</Version>
+    <Version>2.8.0</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
@@ -31,6 +31,16 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
+v2.8.0 - 2026-11-26
+
+Changed
+- DatabentoJsonClient: a time-series request whose end is after the dataset's available end now throws
+  DatabentoHttpException (422, Code DataEndAfterAvailableEnd), as DatabentoClient always has, instead of returning no
+  records. Code that relied on the empty answer must catch the exception or end the range at the available end.
+
+Fixed
+- The README's link to the CHANGELOG works on the nuget.org package page.
+
 v2.7.2 - 2026-11-26
 
 Fixed

@@ -1,6 +1,8 @@
 # Databento.CSharpApiClient
 
 [![NuGet](https://img.shields.io/nuget/v/Databento.CSharpApiClient.svg)](https://www.nuget.org/packages/Databento.CSharpApiClient)
+[![CI](https://github.com/mrut2pac/Databento.CSharpApiClient/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mrut2pac/Databento.CSharpApiClient/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/mrut2pac/Databento.CSharpApiClient/blob/main/LICENSE)
 [![Databento](https://img.shields.io/badge/Databento-Historical%20API-474BD7)](https://databento.com)
 
 Pure-managed C# HTTP client for the [Databento Historical API](https://databento.com/docs/api-reference-historical).
@@ -13,11 +15,15 @@ Pure-managed C# HTTP client for the [Databento Historical API](https://databento
 
 See [CHANGELOG.md](https://github.com/mrut2pac/Databento.CSharpApiClient/blob/main/CHANGELOG.md) for the full version history.
 
+**Related package:** [Databento.CSharpApiClient.Caching](https://github.com/mrut2pac/Databento.CSharpApiClient.Caching) serves these time-series calls from a disk cache and a Parquet archive, so each day of data is paid for once.
+
 ## Installation
 
 ```
 dotnet add package Databento.CSharpApiClient
 ```
+
+Targets .NET 8.0 or later.
 
 ## Quick start
 
@@ -25,7 +31,7 @@ dotnet add package Databento.CSharpApiClient
 using Databento.CSharpApiClient;
 using Databento.CSharpApiClient.DataModel.Dbn;
 
-var options = new DatabentoOptions { ApiKey = "YOUR_API_KEY" };
+var options = new DatabentoOptions { ApiKey = Environment.GetEnvironmentVariable("DATABENTO_API_KEY") };
 using var client = new DatabentoClient(options);
 
 CbboRecordDbn[] quotes = await client.GetCbbo1sAsync(
@@ -86,6 +92,34 @@ await foreach (TradeRecordJson trade in JsonRecordReader.ReadTradesAsync(file))
 }
 ```
 
+## Metadata
+
+The metadata calls are on `DatabentoJsonClient`. Price a request before sending it, and find how far a dataset's data reaches:
+
+```csharp
+using var json = new DatabentoJsonClient(options);
+
+double usd = await json.GetCostAsync(Datasets.XnasItch, new[] { "SPY" }, Schema.Trades, start, end);
+DateRange range = await json.GetDatasetRangeAsync(Datasets.XnasItch);
+Console.WriteLine($"${usd:F4}; data from {range.Start:O} to {range.End:O}");
+```
+## Symbology
+
+`ResolveSymbolsAsync` maps symbols from one symbology type to another over a date range:
+
+```csharp
+SymbologyResolution resolved = await json.ResolveSymbolsAsync(new SymbologyRequest
+{
+    Dataset = Datasets.XnasItch,
+    Symbols = new[] { "SPY", "QQQ" },
+    StartDate = "2024-01-02",
+    EndDate = "2024-01-31",
+});
+
+foreach (MappedSymbol mapping in resolved.Result["SPY"])
+    Console.WriteLine($"{mapping.StartDate}..{mapping.EndDate}: instrument {mapping.Symbol}");
+```
+
 ## Saving DBN records as JSON
 
 `ToJsonRecord()` turns a BBO, CBBO, TCBBO, trade, OHLCV or statistics DBN record into its JSON model, with the values `DatabentoJsonClient` reads from the JSON encoding of the same record. Records downloaded as DBN can then be saved as JSON and read back like records downloaded as JSON. The extension methods are in `DbnToJsonExtensions`, in the `Databento.CSharpApiClient.DataModel.Dbn` namespace, and the JSON records in `Databento.CSharpApiClient.DataModel.Json`:
@@ -140,7 +174,7 @@ Poll `GetBatchJobDetailsAsync(job.JobId)` until its `State` is `"done"`, then li
 ```csharp
 var options = new DatabentoOptions
 {
-    ApiKey        = "YOUR_API_KEY",
+    ApiKey        = Environment.GetEnvironmentVariable("DATABENTO_API_KEY"),
     Timeout       = TimeSpan.FromMinutes(10),  // default 5m
     MaxRetries    = 3,                          // default 3
     RetryBaseDelay = TimeSpan.FromSeconds(1),  // default 1s

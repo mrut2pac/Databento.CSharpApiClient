@@ -107,7 +107,7 @@ Integration tests use `[SkippableFact]` from `Xunit.SkippableFact`. Without the 
    git tag v1.2.3
    git push origin v1.2.3
    ```
-5. The `publish` job in CI fires automatically (triggered by the `v*` tag), builds Release, packs, and pushes to NuGet.org using the `NUGET_API_KEY` repository secret.
+5. The `publish` job in CI fires automatically (triggered by the `v*` tag), builds Release, packs, and pushes to NuGet.org using the `NUGET_API_KEY` repository secret. It then creates the GitHub Release for the tag, with the version's CHANGELOG section as its notes.
 6. The package appears on nuget.org within a few minutes.
 
 > **`--skip-duplicate` is set** — pushing a tag for a version that already exists on NuGet.org is a no-op, not an error.

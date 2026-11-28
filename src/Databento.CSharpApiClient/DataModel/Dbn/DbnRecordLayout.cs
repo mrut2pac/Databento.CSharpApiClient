@@ -4,17 +4,18 @@ using System.IO;
 namespace Databento.CSharpApiClient.DataModel.Dbn
 {
     /// <summary>
-    /// How one DBN schema's records are decoded: which record types it holds, how a record's body is read and, for the
-    /// records that carry one, how its symbol is found from the stream's symbol mappings.
+    /// How one DBN schema's records are decoded and encoded: which record types it holds, how a record's body is read, how a
+    /// record is written and, for the records that carry one, how its symbol is found from the stream's symbol mappings.
     /// </summary>
     /// <typeparam name="TRecord">Record type</typeparam>
     internal sealed class DbnRecordLayout<TRecord>
     {
-        public DbnRecordLayout(string name, Func<RType, bool> accepts, Func<DbnRecordHeader, BinaryReader, TRecord> read, Action<TRecord, DbnSymbolMap> assignSymbol = null)
+        public DbnRecordLayout(string name, Func<RType, bool> accepts, Func<DbnRecordHeader, BinaryReader, TRecord> read, Action<TRecord, BinaryWriter, byte> write, Action<TRecord, DbnSymbolMap> assignSymbol = null)
         {
             this.Name = name;
             this.Accepts = accepts;
             this.Read = read;
+            this.Write = write;
             this.AssignSymbol = assignSymbol;
         }
 
@@ -32,6 +33,11 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
         /// Gets the reader of a record's body, given its header and a reader positioned after it.
         /// </summary>
         public Func<DbnRecordHeader, BinaryReader, TRecord> Read { get; }
+
+        /// <summary>
+        /// Gets the writer of a whole record, header first, in the layout of the given DBN version.
+        /// </summary>
+        public Action<TRecord, BinaryWriter, byte> Write { get; }
 
         /// <summary>
         /// Gets what sets a record's symbol from the stream's symbol mappings; <see langword="null"/> for records without one.

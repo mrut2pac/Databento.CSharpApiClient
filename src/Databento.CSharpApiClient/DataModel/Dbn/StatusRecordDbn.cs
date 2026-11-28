@@ -92,5 +92,28 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                 throw new InvalidDataException("Truncated DBN Status record.");
             }
         }
+
+        /// <summary>
+        /// Writes this record, header first, in the 40-byte DBN layout <see cref="ReadFromBytes"/> reads, the three flags as
+        /// <c>'Y'</c> or <c>'N'</c>. A flag DBN sent as <c>'~'</c> (not available) was read as <see langword="false"/>, so it is
+        /// written as <c>'N'</c>. Nothing is written when a value is refused.
+        /// </summary>
+        /// <param name="writer">Writer to write the record to.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">A value is one the record's DBN field cannot hold.</exception>
+        public void WriteToBytes(BinaryWriter writer)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            DbnRecordWriter record = new DbnRecordWriter(stackalloc byte[40]);
+            record.Header(this.RecordType, this.PublisherId, this.InstrumentId, this.TsEventUtc);
+            record.WriteTimestamp(this.TsReceivedUtc, "ts_recv");
+            record.WriteUInt16(this.Action);
+            record.WriteUInt16(this.Reason);
+            record.WriteUInt16(this.TradingEvent);
+            record.WriteByte(this.IsTrading ? (byte)'Y' : (byte)'N');
+            record.WriteByte(this.IsQuoting ? (byte)'Y' : (byte)'N');
+            record.WriteByte(this.IsShortSellRestricted ? (byte)'Y' : (byte)'N');
+            record.WriteTo(writer);
+        }
     }
 }

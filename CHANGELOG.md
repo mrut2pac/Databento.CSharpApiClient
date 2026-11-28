@@ -6,6 +6,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+- `DbnWriter`: writes uncompressed DBN that `DbnReader` and Databento's own tools read, with one method per schema, async and sync, as `DbnReader` has: CBBO, trades, MBP-1, MBO, MBP-10, TBBO, BBO, TCBBO, CMBP-1, OHLCV, statistics, definitions, status and imbalance.
+  - The metadata is written in the layout of its `Version`, 1, 2 or 3, as Databento's encoder lays it out: `record_count` in v1 only, the symbol width in v2 and v3, the block padded to a multiple of 8 bytes in v3 only. Any other version is refused, as `DbnMetadata.FromBinaryReader` refuses it.
+  - The records are written in that version's layout: statistics with a 32-bit quantity in v1 and v2 and a 64-bit one in v3, definitions in the v1 or v3 layout. DBN v2 definitions are refused, as the reader refuses them.
+  - Data read with `DbnReader` and written again with its own metadata keeps every value the record classes hold. It comes out byte for byte the same when its timestamps are whole multiples of 100 ns, which is what a `DateTime` holds; finer digits are dropped when the data is read. Undefined values are written as DBN's undefined values, so a timestamp of 0 comes back as `u64::MAX`, and a status flag of `~` (not available), which reads as `false`, as `N`.
+  - A value too large or too long for the field it goes in, such as text too long for its field or a timestamp before 1970 or after 2554, is refused with `ArgumentException` rather than altered. A field the version's layout does not have, such as a definition's legs in v1, is not written. Metadata with `TsOut` set throws `NotSupportedException`: the record classes keep no `ts_out`.
+- `WriteToBytes` on every DBN record class and on `Mbp1LevelDbn` and `CbboLevelDbn`, the counterpart of their `ReadFromBytes`, and `DbnMetadata.WriteToBinaryWriter`, the counterpart of `DbnMetadata.FromBinaryReader`.
+
+### Fixed
+- `DbnMetadata.FromBinaryReader` reads an `end` of `u64::MAX`, which Databento's encoder writes for an open-ended stream, as `null`, as it reads 0. It read as `DateTimeOffset.MinValue` before.
+
 ## [2.8.0] - 2026-11-26
 
 ### Changed

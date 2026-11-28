@@ -1,4 +1,5 @@
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -113,9 +114,9 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                 // start: u64 ns
                 md.Start = Utils.FromUnixNs(r.ReadUInt64());
 
-                // end: u64 ns (0 => None)
+                // end: u64 ns (u64::MAX, as Databento's encoder writes an open end, or 0 => None)
                 ulong end = r.ReadUInt64();
-                md.End = (end == 0) ? (DateTimeOffset?)null : Utils.FromUnixNs(end);
+                md.End = (end == 0 || end == ulong.MaxValue) ? (DateTimeOffset?)null : Utils.FromUnixNs(end);
 
                 // limit: u64 (0 => None)
                 ulong limitRaw = r.ReadUInt64();
@@ -196,6 +197,133 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             }
 
             return md;
+        }
+
+        /// <summary>
+        /// Writes this metadata as the start of a DBN stream, in the layout of its <see cref="Version"/> that
+        /// <see cref="FromBinaryReader"/> reads: the <c>DBN</c> prelude, the metadata length and the metadata block, laid out as
+        /// Databento's encoder lays it out (<c>record_count</c> in v1 only, the block padded to a multiple of 8 bytes in v3 only).
+        /// </summary>
+        /// <param name="binaryWriter">Writer positioned at the start of the stream.</param>
+        /// <remarks>
+        /// A <see cref="SymbolCStrLen"/> of 0 takes the version's width: 22 in v1, 71 in v2 and v3. An open <see cref="End"/> is
+        /// written as <c>u64::MAX</c>, no <see cref="Limit"/> as 0, and v1's <c>record_count</c> as <c>u64::MAX</c> (unknown).
+        /// Nothing is written when a value is refused.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="binaryWriter"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">The version is not 1, 2 or 3, the symbols of a v1 stream are not 22 bytes wide, or text is not ASCII or too wide for its field.</exception>
+        public void WriteToBinaryWriter(BinaryWriter binaryWriter)
+        {
+            ArgumentNullException.ThrowIfNull(binaryWriter);
+            binaryWriter.Write(this.ToBytes());
+        }
+
+        private byte[] ToBytes()
+        {
+            byte version = this.Version;
+            if(version < 1 || version > 3)
+            {
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, "Unsupported DBN version {0}; versions 1 to 3 are written.", version));
+            }
+
+            int symbolCStrLen = this.SymbolCStrLen != 0 ? this.SymbolCStrLen : version == 1 ? 22 : 71;
+            if(version == 1 && symbolCStrLen != 22)
+            {
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, "DBN v1 symbols are 22 bytes wide, not {0}.", symbolCStrLen));
+            }
+
+            using(MemoryStream ms = new MemoryStream())
+            using(BinaryWriter w = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
+            {
+                w.Write((byte)'D');
+                w.Write((byte)'B');
+                w.Write((byte)'N');
+                w.Write(version);
+                w.Write(0u); // metadata_length, set below
+
+                WriteFixedCString(w, this.Dataset, 16, "dataset");
+                w.Write((ushort)this.Schema);
+                w.Write(this.Start == DateTimeOffset.MinValue ? 0UL : DbnFieldWriter.Timestamp(this.Start, "start"));
+                w.Write(!this.End.HasValue || this.End.Value == DateTimeOffset.MinValue ? ulong.MaxValue : DbnFieldWriter.Timestamp(this.End.Value, "end"));
+                w.Write(this.Limit ?? 0UL);
+                if(version == 1)
+                {
+                    w.Write(ulong.MaxValue); // record_count: unknown
+                }
+
+                w.Write((byte)this.STypeIn);
+                w.Write((byte)this.STypeOut);
+                w.Write(this.TsOut ? (byte)1 : (byte)0);
+                if(version != 1)
+                {
+                    w.Write((ushort)symbolCStrLen);
+                }
+
+                w.Write(new byte[version == 1 ? 47 : 53]); // reserved
+
+                byte[] schemaDefinition = this.SchemaDefinition ?? Array.Empty<byte>();
+                w.Write((uint)schemaDefinition.Length);
+                w.Write(schemaDefinition);
+                WriteFixedCStringVector(w, this.Symbols, symbolCStrLen, "symbol");
+                WriteFixedCStringVector(w, this.Partial, symbolCStrLen, "partial symbol");
+                WriteFixedCStringVector(w, this.NotFound, symbolCStrLen, "not_found symbol");
+
+                List<DbnSymbolMapping> mappings = this.Mappings ?? new List<DbnSymbolMapping>();
+                w.Write((uint)mappings.Count);
+                foreach(DbnSymbolMapping mapping in mappings)
+                {
+                    if(mapping == null)
+                    {
+                        throw new ArgumentException("The metadata's symbol mappings hold a null mapping.");
+                    }
+
+                    WriteFixedCString(w, mapping.RawSymbol, symbolCStrLen, "mapping raw_symbol");
+                    List<DbnMappingInterval> intervals = mapping.Intervals ?? new List<DbnMappingInterval>();
+                    w.Write((uint)intervals.Count);
+                    foreach(DbnMappingInterval interval in intervals)
+                    {
+                        if(interval == null)
+                        {
+                            throw new ArgumentException("The symbol mapping of " + mapping.RawSymbol + " holds a null interval.");
+                        }
+
+                        w.Write(interval.StartDate);
+                        w.Write(interval.EndDate);
+                        WriteFixedCString(w, interval.Symbol, symbolCStrLen, "mapping symbol");
+                    }
+                }
+
+                // DBN v3 pads the block to a multiple of 8 bytes, as Databento's encoder does; v1 and v2 do not
+                int metadataLength = (int)ms.Length - 8;
+                if(version == 3 && metadataLength % 8 != 0)
+                {
+                    w.Write(new byte[8 - metadataLength % 8]);
+                    metadataLength = (int)ms.Length - 8;
+                }
+
+                w.Flush();
+                byte[] block = ms.ToArray();
+                BinaryPrimitives.WriteUInt32LittleEndian(block.AsSpan(4), (uint)metadataLength);
+
+                return block;
+            }
+        }
+
+        private static void WriteFixedCString(BinaryWriter w, string value, int width, string field)
+        {
+            byte[] bytes = new byte[width];
+            DbnFieldWriter.CString(bytes, value, field);
+            w.Write(bytes);
+        }
+
+        private static void WriteFixedCStringVector(BinaryWriter w, List<string> values, int width, string field)
+        {
+            values ??= new List<string>();
+            w.Write((uint)values.Count);
+            foreach(string value in values)
+            {
+                WriteFixedCString(w, value, width, field);
+            }
         }
 
         private static void SkipExact(BinaryReader r, int bytes)

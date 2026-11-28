@@ -149,5 +149,40 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
                 throw new InvalidDataException("Truncated DBN Imbalance record.");
             }
         }
+
+        /// <summary>
+        /// Writes this record, header first, in the 112-byte DBN layout <see cref="ReadFromBytes"/> reads. Undefined values are
+        /// written as DBN's undefined values, and nothing is written when a value is refused.
+        /// </summary>
+        /// <param name="writer">Writer to write the record to.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">A value is one the record's DBN field cannot hold.</exception>
+        public void WriteToBytes(BinaryWriter writer)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            DbnRecordWriter record = new DbnRecordWriter(stackalloc byte[112]);
+            record.Header(this.RecordType, this.PublisherId, this.InstrumentId, this.TsEventUtc);
+            record.WriteTimestamp(this.TsReceivedUtc, "ts_recv");
+            record.WritePrice(this.RefPrice, "ref_price");
+            record.WriteTimestamp(this.AuctionTime, "auction_time");
+            record.WritePrice(this.ContBookClrPrice, "cont_book_clr_price");
+            record.WritePrice(this.AuctInterestClrPrice, "auct_interest_clr_price");
+            record.WritePrice(this.SsrFillingPrice, "ssr_filling_price");
+            record.WritePrice(this.IndMatchPrice, "ind_match_price");
+            record.WritePrice(this.UpperCollar, "upper_collar");
+            record.WritePrice(this.LowerCollar, "lower_collar");
+            record.WriteUInt32(this.PairedQty);
+            record.WriteUInt32(this.TotalImbalanceQty);
+            record.WriteUInt32(this.MarketImbalanceQty);
+            record.WriteUInt32(this.UnpairedQty);
+            record.WriteByte(DbnFieldWriter.Char(this.AuctionType, "auction_type"));
+            record.WriteByte(DbnFieldWriter.Char(this.Side, "side"));
+            record.WriteByte(this.AuctionStatus);
+            record.WriteByte(this.FreezeStatus);
+            record.WriteByte(this.NumExtensions);
+            record.WriteByte(DbnFieldWriter.Char(this.UnpairedSide, "unpaired_side"));
+            record.WriteByte(DbnFieldWriter.Char(this.SignificantImbalance, "significant_imbalance"));
+            record.WriteTo(writer);
+        }
     }
 }

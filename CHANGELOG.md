@@ -6,6 +6,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-11-28
+
 ### Added
 - `DbnWriter`: writes uncompressed DBN that `DbnReader` and Databento's own tools read, with one method per schema, async and sync, as `DbnReader` has: CBBO, trades, MBP-1, MBO, MBP-10, TBBO, BBO, TCBBO, CMBP-1, OHLCV, statistics, definitions, status and imbalance.
   - The metadata is written in the layout of its `Version`, 1, 2 or 3, as Databento's encoder lays it out: `record_count` in v1 only, the symbol width in v2 and v3, the block padded to a multiple of 8 bytes in v3 only. Any other version is refused, as `DbnMetadata.FromBinaryReader` refuses it.
@@ -301,7 +303,8 @@ Initial release.
 - HTTP retry with exponential back-off and jitter
 - Zero external dependencies — pure `System.Text.Json` on .NET 8+
 
-[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.8.0...HEAD
+[Unreleased]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.9.0...HEAD
+[2.9.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.8.0...v2.9.0
 [2.8.0]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.7.2...v2.8.0
 [2.7.2]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.7.1...v2.7.2
 [2.7.1]: https://github.com/mrut2pac/Databento.CSharpApiClient/compare/v2.7.0...v2.7.1

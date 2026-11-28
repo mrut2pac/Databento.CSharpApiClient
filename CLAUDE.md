@@ -96,10 +96,11 @@ Integration tests use `[SkippableFact]` from `Xunit.SkippableFact`. Without the 
 - **The version bump is a separate `chore:` PR**, opened once every feature PR of the release is merged. It holds only the version, the release notes and the CHANGELOG cut (step 2 below), plus the live-run record (step 1).
 - When it isn't clear which kind of PR a change belongs in, ask the maintainer before opening it.
 
-1. Decide whether the live integration suite must run before this release. Diff from the last `v*` tag to the tip of the preparation branch, which is the commit that will be tagged. A run is needed when anything touches the wire: request building, response parsing or decoding, models, retries or transport. A run is also needed when the last full live run predates such a change. Unit tests alone are not enough for such changes, because the fixtures share the decoder's assumptions about the format. When a run is needed:
-   - Price it with `metadata.get_cost`, which is free; a full run cost about $1 as of 2.4.0.
-   - Run the suite on the preparation branch's tip, and don't tag until it is green.
-   - Record the outcome in the preparation PR's Testing section: the passed and skipped counts, or "not needed" and why. That record is how the next release knows when the last full run happened.
+1. Decide whether the live integration tests must run before this release, and which. Diff from the last `v*` tag to the tip of the preparation branch, which is the commit that will be tagged. A run is needed when anything touches the wire: request building, response parsing or decoding, models, retries or transport. A run is also needed when the last live run of a flow predates such a change to it. Unit tests alone are not enough for such changes, because the fixtures share the decoder's assumptions about the format. When a run is needed:
+   - Run only the flow that changed. A change only to the DBN path (DBN decoding, `DbnReader`, `DbnWriter`, the DBN models) runs `DatabentoClientTests` (`--filter "FullyQualifiedName~.DatabentoClientTests"`); a change only to the JSON path runs `DatabentoJsonClientTests`. Run the whole suite when shared code changed (transport, retries, request building, shared models), or when a flow's last live run predates a change to it.
+   - Price the run with `metadata.get_cost`, which is free; the whole suite cost about $1 as of 2.9.0, and either flow's tests cost a part of that.
+   - Run it on the preparation branch's tip, and don't tag until it is green.
+   - Record the outcome in the preparation PR's Testing section: which tests ran, the passed and skipped counts, or "not needed" and why. That record is how the next release knows when each flow last ran live.
 2. Bump `<Version>` in `src/Databento.CSharpApiClient/Databento.CSharpApiClient.csproj`, add the version's `<PackageReleaseNotes>` entry, and cut CHANGELOG `[Unreleased]` into a dated section with its compare link.
 3. Commit the version bump on a branch and merge via PR.
 4. After merge, on `main`:

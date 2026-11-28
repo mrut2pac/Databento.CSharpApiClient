@@ -21,7 +21,7 @@
     <!-- NuGet packaging -->
     <IsPackable>true</IsPackable>
     <PackageId>Databento.CSharpApiClient</PackageId>
-    <Version>2.8.0</Version>
+    <Version>2.9.0</Version>
     <Authors>Vardan Tovmasyan</Authors>
     <Description>Pure-managed C# HTTP client for the Databento Historical API. Covers timeseries (DBN binary and JSON), metadata, batch jobs, and symbology. No native dependencies — works on any .NET 8+ runtime.</Description>
     <PackageTags>databento;market-data;trading;options;equities;historical;api-client;dbn</PackageTags>
@@ -31,6 +31,20 @@
     <RepositoryUrl>https://github.com/mrut2pac/Databento.CSharpApiClient</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>
+v2.9.0 - 2026-11-28
+
+Added
+- DbnWriter: writes uncompressed DBN (versions 1, 2 and 3) that DbnReader and Databento's own tools read, one async
+  and one sync method per schema, as DbnReader has. The metadata and records are laid out as the metadata's version
+  lays them out. Values DBN cannot hold are refused with ArgumentException rather than altered; metadata with ts_out,
+  and DBN v2 definitions, throw NotSupportedException.
+- WriteToBytes on every DBN record class and level, the counterpart of ReadFromBytes, and
+  DbnMetadata.WriteToBinaryWriter, the counterpart of DbnMetadata.FromBinaryReader.
+
+Fixed
+- DbnMetadata.FromBinaryReader reads an end of u64::MAX, which Databento's encoder writes for an open-ended stream,
+  as null. It read as DateTimeOffset.MinValue before.
+
 v2.8.0 - 2026-11-26
 
 Changed

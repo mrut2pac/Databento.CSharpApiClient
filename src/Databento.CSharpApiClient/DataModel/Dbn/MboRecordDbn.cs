@@ -120,6 +120,5 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             record.WriteUInt32(this.Sequence);
             record.WriteTo(writer);
         }
-
     }
 }

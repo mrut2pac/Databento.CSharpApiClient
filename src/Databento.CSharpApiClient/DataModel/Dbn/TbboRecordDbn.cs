@@ -121,6 +121,5 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             Mbp1LevelDbn.Required(this.Level, "level").Write(ref record);
             record.WriteTo(writer);
         }
-
     }
 }

@@ -135,6 +135,5 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
 
             record.WriteTo(writer);
         }
-
     }
 }

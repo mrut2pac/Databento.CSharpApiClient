@@ -142,6 +142,5 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             record.WriteUInt32(this.AskCount);
             record.WriteTo(writer);
         }
-
     }
 }

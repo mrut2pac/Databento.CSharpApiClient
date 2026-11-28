@@ -97,6 +97,31 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             }
         }
 
+        /// <summary>
+        /// Writes this record, header first, in the 80-byte DBN layout <see cref="ReadFromBytes"/> reads. Undefined values are
+        /// written as DBN's undefined values, and nothing is written when a value is refused.
+        /// </summary>
+        /// <param name="writer">Writer to write the record to.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">A value is one the record's DBN field cannot hold.</exception>
+        public void WriteToBytes(BinaryWriter writer)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            DbnRecordWriter record = new DbnRecordWriter(stackalloc byte[80]);
+            record.Header(this.RecordType, this.PublisherId, this.InstrumentId, this.TsEventUtc);
+            record.WritePrice(this.Price, "price");
+            record.WriteUInt32(this.Size);
+            record.Skip(1); // reserved (action slot)
+            record.WriteSide(this.Side);
+            record.WriteByte((byte)this.Flags);
+            record.Skip(1); // reserved (depth slot)
+            record.WriteTimestamp(this.TsReceivedUtc, "ts_recv");
+            record.Skip(4); // reserved
+            record.WriteUInt32(this.Sequence);
+            Mbp1LevelDbn.Required(this.Level, "level").Write(ref record);
+            record.WriteTo(writer);
+        }
+
         DateTime? IRecord.TsEventUtc => UndefinedValues.Timestamp(this.TsEventUtc);
 
         double? IBboRecord.Price => UndefinedValues.Price(this.Price);

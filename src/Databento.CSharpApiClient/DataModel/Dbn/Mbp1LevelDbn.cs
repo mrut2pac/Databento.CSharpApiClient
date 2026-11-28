@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 
 namespace Databento.CSharpApiClient.DataModel.Dbn
@@ -45,6 +46,36 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             {
                 throw new System.IO.InvalidDataException("Truncated DBN BBO level.");
             }
+        }
+
+        /// <summary>
+        /// Writes this level in the 32-byte layout <see cref="ReadFromBytes"/> reads; a <see cref="double.NaN"/> price is written as
+        /// DBN's undefined price, and nothing is written when a price is refused.
+        /// </summary>
+        /// <param name="writer">Writer to write the level to.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">A price is out of the range of a DBN price.</exception>
+        public void WriteToBytes(BinaryWriter writer)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            DbnRecordWriter level = new DbnRecordWriter(stackalloc byte[32]);
+            this.Write(ref level);
+            level.WriteTo(writer);
+        }
+
+        internal static Mbp1LevelDbn Required(Mbp1LevelDbn level, string field)
+        {
+            return level ?? throw DbnFieldWriter.Invalid(field, "null", "a record's level must be set");
+        }
+
+        internal void Write(ref DbnRecordWriter record)
+        {
+            record.WritePrice(this.BidPrice, "bid_px");
+            record.WritePrice(this.AskPrice, "ask_px");
+            record.WriteUInt32(this.BidSize);
+            record.WriteUInt32(this.AskSize);
+            record.WriteUInt32(this.BidCount);
+            record.WriteUInt32(this.AskCount);
         }
     }
 }

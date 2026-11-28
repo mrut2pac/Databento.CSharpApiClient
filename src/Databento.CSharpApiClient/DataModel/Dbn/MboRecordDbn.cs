@@ -96,5 +96,29 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             }
         }
 
+        /// <summary>
+        /// Writes this record, header first, in the 56-byte DBN layout <see cref="ReadFromBytes"/> reads. Undefined values are
+        /// written as DBN's undefined values, and nothing is written when a value is refused.
+        /// </summary>
+        /// <param name="writer">Writer to write the record to.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">A value is one the record's DBN field cannot hold.</exception>
+        public void WriteToBytes(BinaryWriter writer)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            DbnRecordWriter record = new DbnRecordWriter(stackalloc byte[56]);
+            record.Header(this.RecordType, this.PublisherId, this.InstrumentId, this.TsEventUtc);
+            record.WriteUInt64(this.OrderId);
+            record.WritePrice(this.Price, "price");
+            record.WriteUInt32(this.Size);
+            record.WriteByte((byte)this.Flags);
+            record.WriteByte(DbnFieldWriter.Byte(this.ChannelId, "channel_id"));
+            record.WriteByte((byte)this.Action);
+            record.WriteSide(this.Side);
+            record.WriteTimestamp(this.TsReceivedUtc, "ts_recv");
+            record.WriteInt32(this.TsInDelta);
+            record.WriteUInt32(this.Sequence);
+            record.WriteTo(writer);
+        }
     }
 }

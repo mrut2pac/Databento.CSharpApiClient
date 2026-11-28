@@ -102,5 +102,38 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             }
         }
 
+        /// <summary>
+        /// Writes this record, header first, in the 368-byte DBN layout <see cref="ReadFromBytes"/> reads. Undefined values are
+        /// written as DBN's undefined values, and nothing is written when a value is refused.
+        /// </summary>
+        /// <param name="writer">Writer to write the record to.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">A value is one the record's DBN field cannot hold.</exception>
+        public void WriteToBytes(BinaryWriter writer)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            DbnRecordWriter record = new DbnRecordWriter(stackalloc byte[368]);
+            record.Header(this.RecordType, this.PublisherId, this.InstrumentId, this.TsEventUtc);
+            record.WritePrice(this.Price, "price");
+            record.WriteUInt32(this.Size);
+            record.WriteByte((byte)this.Action);
+            record.WriteSide(this.Side);
+            record.WriteByte((byte)this.Flags);
+            record.WriteByte(this.Depth);
+            record.WriteTimestamp(this.TsReceivedUtc, "ts_recv");
+            record.WriteInt32(this.TsInDelta);
+            record.WriteUInt32(this.Sequence);
+            if(this.Levels == null || this.Levels.Length != 10)
+            {
+                throw DbnFieldWriter.Invalid("levels", this.Levels == null ? "null" : this.Levels.Length.ToString(System.Globalization.CultureInfo.InvariantCulture), "an MBP-10 record has 10 levels");
+            }
+
+            foreach(Mbp1LevelDbn level in this.Levels)
+            {
+                Mbp1LevelDbn.Required(level, "levels").Write(ref record);
+            }
+
+            record.WriteTo(writer);
+        }
     }
 }

@@ -115,6 +115,56 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             }
         }
 
+        /// <summary>
+        /// Writes this record, header first, in the layout <see cref="ReadFromBytes"/> reads for the DBN version: 64 bytes with a
+        /// 32-bit quantity in v1 and v2, 80 bytes with a 64-bit quantity in v3. The undefined quantity is written as the version's:
+        /// <see cref="long.MaxValue"/> as <see cref="int.MaxValue"/> in v1 and v2, and <see cref="int.MaxValue"/> as <see cref="long.MaxValue"/>
+        /// in v3, as Databento converts between them. Nothing is written when a value is refused.
+        /// </summary>
+        /// <param name="writer">Writer to write the record to.</param>
+        /// <param name="dbnVersion">DBN version of the stream: 1, 2 or 3.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="dbnVersion"/> is not 1, 2 or 3.</exception>
+        /// <exception cref="ArgumentException">A value is one the record's DBN field cannot hold, such as a quantity beyond 32 bits in v1 or v2.</exception>
+        public void WriteToBytes(BinaryWriter writer, byte dbnVersion)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            ArgumentOutOfRangeException.ThrowIfZero(dbnVersion);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(dbnVersion, (byte)3);
+
+            bool wideQuantity = dbnVersion == 3;
+            DbnRecordWriter record = new DbnRecordWriter(stackalloc byte[wideQuantity ? DbnRecordHeader.SizeBytes + StatisticsV3BodyBytes : 64]);
+            record.Header(this.RecordType, this.PublisherId, this.InstrumentId, this.TsEventUtc);
+            record.WriteTimestamp(this.TsReceivedUtc, "ts_recv");
+            record.WriteTimestamp(this.TsRefUtc, "ts_ref");
+            record.WritePrice(this.Price, "price");
+            if(wideQuantity)
+            {
+                // int.MaxValue is the undefined quantity of v1 and v2, which the record interface reads as undefined in v3 too
+                record.WriteInt64(this.Quantity == int.MaxValue ? long.MaxValue : this.Quantity);
+            }
+            else if(this.Quantity == long.MaxValue)
+            {
+                record.WriteInt32(int.MaxValue);
+            }
+            else if(this.Quantity < int.MinValue || this.Quantity > int.MaxValue)
+            {
+                throw DbnFieldWriter.Invalid("quantity", this.Quantity, "DBN v1 and v2 statistics hold a 32-bit quantity");
+            }
+            else
+            {
+                record.WriteInt32((int)this.Quantity);
+            }
+
+            record.WriteUInt32(this.Sequence);
+            record.WriteInt32(this.TsInDelta);
+            record.WriteUInt16(this.StatType);
+            record.WriteUInt16(this.ChannelId);
+            record.WriteByte(this.UpdateAction);
+            record.WriteByte((byte)this.StatFlags);
+            record.WriteTo(writer);
+        }
+
         DateTime? IRecord.TsEventUtc => UndefinedValues.Timestamp(this.TsEventUtc);
 
         double? IStatisticsRecord.Price => UndefinedValues.Price(this.Price);

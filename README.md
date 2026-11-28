@@ -120,6 +120,29 @@ foreach (MappedSymbol mapping in resolved.Result["SPY"])
     Console.WriteLine($"{mapping.StartDate}..{mapping.EndDate}: instrument {mapping.Symbol}");
 ```
 
+## Writing DBN
+
+`DbnWriter` writes what `DbnReader` reads, one method per schema (`WriteTradesAsync`, `WriteTcbbo`, ...): the metadata, in the layout of its `Version` (DBN 1, 2 or 3), then the records in that version's layout. A file read with `DbnReader` and written again with its own metadata keeps every value the record classes hold, so records can be filtered and saved as DBN that Databento's own tools open:
+
+```csharp
+DbnMetadata metadata;
+using (FileStream input = File.OpenRead("opra-pillar-20240118.tcbbo.dbn"))
+using (BinaryReader reader = new BinaryReader(input))
+{
+    metadata = DbnMetadata.FromBinaryReader(reader);
+}
+
+using FileStream source = File.OpenRead("opra-pillar-20240118.tcbbo.dbn");
+using FileStream output = File.Create("opra-pillar-20240118.large.tcbbo.dbn");
+DbnWriter.WriteTcbbo(output, metadata, DbnReader.ReadTcbbo(source).Where(trade => trade.Size >= 10));
+```
+
+The writer writes uncompressed DBN; for `.dbn.zst`, pass it a compressing stream from the zstd library of your choice, such as ZstdSharp.Port's `CompressionStream`. A record's `Symbol` is not written: the reader takes it from the metadata's symbol mappings again. Each record class also has `WriteToBytes`, the counterpart of its `ReadFromBytes`, and `DbnMetadata` has `WriteToBinaryWriter`.
+
+The record classes hold timestamps as `DateTime`, to 100 ns, so finer digits are dropped when DBN is read and are not written back. Undefined values are written as DBN's: a `NaN` price as `i64::MAX`, and a record's `DateTime.MinValue` or `null` timestamp as `u64::MAX` (an unset metadata `Start` as 0). A status flag DBN sent as `~` (not available) reads as `false` and is written as `N`.
+
+A value DBN cannot hold is refused with `ArgumentException` rather than altered: text that is not ASCII or too long for its field, a timestamp before 1970 or after 2554, or a number too large for the field it goes in, such as a statistics quantity beyond 32 bits in DBN v1 or v2. A field the version's layout does not have, such as a definition's legs in v1, is not written. Metadata with `TsOut` set, and DBN v2 definitions, which the reader does not read either, throw `NotSupportedException`.
+
 ## Saving DBN records as JSON
 
 `ToJsonRecord()` turns a BBO, CBBO, TCBBO, trade, OHLCV or statistics DBN record into its JSON model, with the values `DatabentoJsonClient` reads from the JSON encoding of the same record. Records downloaded as DBN can then be saved as JSON and read back like records downloaded as JSON. The extension methods are in `DbnToJsonExtensions`, in the `Databento.CSharpApiClient.DataModel.Dbn` namespace, and the JSON records in `Databento.CSharpApiClient.DataModel.Json`:

@@ -440,6 +440,200 @@ namespace Databento.CSharpApiClient.DataModel.Dbn
             record.LegUnderlyingId = BinaryPrimitives.ReadUInt32LittleEndian(body.AsSpan(192));
         }
 
+        /// <summary>
+        /// Writes this record, header first, in the layout <see cref="ReadFromBytes"/> reads for the DBN version: 360 bytes in v1,
+        /// 520 in v3. Each layout writes only the fields it has, so the <c>Leg*</c> fields are not written in v1, nor the trading
+        /// reference fields, <see cref="MdSecurityTradingStatus"/> and <see cref="SettlementPriceType"/> in v3. Nothing is written
+        /// when a value is refused.
+        /// </summary>
+        /// <param name="writer">Writer to write the record to.</param>
+        /// <param name="dbnVersion">DBN version of the stream: 1 or 3.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="dbnVersion"/> is not 1, 2 or 3.</exception>
+        /// <exception cref="NotSupportedException"><paramref name="dbnVersion"/> is 2, whose definition layout the reader does not read either.</exception>
+        /// <exception cref="ArgumentException">A value is one the record's DBN field cannot hold, such as a raw instrument ID beyond 32 bits in v1.</exception>
+        public void WriteToBytes(BinaryWriter writer, byte dbnVersion)
+        {
+            ArgumentNullException.ThrowIfNull(writer);
+            ArgumentOutOfRangeException.ThrowIfZero(dbnVersion);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(dbnVersion, (byte)3);
+            if(dbnVersion == 2)
+            {
+                throw new NotSupportedException($"DBN v2 definition records (400 bytes) are not written, as they are not read: only DBN v1 ({V1RecordBytes} bytes) and v3 ({V3RecordBytes} bytes).");
+            }
+
+            DbnRecordWriter record = new DbnRecordWriter(new byte[dbnVersion == 1 ? V1RecordBytes : V3RecordBytes]);
+            record.Header(this.RecordType, this.PublisherId, this.InstrumentId, this.TsEventUtc);
+            record.WriteTimestamp(this.TsReceivedUtc, "ts_recv");
+            record.WritePrice(this.MinPriceIncrement, "min_price_increment");
+            record.WritePrice(this.DisplayFactor, "display_factor");
+            record.WriteTimestamp(this.Expiration, "expiration");
+            record.WriteTimestamp(this.Activation, "activation");
+            record.WritePrice(this.HighLimitPrice, "high_limit_price");
+            record.WritePrice(this.LowLimitPrice, "low_limit_price");
+            record.WritePrice(this.MaxPriceVariation, "max_price_variation");
+            if(dbnVersion == 1)
+            {
+                this.WriteV1Fields(ref record);
+            }
+            else
+            {
+                this.WriteV3Fields(ref record);
+            }
+
+            record.WriteTo(writer);
+        }
+
+        // the body offsets ReadV1Fields reads
+        private void WriteV1Fields(ref DbnRecordWriter record)
+        {
+            if(this.RawInstrumentId > uint.MaxValue)
+            {
+                throw DbnFieldWriter.Invalid("raw_instrument_id", this.RawInstrumentId, "DBN v1 definitions hold a 32-bit raw instrument ID");
+            }
+
+            record.Seek(64);
+            record.WritePrice(this.TradingReferencePrice, "trading_reference_price");
+            record.WritePrice(this.UnitOfMeasureQty, "unit_of_measure_qty");
+            record.WritePrice(this.MinPriceIncrementAmount, "min_price_increment_amount");
+            record.WritePrice(this.PriceRatio, "price_ratio");
+            record.WriteInt32(this.InstrumentAttributeValue);
+            record.WriteUInt32(this.UnderlyingId);
+            record.WriteUInt32((uint)this.RawInstrumentId);
+            record.WriteInt32(this.MarketDepthImplied);
+            record.WriteInt32(this.MarketDepth);
+            record.WriteUInt32(this.MarketSegmentId);
+            record.WriteUInt32(this.MaxTradeVolume);
+            record.WriteInt32(this.MinLotSize);
+            record.WriteInt32(this.MinLotSizeBlock);
+            record.WriteInt32(this.MinLotSizeRoundLot);
+            record.WriteUInt32(this.MinTradeVolume);
+            record.Skip(4); // reserved
+            record.WriteInt32(WriteUndefinedInt32(this.ContractMultiplier, "contract_multiplier"));
+            record.WriteInt32(this.DecayQuantity);
+            record.WriteInt32(this.OriginalContractSize);
+            record.Skip(4); // reserved
+            record.WriteUInt16(this.TradingReferenceDate);
+            record.WriteInt16(this.ApplId);
+            record.WriteUInt16(this.MaturityYear);
+            record.WriteUInt16(this.DecayStartDate);
+            record.WriteUInt16(this.ChannelId);
+            record.WriteCString(this.Currency, 4, "currency");
+            record.WriteCString(this.SettlementCurrency, 4, "settl_currency");
+            record.WriteCString(this.SecuritySubType, 6, "secsubtype");
+            record.WriteCString(this.RawSymbol, 22, "raw_symbol");
+            record.WriteCString(this.Group, 21, "group");
+            record.WriteCString(this.Exchange, 5, "exchange");
+            record.WriteCString(this.Asset, 7, "asset");
+            record.WriteCString(this.Cfi, 7, "cfi");
+            record.WriteCString(this.SecurityType, 7, "security_type");
+            record.WriteCString(this.UnitOfMeasure, 31, "unit_of_measure");
+            record.WriteCString(this.Underlying, 21, "underlying");
+            record.WriteCString(this.StrikePriceCurrency, 4, "strike_price_currency");
+            record.WriteByte(DbnFieldWriter.Char(this.InstrumentClass, "instrument_class"));
+            record.Skip(2); // reserved
+            record.WritePrice(this.StrikePrice, "strike_price");
+            record.Skip(6); // reserved
+            record.WriteByte(DbnFieldWriter.Char(this.MatchAlgorithm, "match_algorithm"));
+            record.WriteByte(this.MdSecurityTradingStatus);
+            record.WriteByte(this.MainFraction);
+            record.WriteByte(this.PriceDisplayFormat);
+            record.WriteByte(this.SettlementPriceType);
+            record.WriteByte(this.SubFraction);
+            record.WriteByte(this.UnderlyingProduct);
+            record.WriteByte(DbnFieldWriter.Char(this.Action, "security_update_action"));
+            record.WriteByte(this.MaturityMonth);
+            record.WriteByte(this.MaturityDay);
+            record.WriteByte(this.MaturityWeek);
+            record.WriteByte(DbnFieldWriter.Char(this.UserDefinedInstrument, "user_defined_instrument"));
+            record.WriteByte((byte)this.ContractMultiplierUnit);
+            record.WriteByte((byte)this.FlowScheduleType);
+            record.WriteByte(this.TickRule);
+        }
+
+        // the body offsets ReadV3Fields reads
+        private void WriteV3Fields(ref DbnRecordWriter record)
+        {
+            record.Seek(64);
+            record.WritePrice(this.UnitOfMeasureQty, "unit_of_measure_qty");
+            record.WritePrice(this.MinPriceIncrementAmount, "min_price_increment_amount");
+            record.WritePrice(this.PriceRatio, "price_ratio");
+            record.WritePrice(this.StrikePrice, "strike_price");
+            record.WriteUInt64(this.RawInstrumentId);
+            record.WritePrice(this.LegPrice, "leg_price");
+            record.WritePrice(this.LegDelta, "leg_delta");
+            record.WriteInt32(this.InstrumentAttributeValue);
+            record.WriteUInt32(this.UnderlyingId);
+            record.WriteInt32(this.MarketDepthImplied);
+            record.WriteInt32(this.MarketDepth);
+            record.WriteUInt32(this.MarketSegmentId);
+            record.WriteUInt32(this.MaxTradeVolume);
+            record.WriteInt32(this.MinLotSize);
+            record.WriteInt32(this.MinLotSizeBlock);
+            record.WriteInt32(this.MinLotSizeRoundLot);
+            record.WriteUInt32(this.MinTradeVolume);
+            record.WriteInt32(WriteUndefinedInt32(this.ContractMultiplier, "contract_multiplier"));
+            record.WriteInt32(this.DecayQuantity);
+            record.WriteInt32(this.OriginalContractSize);
+            record.WriteUInt32(this.LegInstrumentId);
+            record.WriteInt32(this.LegRatioPriceNumerator);
+            record.WriteInt32(this.LegRatioPriceDenominator);
+            record.WriteInt32(this.LegRatioQtyNumerator);
+            record.WriteInt32(this.LegRatioQtyDenominator);
+            record.WriteUInt32(this.LegUnderlyingId);
+            record.WriteInt16(this.ApplId);
+            record.WriteUInt16(this.MaturityYear);
+            record.WriteUInt16(this.DecayStartDate);
+            record.WriteUInt16(this.ChannelId);
+            record.WriteUInt16(this.LegCount);
+            record.WriteUInt16(this.LegIndex);
+            record.WriteCString(this.Currency, 4, "currency");
+            record.WriteCString(this.SettlementCurrency, 4, "settl_currency");
+            record.WriteCString(this.SecuritySubType, 6, "secsubtype");
+            record.WriteCString(this.RawSymbol, 71, "raw_symbol");
+            record.WriteCString(this.Group, 21, "group");
+            record.WriteCString(this.Exchange, 5, "exchange");
+            record.WriteCString(this.Asset, 11, "asset");
+            record.WriteCString(this.Cfi, 7, "cfi");
+            record.WriteCString(this.SecurityType, 7, "security_type");
+            record.WriteCString(this.UnitOfMeasure, 31, "unit_of_measure");
+            record.WriteCString(this.Underlying, 21, "underlying");
+            record.WriteCString(this.StrikePriceCurrency, 4, "strike_price_currency");
+            record.WriteCString(this.LegRawSymbol, 71, "leg_raw_symbol");
+            record.WriteByte(DbnFieldWriter.Char(this.InstrumentClass, "instrument_class"));
+            record.WriteByte(DbnFieldWriter.Char(this.MatchAlgorithm, "match_algorithm"));
+            record.WriteByte(this.MainFraction);
+            record.WriteByte(this.PriceDisplayFormat);
+            record.WriteByte(this.SubFraction);
+            record.WriteByte(this.UnderlyingProduct);
+            record.WriteByte(DbnFieldWriter.Char(this.Action, "security_update_action"));
+            record.WriteByte(this.MaturityMonth);
+            record.WriteByte(this.MaturityDay);
+            record.WriteByte(this.MaturityWeek);
+            record.WriteByte(DbnFieldWriter.Char(this.UserDefinedInstrument, "user_defined_instrument"));
+            record.WriteByte((byte)this.ContractMultiplierUnit);
+            record.WriteByte((byte)this.FlowScheduleType);
+            record.WriteByte(this.TickRule);
+            record.WriteByte(DbnFieldWriter.Char(this.LegInstrumentClass, "leg_instrument_class"));
+            record.WriteByte(DbnFieldWriter.Char(this.LegSide, "leg_side"));
+        }
+
+        // the reverse of ReadUndefinedInt32: NaN is int.MaxValue, DBN's undefined value, and anything else a whole 32-bit number
+        private static int WriteUndefinedInt32(double value, string field)
+        {
+            if(double.IsNaN(value))
+            {
+                return int.MaxValue;
+            }
+
+            if(value != Math.Floor(value) || value < int.MinValue || value > int.MaxValue)
+            {
+                throw DbnFieldWriter.Invalid(field, value, "the field holds a whole 32-bit number");
+            }
+
+            return (int)value;
+        }
+
         private static double ReadUndefinedInt32(byte[] body, int offset)
         {
             int value = BinaryPrimitives.ReadInt32LittleEndian(body.AsSpan(offset));
